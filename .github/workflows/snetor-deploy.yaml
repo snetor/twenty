@@ -44,9 +44,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Compute image tag
+      - name: Compute image tag and APP_VERSION
         id: meta
         run: |
+          # Image tag (immutable): the git tag on tag pushes, else dev-<sha>.
           if [ "${{ github.ref_type }}" = "tag" ]; then
             TAG="${{ github.ref_name }}"
           elif [ -n "${{ github.event.inputs.tag }}" ]; then
@@ -54,8 +55,18 @@ jobs:
           else
             TAG="dev-$(git rev-parse --short HEAD)"
           fi
+          # APP_VERSION must be a valid SemVer (Twenty validates it at boot).
+          # On a tag push, strip a leading 'v' (v2.8.0 -> 2.8.0). Otherwise use
+          # the repo's package.json version. NEVER pass the image tag — dev-<sha>
+          # is not semver and the app crashes config validation on startup.
+          if [ "${{ github.ref_type }}" = "tag" ]; then
+            APP_VERSION="${TAG#v}"
+          else
+            APP_VERSION="$(node -p "require('./package.json').version")"
+          fi
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
-          echo "Publishing image tag: $TAG"
+          echo "app_version=$APP_VERSION" >> "$GITHUB_OUTPUT"
+          echo "Publishing image tag: $TAG  (APP_VERSION=$APP_VERSION)"
 
       - uses: azure/login@v2
         with:
@@ -79,7 +90,7 @@ jobs:
           push: true
           tags: ${{ env.ACR_NAME }}.azurecr.io/twenty:${{ steps.meta.outputs.tag }}
           build-args: |
-            APP_VERSION=${{ steps.meta.outputs.tag }}
+            APP_VERSION=${{ steps.meta.outputs.app_version }}
           # GitHub Actions layer cache to speed up rebuilds.
           cache-from: type=gha
           cache-to: type=gha,mode=max
