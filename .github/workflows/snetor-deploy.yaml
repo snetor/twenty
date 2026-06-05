@@ -1,0 +1,109 @@
+name: "Snetor: build & deploy to ACR"
+
+# Builds the Snetor fork image, pushes it to the private Azure Container Registry,
+# then bumps the image tag in the azure-landing-zone repo (GitOps) which triggers
+# its tf-apply to roll the new image onto the Container Apps + run DB migrations.
+#
+# Snetor-prefixed name so merges from upstream (twentyhq/twenty) never clobber it.
+#
+# Required repo secrets (Settings → Secrets and variables → Actions):
+#   AZURE_CLIENT_ID / AZURE_TENANT_ID / AZURE_SUBSCRIPTION_ID  — OIDC SP
+#       (the SP needs a federated credential for this repo + AcrPush on the ACR)
+#   ACR_NAME            — ACR name without .azurecr.io (e.g. acrtwentydevXXXX)
+#   LANDING_ZONE_PAT  — fine-grained PAT, contents:write on snetor/azure-landing-zone
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Image tag to publish (default: dev-<short-sha>)"
+        required: false
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  id-token: write # OIDC login to Azure
+  contents: read
+
+concurrency:
+  group: snetor-deploy
+  cancel-in-progress: false
+
+jobs:
+  build-push-deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    # Binds OIDC to a single, trigger-independent subject
+    # (repo:snetor/twenty:environment:twenty-deploy) so ONE Azure federated
+    # credential covers both manual runs and tag pushes (tag/branch refs would
+    # otherwise each need their own credential — no wildcards allowed).
+    environment: twenty-deploy
+    env:
+      ACR_NAME: ${{ secrets.ACR_NAME }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Compute image tag
+        id: meta
+        run: |
+          if [ "${{ github.ref_type }}" = "tag" ]; then
+            TAG="${{ github.ref_name }}"
+          elif [ -n "${{ github.event.inputs.tag }}" ]; then
+            TAG="${{ github.event.inputs.tag }}"
+          else
+            TAG="dev-$(git rev-parse --short HEAD)"
+          fi
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "Publishing image tag: $TAG"
+
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      # Populates the docker credential store with an ACR token. build-push-action
+      # forwards this auth to the buildx builder.
+      - name: ACR login
+        run: az acr login --name "$ACR_NAME"
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build & push image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: packages/twenty-docker/twenty/Dockerfile
+          target: twenty
+          push: true
+          tags: ${{ env.ACR_NAME }}.azurecr.io/twenty:${{ steps.meta.outputs.tag }}
+          build-args: |
+            APP_VERSION=${{ steps.meta.outputs.tag }}
+          # GitHub Actions layer cache to speed up rebuilds.
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # GitOps: rewrite the single tag line in the landing-zone repo and push to
+      # main. That repo's tf-apply (path-filtered on environments/**) then deploys
+      # the new image and runs the db-init Job + /healthz check.
+      - name: Bump image tag in azure-landing-zone
+        env:
+          GH_TOKEN: ${{ secrets.LANDING_ZONE_PAT }}
+        run: |
+          set -euo pipefail
+          git clone --depth=1 \
+            "https://x-access-token:${GH_TOKEN}@github.com/snetor/azure-landing-zone.git" lz
+          cd lz
+          FILE="environments/dev/twenty-image.auto.tfvars"
+          sed -i "s|^twenty_image_tag = .*|twenty_image_tag = \"${{ steps.meta.outputs.tag }}\"|" "$FILE"
+          git config user.name "snetor-deploy-bot"
+          git config user.email "deploy-bot@snetor.com"
+          git add "$FILE"
+          if git diff --cached --quiet; then
+            echo "Image tag already current — nothing to deploy."
+            exit 0
+          fi
+          git commit -m "chore(twenty): deploy image ${{ steps.meta.outputs.tag }}"
+          git push origin HEAD:main
+          echo "Pushed tag bump → azure-landing-zone tf-apply will deploy."
