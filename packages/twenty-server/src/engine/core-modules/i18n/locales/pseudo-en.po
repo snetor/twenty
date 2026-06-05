@@ -523,7 +523,6 @@ msgstr ""
 #: src/engine/metadata-modules/view/filters/view-rest-api-exception.filter.ts
 #: src/engine/metadata-modules/row-level-permission-predicate/exceptions/row-level-permission-predicate.exception.ts
 #: src/engine/metadata-modules/row-level-permission-predicate/exceptions/row-level-permission-predicate-group.exception.ts
-#: src/engine/core-entity-cache/exceptions/core-entity-cache.exception.ts
 msgid "An unexpected error occurred."
 msgstr ""
 
@@ -533,9 +532,9 @@ msgstr ""
 msgid "An unknown calendar error occurred."
 msgstr ""
 
-#. js-lingui-id: JKWicb
+#. js-lingui-id: Jrl0Z/
 #: src/engine/workspace-manager/twenty-standard-application/utils/field-metadata/compute-company-standard-flat-field-metadata.util.ts
-msgid "Annual Recurring Revenue: The actual or estimated annual revenue of the company"
+msgid "Annual Revenue"
 msgstr ""
 
 #. js-lingui-id: 4XvK/4
@@ -672,11 +671,6 @@ msgstr ""
 #. js-lingui-id: TdfEV7
 #: src/engine/workspace-manager/twenty-standard-application/utils/field-metadata/compute-workflow-version-standard-flat-field-metadata.util.ts
 msgid "Archived"
-msgstr ""
-
-#. js-lingui-id: 3EiOLz
-#: src/engine/workspace-manager/twenty-standard-application/utils/field-metadata/compute-company-standard-flat-field-metadata.util.ts
-msgid "ARR"
 msgstr ""
 
 #. js-lingui-id: Ek7xGj
@@ -871,11 +865,6 @@ msgstr ""
 #. js-lingui-id: DDKhmc
 #: src/engine/core-modules/billing/billing.exception.ts
 msgid "Billing product not found."
-msgstr ""
-
-#. js-lingui-id: Je6GWV
-#: src/engine/workspace-manager/workspace-cleaner/exceptions/workspace-cleaner.exception.ts
-msgid "Billing subscription not found."
 msgstr ""
 
 #. js-lingui-id: K1172m
@@ -1322,11 +1311,6 @@ msgstr ""
 #: src/engine/workspace-manager/workspace-migration/workspace-migration-builder/validators/services/flat-view-filter-group-validator.service.ts
 #: src/engine/workspace-manager/workspace-migration/workspace-migration-builder/validators/services/flat-view-filter-group-validator.service.ts
 msgid "Circular dependency detected in view filter group hierarchy"
-msgstr ""
-
-#. js-lingui-id: 3wV73y
-#: src/engine/workspace-manager/twenty-standard-application/utils/field-metadata/compute-person-standard-flat-field-metadata.util.ts
-msgid "City"
 msgstr ""
 
 #. js-lingui-id: J7dFKa
@@ -2098,11 +2082,6 @@ msgstr ""
 #: src/engine/metadata-modules/page-layout-widget/constants/standard-page-layout-widget-titles.ts
 #: src/engine/metadata-modules/page-layout-tab/constants/standard-page-layout-tab-titles.ts
 msgid "Emails"
-msgstr ""
-
-#. js-lingui-id: gqv5ZL
-#: src/engine/workspace-manager/twenty-standard-application/utils/field-metadata/compute-company-standard-flat-field-metadata.util.ts
-msgid "Employees"
 msgstr ""
 
 #. js-lingui-id: aVGG1u
@@ -2913,11 +2892,6 @@ msgstr ""
 msgid "iCal UID"
 msgstr ""
 
-#. js-lingui-id: CiyiKN
-#: src/engine/workspace-manager/twenty-standard-application/utils/field-metadata/compute-company-standard-flat-field-metadata.util.ts
-msgid "ICP"
-msgstr ""
-
 #. js-lingui-id: dFb5Nt
 #: src/engine/workspace-manager/twenty-standard-application/utils/field-metadata/compute-workspace-member-standard-flat-field-metadata.util.ts
 #: src/engine/workspace-manager/twenty-standard-application/utils/field-metadata/compute-workspace-member-standard-flat-field-metadata.util.ts
@@ -2968,11 +2942,6 @@ msgstr ""
 #: src/engine/workspace-manager/twenty-standard-application/utils/field-metadata/compute-attachment-standard-flat-field-metadata.util.ts
 #: src/engine/workspace-manager/twenty-standard-application/utils/field-metadata/compute-attachment-standard-flat-field-metadata.util.ts
 msgid "Id"
-msgstr ""
-
-#. js-lingui-id: yEFb1B
-#: src/engine/workspace-manager/twenty-standard-application/utils/field-metadata/compute-company-standard-flat-field-metadata.util.ts
-msgid "Ideal Customer Profile: Indicates whether the company is the most suitable and valuable customer for you"
 msgstr ""
 
 #. js-lingui-id: 6cVc+b
@@ -3458,7 +3427,6 @@ msgstr ""
 
 #. js-lingui-id: HiaWGB
 #: src/engine/workspace-cache/exceptions/workspace-cache.exception.ts
-#: src/engine/core-entity-cache/exceptions/core-entity-cache.exception.ts
 msgid "Invalid parameters provided."
 msgstr ""
 
@@ -4830,11 +4798,6 @@ msgstr ""
 #. js-lingui-id: bR2sEm
 #: src/engine/workspace-manager/twenty-standard-application/utils/field-metadata/compute-workspace-member-standard-flat-field-metadata.util.ts
 msgid "Number format"
-msgstr ""
-
-#. js-lingui-id: ioJFzx
-#: src/engine/workspace-manager/twenty-standard-application/utils/field-metadata/compute-company-standard-flat-field-metadata.util.ts
-msgid "Number of employees in the company"
 msgstr ""
 
 #. js-lingui-id: MKdH/S
@@ -6722,14 +6685,14 @@ msgstr ""
 msgid "The company name"
 msgstr ""
 
-#. js-lingui-id: BHFCqB
-#: src/engine/workspace-manager/twenty-standard-application/utils/field-metadata/compute-company-standard-flat-field-metadata.util.ts
-msgid "The company Twitter/X account"
-msgstr ""
-
 #. js-lingui-id: OBmU0K
 #: src/engine/workspace-manager/twenty-standard-application/utils/field-metadata/compute-company-standard-flat-field-metadata.util.ts
 msgid "The company website URL. We use this url to fetch the company icon"
+msgstr ""
+
+#. js-lingui-id: ws4TEY
+#: src/engine/workspace-manager/twenty-standard-application/utils/field-metadata/compute-company-standard-flat-field-metadata.util.ts
+msgid "The company's total annual revenue"
 msgstr ""
 
 #. js-lingui-id: j6q6l+
@@ -7661,11 +7624,6 @@ msgstr ""
 msgid "View already exists"
 msgstr ""
 
-#. js-lingui-id: kB0dDD
-#: src/engine/metadata-modules/view/exceptions/flat-view.exception.ts
-msgid "View already exists."
-msgstr ""
-
 #. js-lingui-id: pTvQqf
 #: src/engine/workspace-manager/workspace-migration/workspace-migration-builder/validators/services/flat-view-field-validator.service.ts
 msgid "View field already exists"
@@ -7909,11 +7867,6 @@ msgstr ""
 #. js-lingui-id: RAcTQ1
 #: src/engine/metadata-modules/view/services/view-widget-upsert.service.ts
 msgid "View not found for widget"
-msgstr ""
-
-#. js-lingui-id: yheEin
-#: src/engine/metadata-modules/view/exceptions/flat-view.exception.ts
-msgid "View not found."
 msgstr ""
 
 #. js-lingui-id: ipFNcM
@@ -8521,12 +8474,6 @@ msgstr ""
 #. js-lingui-id: RksBK0
 #: src/engine/core-modules/auth/services/auth.service.ts
 msgid "Wrong password."
-msgstr ""
-
-#. js-lingui-id: 0gv+T2
-#: src/engine/workspace-manager/twenty-standard-application/utils/field-metadata/compute-person-standard-flat-field-metadata.util.ts
-#: src/engine/workspace-manager/twenty-standard-application/utils/field-metadata/compute-company-standard-flat-field-metadata.util.ts
-msgid "X"
 msgstr ""
 
 #. js-lingui-id: eTlYxu

@@ -528,7 +528,6 @@ msgstr "Une erreur de configuration inattendue s'est produite."
 #: src/engine/metadata-modules/view/filters/view-rest-api-exception.filter.ts
 #: src/engine/metadata-modules/row-level-permission-predicate/exceptions/row-level-permission-predicate.exception.ts
 #: src/engine/metadata-modules/row-level-permission-predicate/exceptions/row-level-permission-predicate-group.exception.ts
-#: src/engine/core-entity-cache/exceptions/core-entity-cache.exception.ts
 msgid "An unexpected error occurred."
 msgstr "Une erreur inattendue s'est produite."
 
@@ -538,10 +537,10 @@ msgstr "Une erreur inattendue s'est produite."
 msgid "An unknown calendar error occurred."
 msgstr "Une erreur de calendrier inconnue s'est produite."
 
-#. js-lingui-id: JKWicb
+#. js-lingui-id: Jrl0Z/
 #: src/engine/workspace-manager/twenty-standard-application/utils/field-metadata/compute-company-standard-flat-field-metadata.util.ts
-msgid "Annual Recurring Revenue: The actual or estimated annual revenue of the company"
-msgstr "Revenu annuel récurrent : Le revenu annuel réel ou estimé de l'entreprise"
+msgid "Annual Revenue"
+msgstr ""
 
 #. js-lingui-id: 4XvK/4
 #: src/engine/workspace-manager/workspace-migration/workspace-migration-builder/validators/services/flat-permission-flag-validator.service.ts
@@ -678,11 +677,6 @@ msgstr ""
 #: src/engine/workspace-manager/twenty-standard-application/utils/field-metadata/compute-workflow-version-standard-flat-field-metadata.util.ts
 msgid "Archived"
 msgstr ""
-
-#. js-lingui-id: 3EiOLz
-#: src/engine/workspace-manager/twenty-standard-application/utils/field-metadata/compute-company-standard-flat-field-metadata.util.ts
-msgid "ARR"
-msgstr "ARR"
 
 #. js-lingui-id: Ek7xGj
 #: src/engine/workspace-manager/twenty-standard-application/utils/field-metadata/compute-workspace-member-standard-flat-field-metadata.util.ts
@@ -877,11 +871,6 @@ msgstr "Tarif de facturation introuvable."
 #: src/engine/core-modules/billing/billing.exception.ts
 msgid "Billing product not found."
 msgstr "Produit de facturation introuvable."
-
-#. js-lingui-id: Je6GWV
-#: src/engine/workspace-manager/workspace-cleaner/exceptions/workspace-cleaner.exception.ts
-msgid "Billing subscription not found."
-msgstr "Abonnement de facturation introuvable."
 
 #. js-lingui-id: K1172m
 #: src/engine/workspace-manager/twenty-standard-application/utils/object-metadata/create-standard-flat-object-metadata.util.ts
@@ -1328,11 +1317,6 @@ msgstr "Dépendance circulaire détectée dans la hiérarchie des éléments du 
 #: src/engine/workspace-manager/workspace-migration/workspace-migration-builder/validators/services/flat-view-filter-group-validator.service.ts
 msgid "Circular dependency detected in view filter group hierarchy"
 msgstr "Dépendance circulaire détectée dans la hiérarchie des groupes de filtres de la vue"
-
-#. js-lingui-id: 3wV73y
-#: src/engine/workspace-manager/twenty-standard-application/utils/field-metadata/compute-person-standard-flat-field-metadata.util.ts
-msgid "City"
-msgstr "Ville"
 
 #. js-lingui-id: J7dFKa
 #: src/engine/core-modules/application/connection-provider/connection-provider.exception.ts
@@ -2104,11 +2088,6 @@ msgstr "Vérification par e-mail non requise."
 #: src/engine/metadata-modules/page-layout-tab/constants/standard-page-layout-tab-titles.ts
 msgid "Emails"
 msgstr "Emails"
-
-#. js-lingui-id: gqv5ZL
-#: src/engine/workspace-manager/twenty-standard-application/utils/field-metadata/compute-company-standard-flat-field-metadata.util.ts
-msgid "Employees"
-msgstr "Employés"
 
 #. js-lingui-id: aVGG1u
 #: src/engine/metadata-modules/permissions/permissions.exception.ts
@@ -2918,11 +2897,6 @@ msgstr "Accueil"
 msgid "iCal UID"
 msgstr "UID iCal"
 
-#. js-lingui-id: CiyiKN
-#: src/engine/workspace-manager/twenty-standard-application/utils/field-metadata/compute-company-standard-flat-field-metadata.util.ts
-msgid "ICP"
-msgstr "ICP"
-
 #. js-lingui-id: dFb5Nt
 #: src/engine/workspace-manager/twenty-standard-application/utils/field-metadata/compute-workspace-member-standard-flat-field-metadata.util.ts
 #: src/engine/workspace-manager/twenty-standard-application/utils/field-metadata/compute-workspace-member-standard-flat-field-metadata.util.ts
@@ -2974,11 +2948,6 @@ msgstr "ICP"
 #: src/engine/workspace-manager/twenty-standard-application/utils/field-metadata/compute-attachment-standard-flat-field-metadata.util.ts
 msgid "Id"
 msgstr "ID"
-
-#. js-lingui-id: yEFb1B
-#: src/engine/workspace-manager/twenty-standard-application/utils/field-metadata/compute-company-standard-flat-field-metadata.util.ts
-msgid "Ideal Customer Profile: Indicates whether the company is the most suitable and valuable customer for you"
-msgstr ""
 
 #. js-lingui-id: 6cVc+b
 #: src/engine/core-modules/sso/sso.exception.ts
@@ -3463,7 +3432,6 @@ msgstr "Données du widget de mise en page invalides."
 
 #. js-lingui-id: HiaWGB
 #: src/engine/workspace-cache/exceptions/workspace-cache.exception.ts
-#: src/engine/core-entity-cache/exceptions/core-entity-cache.exception.ts
 msgid "Invalid parameters provided."
 msgstr "Paramètres invalides fournis."
 
@@ -4836,11 +4804,6 @@ msgstr "Novembre"
 #: src/engine/workspace-manager/twenty-standard-application/utils/field-metadata/compute-workspace-member-standard-flat-field-metadata.util.ts
 msgid "Number format"
 msgstr "Format de nombre"
-
-#. js-lingui-id: ioJFzx
-#: src/engine/workspace-manager/twenty-standard-application/utils/field-metadata/compute-company-standard-flat-field-metadata.util.ts
-msgid "Number of employees in the company"
-msgstr "Nombre d'employés dans l'entreprise"
 
 #. js-lingui-id: MKdH/S
 #: src/engine/workspace-manager/workspace-migration/workspace-migration-builder/validators/services/flat-connection-provider-validator.service.ts
@@ -6727,15 +6690,15 @@ msgstr "Le compte Linkedin de l'entreprise"
 msgid "The company name"
 msgstr "Le nom de l'entreprise"
 
-#. js-lingui-id: BHFCqB
-#: src/engine/workspace-manager/twenty-standard-application/utils/field-metadata/compute-company-standard-flat-field-metadata.util.ts
-msgid "The company Twitter/X account"
-msgstr "Le compte Twitter/X de l'entreprise"
-
 #. js-lingui-id: OBmU0K
 #: src/engine/workspace-manager/twenty-standard-application/utils/field-metadata/compute-company-standard-flat-field-metadata.util.ts
 msgid "The company website URL. We use this url to fetch the company icon"
 msgstr "L'URL du site web de l'entreprise. Nous utilisons cette URL pour récupérer l'icône de l'entreprise"
+
+#. js-lingui-id: ws4TEY
+#: src/engine/workspace-manager/twenty-standard-application/utils/field-metadata/compute-company-standard-flat-field-metadata.util.ts
+msgid "The company's total annual revenue"
+msgstr ""
 
 #. js-lingui-id: j6q6l+
 #: src/engine/core-modules/application/connection-provider/connection-provider.exception.ts
@@ -7666,11 +7629,6 @@ msgstr ""
 msgid "View already exists"
 msgstr "La vue existe déjà"
 
-#. js-lingui-id: kB0dDD
-#: src/engine/metadata-modules/view/exceptions/flat-view.exception.ts
-msgid "View already exists."
-msgstr "La vue existe déjà."
-
 #. js-lingui-id: pTvQqf
 #: src/engine/workspace-manager/workspace-migration/workspace-migration-builder/validators/services/flat-view-field-validator.service.ts
 msgid "View field already exists"
@@ -7915,11 +7873,6 @@ msgstr "Vue introuvable après l’opération d’upsert"
 #: src/engine/metadata-modules/view/services/view-widget-upsert.service.ts
 msgid "View not found for widget"
 msgstr ""
-
-#. js-lingui-id: yheEin
-#: src/engine/metadata-modules/view/exceptions/flat-view.exception.ts
-msgid "View not found."
-msgstr "Vue non trouvée."
 
 #. js-lingui-id: ipFNcM
 #: src/engine/workspace-manager/workspace-migration/workspace-migration-builder/validators/services/flat-view-sort-validator.service.ts
@@ -8527,12 +8480,6 @@ msgstr "Mot de passe incorrect"
 #: src/engine/core-modules/auth/services/auth.service.ts
 msgid "Wrong password."
 msgstr "Mot de passe incorrect."
-
-#. js-lingui-id: 0gv+T2
-#: src/engine/workspace-manager/twenty-standard-application/utils/field-metadata/compute-person-standard-flat-field-metadata.util.ts
-#: src/engine/workspace-manager/twenty-standard-application/utils/field-metadata/compute-company-standard-flat-field-metadata.util.ts
-msgid "X"
-msgstr ""
 
 #. js-lingui-id: eTlYxu
 #: src/engine/workspace-manager/twenty-standard-application/utils/field-metadata/compute-workspace-member-standard-flat-field-metadata.util.ts
