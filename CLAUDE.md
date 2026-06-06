@@ -222,3 +222,31 @@ This handles everything: starts Postgres + Redis (auto-detects local services vs
 - `tsconfig.base.json` - Base TypeScript configuration
 - `package.json` - Root package with workspace definitions
 - `.cursor/rules/` - Detailed development guidelines and best practices
+
+---
+
+## Snetor fork — déploiement Azure (à date)
+
+Ce fork (`snetor/twenty`) est self-hosted sur **Azure Container Apps**, piloté par le repo
+`snetor/azure-landing-zone`. Doc complète : `docs/twenty-deployment-runbook.md` (côté landing-zone).
+
+**Modèle de branches :**
+- `main` (défaut) : suit l'upstream + héberge `.github/workflows/snetor-deploy.yaml` (requis pour
+  que `workflow_dispatch` apparaisse). **Ne jamais déployer depuis `main`** (HEAD upstream mouvant
+  → décalage de version vs schéma DB → migrations imprévues).
+- **`snetor/main` (branche de déploiement)** : force-pinnée sur une release upstream `twenty/vX.Y.Z`
+  (la version alignée sur le schéma DB Azure ; actuellement **v2.7.4**), customisations Snetor par-dessus.
+  Pour monter de version : re-pinner sur le nouveau tag release (rebaser les commits Snetor dessus),
+  puis tag-deploy ; le Job d'init applique les migrations forward.
+
+**Déployer :** taguer `vX.Y.Z-snetor.N` sur `snetor/main` (ou `workflow_dispatch`). Le workflow :
+OIDC Azure (env GitHub `twenty-deploy`) → `az acr login` → build cible `twenty` → push ACR privé →
+réécrit `environments/dev/twenty-image.auto.tfvars` dans la landing-zone (PAT `LANDING_ZONE_PAT`) →
+`tf-apply` déploie + db-init migre + check `/healthz`.
+
+**Gotchas :**
+- **`APP_VERSION` doit être un SemVer valide** (Twenty le valide au boot). Le workflow le dérive du
+  tag (`vX.Y.Z` → `X.Y.Z`) ou du `package.json` — **jamais** le tag d'image `dev-<sha>` (sinon crash
+  config au démarrage).
+- Build sur `ubuntu-latest` (16 Go — couvre le heap 8 Go du build frontend).
+- Image = ACR privé (`acrtwentydev….azurecr.io/twenty:<tag>`), tag **toujours figé**, jamais `latest`.

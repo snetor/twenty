@@ -1,3 +1,18 @@
+<!-- SNETOR FORK — début (bloc maintenu manuellement, à conserver lors des syncs upstream) -->
+> ### 🏷️ Snetor fork
+> Ce fork est **self-hosted sur Azure** (Container Apps), déployé depuis le repo
+> [`snetor/azure-landing-zone`](https://github.com/snetor/azure-landing-zone).
+>
+> - **CI/CD** : `.github/workflows/snetor-deploy.yaml` build l'image → ACR privé → bump GitOps du
+>   tag dans la landing-zone → `tf-apply` déploie + migre + check `/healthz`.
+> - **Branche de déploiement** : **`snetor/main`**, pinnée sur une release upstream `twenty/vX.Y.Z`
+>   (= la version alignée sur le schéma DB Azure), customisations Snetor par-dessus.
+> - **Déployer** : taguer `vX.Y.Z-snetor.N` sur `snetor/main`. **Ne JAMAIS déployer depuis `main`**
+>   (HEAD upstream mouvant → décalage de version / migrations imprévues).
+> - Détails & approche : voir `CLAUDE.md` (section *Snetor fork*) et le runbook
+>   `docs/twenty-deployment-runbook.md` du repo azure-landing-zone.
+<!-- SNETOR FORK — fin -->
+
 <p align="center">
   <a href="https://www.twenty.com">
     <img src="./packages/twenty-website/public/images/core/logo.svg" width="100px" alt="Twenty logo" />
