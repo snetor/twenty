@@ -26,7 +26,10 @@ const buildQb = (overrides: Record<string, unknown>) => {
 
   Object.assign(qb, {
     internalContext: { objectIdByNameSingular: {} } as any,
-    authContext: { type: 'user', workspaceMember: { allowedCountries: 'ES' } } as any,
+    authContext: {
+      type: 'user',
+      workspaceMember: { allowedCountries: 'ES' },
+    } as any,
     shouldBypassPermissionChecks: false,
     expressionMap: { mainAlias: { target: 'company', subQuery: false } } as any,
     ...overrides,
@@ -41,7 +44,10 @@ const callPredicate = (qb: WorkspaceSelectQueryBuilder<any>) =>
 describe('WorkspaceSelectQueryBuilder — branchement du filtre pays', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    getMetadataMock.mockReturnValue({ nameSingular: 'company', fieldIds: [] } as any);
+    getMetadataMock.mockReturnValue({
+      nameSingular: 'company',
+      fieldIds: [],
+    } as any);
     applyMock.mockImplementation(() => undefined);
   });
 
@@ -51,7 +57,7 @@ describe('WorkspaceSelectQueryBuilder — branchement du filtre pays', () => {
     expect(applyMock).toHaveBeenCalledTimes(1);
   });
 
-  it("ne filtre pas quand shouldBypassPermissionChecks=true", () => {
+  it('ne filtre pas quand shouldBypassPermissionChecks=true', () => {
     callPredicate(buildQb({ shouldBypassPermissionChecks: true }));
 
     expect(applyMock).not.toHaveBeenCalled();
@@ -60,7 +66,9 @@ describe('WorkspaceSelectQueryBuilder — branchement du filtre pays', () => {
   it('ne filtre pas une subquery (pas de metadata)', () => {
     callPredicate(
       buildQb({
-        expressionMap: { mainAlias: { target: 'company', subQuery: true } } as any,
+        expressionMap: {
+          mainAlias: { target: 'company', subQuery: true },
+        } as any,
       }),
     );
 
