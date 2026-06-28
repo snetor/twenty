@@ -29,6 +29,7 @@ import { WorkspaceDeleteQueryBuilder } from 'src/engine/twenty-orm/repository/wo
 import { WorkspaceInsertQueryBuilder } from 'src/engine/twenty-orm/repository/workspace-insert-query-builder';
 import { WorkspaceSoftDeleteQueryBuilder } from 'src/engine/twenty-orm/repository/workspace-soft-delete-query-builder';
 import { WorkspaceUpdateQueryBuilder } from 'src/engine/twenty-orm/repository/workspace-update-query-builder';
+import { applyCountryPermissionFilter } from 'src/engine/twenty-orm/utils/apply-country-permission-filter.util';
 import { applyRowLevelPermissionPredicates } from 'src/engine/twenty-orm/utils/apply-row-level-permission-predicates.util';
 import { formatResult } from 'src/engine/twenty-orm/utils/format-result.util';
 import { getObjectMetadataFromEntityTarget } from 'src/engine/twenty-orm/utils/get-object-metadata-from-entity-target.util';
@@ -374,6 +375,11 @@ export class WorkspaceSelectQueryBuilder<
 
   private validatePermissions(): void {
     this.applyRowLevelPermissionPredicatesToMainAliasAndJoinedRelations();
+    // Snetor : cloisonnement par pays (AGPL). ⚠️ Ne porte que sur l'alias principal,
+    // là où l'upstream applique désormais ses prédicats AUSSI aux relations jointes
+    // (`applyRowLevelPermissionPredicatesToJoinedRelations`). Écart connu, à traiter
+    // avec le lot B — cf. la ligne « relations inverses » de sa spec.
+    this.applyCountryPermissionFilterPredicate();
     validateQueryIsPermittedOrThrow({
       expressionMap: this.expressionMap,
       objectsPermissions: this.objectRecordsPermissions,
@@ -428,6 +434,34 @@ export class WorkspaceSelectQueryBuilder<
       internalContext: this.internalContext,
       authContext: this.authContext,
       featureFlagMap: this.featureFlagMap,
+    });
+  }
+
+  // Snetor : cloisonnement par pays (AGPL, autonome). Ne réutilise pas le code
+  // Enterprise voisin, qui n'est qu'un patron de forme.
+  private applyCountryPermissionFilterPredicate(): void {
+    if (this.shouldBypassPermissionChecks) {
+      return;
+    }
+
+    // Subqueries don't have entity metadata, skip the filter
+    // (already applied on the original entity query).
+    if (this.expressionMap.mainAlias?.subQuery) {
+      return;
+    }
+
+    const mainAliasTarget = this.getMainAliasTarget();
+
+    const objectMetadata = getObjectMetadataFromEntityTarget(
+      mainAliasTarget,
+      this.internalContext,
+    );
+
+    applyCountryPermissionFilter({
+      queryBuilder: this,
+      objectMetadata,
+      internalContext: this.internalContext,
+      authContext: this.authContext,
     });
   }
 
