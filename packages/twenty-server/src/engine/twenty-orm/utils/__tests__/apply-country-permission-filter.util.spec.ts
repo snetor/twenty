@@ -112,6 +112,24 @@ describe('applyCountryPermissionFilter', () => {
     }
   });
 
+  it('no-op si le champ allowedCountries est absent du workspaceMember (workspace non provisionné)', () => {
+    const qb: any = makeQb();
+    const { objectMetadata, internalContext } = unhandledObject();
+
+    applyCountryPermissionFilter({
+      queryBuilder: qb,
+      objectMetadata,
+      internalContext,
+      authContext: {
+        type: 'user',
+        workspaceMember: { name: 'x' }, // pas de champ allowedCountries
+      } as any,
+    });
+
+    expect(qb.where).not.toHaveBeenCalled();
+    expect(qb.andWhere).not.toHaveBeenCalled();
+  });
+
   it('default-deny : objet sans countryCode hors allowlist (salesperson) => invisible', () => {
     const qb: any = makeQb();
     const { objectMetadata, internalContext } = unhandledObject();

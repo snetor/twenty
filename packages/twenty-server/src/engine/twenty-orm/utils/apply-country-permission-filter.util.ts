@@ -51,7 +51,15 @@ export const applyCountryPermissionFilter = <T extends ObjectLiteral>({
   // 2. Scope de l'utilisateur courant, lu sur le champ custom hydraté du workspaceMember.
   const raw = Object.entries(authContext.workspaceMember).find(
     ([key]) => key === MEMBER_SCOPE_FIELD,
-  )?.[1] as string | undefined;
+  )?.[1] as string | null | undefined;
+
+  // Cloisonnement NON provisionné dans ce workspace : le champ `allowedCountries`
+  // est absent du workspaceMember (workspaces upstream/tests sans le champ Snetor)
+  // → no-op total. NB : champ présent mais vide ('' / null) ≠ absent → default-deny
+  //   (un membre Snetor sans pays ne voit rien).
+  if (raw === undefined) {
+    return;
+  }
 
   if (raw === ALL_COUNTRIES) {
     return; // « tous pays » (managers de zone large / ExCom / admins) : pas de filtre
