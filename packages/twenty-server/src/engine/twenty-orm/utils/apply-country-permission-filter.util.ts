@@ -18,6 +18,17 @@ const ALL_COUNTRIES = '*';
 const COUNTRY_FIELD = 'countryCode';
 const MEMBER_SCOPE_FIELD = 'allowedCountries';
 
+// Objets de référence/catalogue sans rattachement pays (pas de donnée client
+// confidentielle) : restent visibles par un utilisateur scoppé. TOUT autre objet
+// sans `countryCode` est refusé par défaut (default-deny) — secure-by-default :
+// un objet ajouté demain est invisible tant qu'il n'est pas explicitement traité
+// (countryCode direct) ou ajouté ici. Étendre via les tests UI si une vue casse.
+const COUNTRY_AGNOSTIC_OBJECTS = new Set<string>([
+  'country', // référentiel des 76 pays
+  'product', // catalogue produit (master data, non pays-spécifique)
+  'workspaceMember', // annuaire interne Twenty (assignation, mentions, avatars)
+]);
+
 type ApplyCountryPermissionFilterArgs<T extends ObjectLiteral> = {
   queryBuilder: WorkspaceSelectQueryBuilder<T>;
   objectMetadata: FlatObjectMetadata;
@@ -51,20 +62,27 @@ export const applyCountryPermissionFilter = <T extends ObjectLiteral>({
     .map((iso) => iso.trim().toUpperCase())
     .filter((iso) => iso.length > 0);
 
-  // 3. Objet concerné ? Cloisonné ssi il porte un champ `countryCode`.
-  //    Sinon (objets système, métadonnées, mission*) : pas de filtre.
-  //    (* mission = différé itération 2, cf. COUNTRY_FILTER_SPIKE.md)
+  // 3. Objet porteur d'un `countryCode` ? → cloisonnement direct.
   const { fieldIdByName } = buildFieldMapsFromFlatObjectMetadata(
     internalContext.flatFieldMetadataMaps,
     objectMetadata,
   );
 
-  if (!isDefined(fieldIdByName[COUNTRY_FIELD])) {
+  if (isDefined(fieldIdByName[COUNTRY_FIELD])) {
+    injectCountryWhere(queryBuilder, objectMetadata, internalContext, allowed);
     return;
   }
 
-  // 4. Injection (default-deny si `allowed` est vide).
-  injectCountryWhere(queryBuilder, objectMetadata, internalContext, allowed);
+  // 4. Objet SANS `countryCode` : référentiel autorisé → visible ; sinon
+  //    default-deny. Évite la fuite cross-pays via les objets non rattachés
+  //    (salesperson, mission, note/task/attachment/timeline, companyGroup,
+  //    calendar/message…). Le filtrage transitif fin de ces objets (ex. notes
+  //    des comptes du rep) viendra dans une itération ultérieure.
+  if (COUNTRY_AGNOSTIC_OBJECTS.has(objectMetadata.nameSingular)) {
+    return;
+  }
+
+  denyAll(queryBuilder);
 };
 
 const injectCountryWhere = <T extends ObjectLiteral>(
@@ -102,6 +120,27 @@ const injectCountryWhere = <T extends ObjectLiteral>(
     );
   });
 
+  appendCondition(queryBuilder, condition);
+};
+
+// Default-deny : un objet non rattaché à un pays (et hors allowlist) est invisible
+// pour un utilisateur scoppé.
+const denyAll = <T extends ObjectLiteral>(
+  queryBuilder: WorkspaceSelectQueryBuilder<T>,
+): void => {
+  appendCondition(
+    queryBuilder,
+    new Brackets((qb) => {
+      qb.where('1 = 0');
+    }),
+  );
+};
+
+// Ajoute la condition en AND avec les WHERE existants (ou en WHERE si aucun).
+const appendCondition = <T extends ObjectLiteral>(
+  queryBuilder: WorkspaceSelectQueryBuilder<T>,
+  condition: Brackets,
+): void => {
   if (queryBuilder.expressionMap.wheres.length === 0) {
     queryBuilder.where(condition);
   } else {
