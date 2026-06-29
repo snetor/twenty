@@ -172,7 +172,8 @@ describe('applyCountryPermissionFilter', () => {
 
   it('self-owned : task avec workspaceMember.id => filtre par appartenance pose (pas un deny)', () => {
     const qb: any = makeQb();
-    const { objectMetadata, internalContext } = objectWithoutCountryCode('task');
+    const { objectMetadata, internalContext } =
+      objectWithoutCountryCode('task');
 
     applyCountryPermissionFilter({
       queryBuilder: qb,
@@ -191,7 +192,8 @@ describe('applyCountryPermissionFilter', () => {
 
   it('self-owned : task SANS workspaceMember.id => default-deny', () => {
     const qb: any = makeQb();
-    const { objectMetadata, internalContext } = objectWithoutCountryCode('task');
+    const { objectMetadata, internalContext } =
+      objectWithoutCountryCode('task');
 
     applyCountryPermissionFilter({
       queryBuilder: qb,
