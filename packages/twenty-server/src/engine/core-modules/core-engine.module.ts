@@ -18,6 +18,7 @@ import { ApplicationUpgradeModule } from 'src/engine/core-modules/application/ap
 import { ApplicationModule } from 'src/engine/core-modules/application/application.module';
 import { PreInstalledAppsModule } from 'src/engine/core-modules/application/pre-installed-apps/pre-installed-apps.module';
 import { ApprovedAccessDomainModule } from 'src/engine/core-modules/approved-access-domain/approved-access-domain.module';
+import { CountryCodeDerivationModule } from 'src/engine/core-modules/country-code-derivation/country-code-derivation.module';
 import { AuthModule } from 'src/engine/core-modules/auth/auth.module';
 import { BillingWebhookModule } from 'src/engine/core-modules/billing-webhook/billing-webhook.module';
 import { AppBillingModule } from 'src/engine/core-modules/billing/app-billing/app-billing.module';
@@ -118,6 +119,7 @@ import { FileModule } from './file/file.module';
     WorkflowApiModule,
     WorkspaceEventEmitterModule,
     ActorModule,
+    CountryCodeDerivationModule,
     TelemetryModule,
     AdminPanelModule,
     LabModule,
