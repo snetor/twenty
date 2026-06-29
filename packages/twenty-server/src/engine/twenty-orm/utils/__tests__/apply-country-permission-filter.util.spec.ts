@@ -41,11 +41,11 @@ const allowlistedObject = (nameSingular = 'workspaceMember') => ({
   } as any,
 });
 
-// Objet sans champ countryCode ET hors allowlist (ex. salesperson, mission, note) :
-// default-deny pour un utilisateur scoppé.
-const unhandledObject = () => ({
+// Objet sans champ countryCode (paramétrable). Hors allowlist + hors self-owned
+// (ex. salesperson, mission) => default-deny ; pour task/note avec id => self-owned.
+const objectWithoutCountryCode = (nameSingular = 'salesperson') => ({
   objectMetadata: {
-    nameSingular: 'salesperson',
+    nameSingular,
     fieldIds: ['name-field-id'],
   } as any,
   internalContext: {
@@ -114,7 +114,7 @@ describe('applyCountryPermissionFilter', () => {
 
   it('no-op si le champ allowedCountries est absent du workspaceMember (workspace non provisionné)', () => {
     const qb: any = makeQb();
-    const { objectMetadata, internalContext } = unhandledObject();
+    const { objectMetadata, internalContext } = objectWithoutCountryCode();
 
     applyCountryPermissionFilter({
       queryBuilder: qb,
@@ -132,7 +132,7 @@ describe('applyCountryPermissionFilter', () => {
 
   it('default-deny : objet sans countryCode hors allowlist (salesperson) => invisible', () => {
     const qb: any = makeQb();
-    const { objectMetadata, internalContext } = unhandledObject();
+    const { objectMetadata, internalContext } = objectWithoutCountryCode();
 
     applyCountryPermissionFilter({
       queryBuilder: qb,
@@ -154,7 +154,7 @@ describe('applyCountryPermissionFilter', () => {
   it('default-deny objet hors allowlist : andWhere si un where existe déjà', () => {
     const qb: any = makeQb();
     qb.expressionMap.wheres = [{ type: 'simple' }];
-    const { objectMetadata, internalContext } = unhandledObject();
+    const { objectMetadata, internalContext } = objectWithoutCountryCode();
 
     applyCountryPermissionFilter({
       queryBuilder: qb,
@@ -168,6 +168,48 @@ describe('applyCountryPermissionFilter', () => {
 
     expect(qb.andWhere).toHaveBeenCalledTimes(1);
     expect(qb.where).not.toHaveBeenCalled();
+  });
+
+  it('self-owned : task avec workspaceMember.id => filtre par appartenance pose (pas un deny)', () => {
+    const qb: any = makeQb();
+    const { objectMetadata, internalContext } =
+      objectWithoutCountryCode('task');
+
+    applyCountryPermissionFilter({
+      queryBuilder: qb,
+      objectMetadata,
+      internalContext,
+      authContext: {
+        type: 'user',
+        workspaceMember: { id: 'me-123', allowedCountries: 'ES' },
+      } as any,
+    });
+
+    // une condition est posée (le filtre assignee=moi), pas un no-op
+    expect(qb.where).toHaveBeenCalledTimes(1);
+    expect(qb.andWhere).not.toHaveBeenCalled();
+  });
+
+  it('self-owned : task SANS workspaceMember.id => default-deny', () => {
+    const qb: any = makeQb();
+    const { objectMetadata, internalContext } =
+      objectWithoutCountryCode('task');
+
+    applyCountryPermissionFilter({
+      queryBuilder: qb,
+      objectMetadata,
+      internalContext,
+      authContext: {
+        type: 'user',
+        workspaceMember: { allowedCountries: 'ES' }, // pas d'id
+      } as any,
+    });
+
+    expect(qb.where).toHaveBeenCalledTimes(1);
+    const brackets = qb.where.mock.calls[0][0];
+    const inner = { where: jest.fn(), andWhere: jest.fn() };
+    brackets.whereFactory(inner);
+    expect(inner.where).toHaveBeenCalledWith('1 = 0');
   });
 
   it('injecte un filtre countryCode pour un user scopé', () => {
