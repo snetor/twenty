@@ -29,6 +29,22 @@ const COUNTRY_AGNOSTIC_OBJECTS = new Set<string>([
   'workspaceMember', // annuaire interne Twenty (assignation, mentions, avatars)
 ]);
 
+// Objets « personnels » sans countryCode : un utilisateur scoppé voit SES propres
+// enregistrements (ceux où il est impliqué), via un filtre d'appartenance par
+// identité du membre courant. Le reste (notes/tâches d'autrui ou rattachées à des
+// comptes hors scope) reste default-deny ; le transitif via les comptes in-scope
+// du rep viendra en itération ultérieure (cf. audit).
+const SELF_OWNED_FILTERS: Record<
+  string,
+  (workspaceMemberId: string) => { field: string; filter: object }
+> = {
+  task: (id) => ({ field: 'assigneeId', filter: { eq: id } }),
+  note: (id) => ({
+    field: 'createdBy',
+    filter: { workspaceMemberId: { eq: id } },
+  }),
+};
+
 type ApplyCountryPermissionFilterArgs<T extends ObjectLiteral> = {
   queryBuilder: WorkspaceSelectQueryBuilder<T>;
   objectMetadata: FlatObjectMetadata;
@@ -77,27 +93,49 @@ export const applyCountryPermissionFilter = <T extends ObjectLiteral>({
   );
 
   if (isDefined(fieldIdByName[COUNTRY_FIELD])) {
-    injectCountryWhere(queryBuilder, objectMetadata, internalContext, allowed);
+    if (allowed.length === 0) {
+      denyAll(queryBuilder); // sales sans pays : ne voit rien
+    } else {
+      injectFieldFilter(queryBuilder, objectMetadata, internalContext, {
+        field: COUNTRY_FIELD,
+        filter: { in: allowed },
+      });
+    }
     return;
   }
 
-  // 4. Objet SANS `countryCode` : référentiel autorisé → visible ; sinon
-  //    default-deny. Évite la fuite cross-pays via les objets non rattachés
-  //    (salesperson, mission, note/task/attachment/timeline, companyGroup,
-  //    calendar/message…). Le filtrage transitif fin de ces objets (ex. notes
-  //    des comptes du rep) viendra dans une itération ultérieure.
+  // 4. Objet SANS `countryCode` : référentiel autorisé → visible.
   if (COUNTRY_AGNOSTIC_OBJECTS.has(objectMetadata.nameSingular)) {
     return;
   }
 
+  // 4b. Objet « personnel » (note/task) : l'utilisateur voit SES enregistrements.
+  const selfOwned = SELF_OWNED_FILTERS[objectMetadata.nameSingular];
+  const workspaceMemberId = (authContext.workspaceMember as { id?: string }).id;
+
+  if (selfOwned && isDefined(workspaceMemberId)) {
+    injectFieldFilter(
+      queryBuilder,
+      objectMetadata,
+      internalContext,
+      selfOwned(workspaceMemberId),
+    );
+    return;
+  }
+
+  // 4c. Tout le reste (salesperson, mission, attachment, companyGroup,
+  //     calendar/message…) → default-deny. Secure-by-default.
   denyAll(queryBuilder);
 };
 
-const injectCountryWhere = <T extends ObjectLiteral>(
+// Injecte `WHERE <field> <filter>` via le field parser GraphQL (gère l'alias, les
+// params, les champs composites comme `createdBy`). Utilisé pour countryCode
+// (`{ in: [...] }`) comme pour l'appartenance (`assigneeId`/`createdBy`).
+const injectFieldFilter = <T extends ObjectLiteral>(
   queryBuilder: WorkspaceSelectQueryBuilder<T>,
   objectMetadata: FlatObjectMetadata,
   internalContext: WorkspaceInternalContext,
-  allowed: string[],
+  { field, filter }: { field: string; filter: object },
 ): void => {
   // parseKeyFilter (Enterprise, privé) délègue son default case à
   // GraphqlQueryFilterFieldParser.parse — on appelle directement le parser public.
@@ -106,23 +144,17 @@ const injectCountryWhere = <T extends ObjectLiteral>(
     queryBuilder as WorkspaceSelectQueryBuilder<ObjectLiteral>;
 
   const condition = new Brackets((qb) => {
-    if (allowed.length === 0) {
-      qb.where('1 = 0'); // default-deny : un sales sans pays ne voit rien
-      return;
-    }
-
     const fieldParser = new GraphqlQueryFilterFieldParser(
       objectMetadata,
       internalContext.flatFieldMetadataMaps,
     );
 
-    // `countryCode IN (:...allowed)` via le field parser (gère l'alias + les params)
     fieldParser.parse(
       qb,
       outerQueryBuilder,
       objectMetadata.nameSingular,
-      COUNTRY_FIELD,
-      { in: allowed },
+      field,
+      filter,
       true,
       false,
     );
