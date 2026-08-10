@@ -7,6 +7,7 @@ import { EmailField } from '@/settings/profile/components/EmailField';
 import { NameFields } from '@/settings/profile/components/NameFields';
 import { WorkspaceMemberPictureUploader } from '@/settings/workspace-member/components/WorkspaceMemberPictureUploader';
 import { useCanChangePassword } from '@/settings/profile/hooks/useCanChangePassword';
+import { useHasPermissionFlag } from '@/settings/roles/hooks/useHasPermissionFlag';
 import { useCurrentUserWorkspaceTwoFactorAuthentication } from '@/settings/two-factor-authentication/hooks/useCurrentUserWorkspaceTwoFactorAuthentication';
 import { SettingsPageLayout } from '@/settings/components/layout/SettingsPageLayout';
 import { Trans, useLingui } from '@lingui/react/macro';
@@ -16,6 +17,7 @@ import { getSettingsPath } from 'twenty-shared/utils';
 import { H2Title, IconShield, Status } from 'twenty-ui/display';
 import { Section } from 'twenty-ui/layout';
 import { UndecoratedLink } from 'twenty-ui/navigation';
+import { PermissionFlagType } from '~/generated-metadata/graphql';
 
 export const SettingsProfile = () => {
   const { t } = useLingui();
@@ -29,6 +31,11 @@ export const SettingsProfile = () => {
     'VERIFIED';
 
   const { canChangePassword } = useCanChangePassword();
+
+  // Snetor : même flag que le garde serveur sur `deleteUser`. Le front ne protège
+  // rien par lui-même (la mutation reste appelable sur /metadata), il évite juste
+  // d'exposer un bouton que le serveur refusera.
+  const canDeleteAccount = useHasPermissionFlag(PermissionFlagType.WORKSPACE);
 
   if (!currentWorkspaceMember?.id) {
     return null;
@@ -95,9 +102,11 @@ export const SettingsProfile = () => {
             <SetOrChangePassword />
           </Section>
         )}
-        <Section>
-          <DeleteAccount />
-        </Section>
+        {canDeleteAccount && (
+          <Section>
+            <DeleteAccount />
+          </Section>
+        )}
       </SettingsPageContainer>
     </SettingsPageLayout>
   );

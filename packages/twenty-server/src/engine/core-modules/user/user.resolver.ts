@@ -362,8 +362,22 @@ export class UserResolver {
     return getHMACKey(parent.email, key);
   }
 
+  // Snetor : la suppression de compte est gardée par le flag WORKSPACE, comme
+  // `deleteCurrentWorkspace`. En amont elle ne porte que `NoPermissionGuard`
+  // (`canActivate()` = `return true`), donc tout compte authentifié peut la
+  // déclencher — y compris un commercial sur un rôle sans aucun flag de réglages.
+  //
+  // Ce n'est pas anodin sur un déploiement mono-workspace partagé : le service
+  // hard-delete le `workspaceMember` de l'appelant, et si c'était le dernier
+  // membre, il suspend puis supprime le workspace entier. Le seul garde-fou amont
+  // est un décompte de membres et la règle « pas le dernier admin » — pas une
+  // permission.
   @Mutation(() => UserEntity)
-  @UseGuards(UserAuthGuard, NoPermissionGuard)
+  @UseGuards(
+    WorkspaceAuthGuard,
+    UserAuthGuard,
+    SettingsPermissionGuard(PermissionFlagType.WORKSPACE),
+  )
   async deleteUser(@AuthUser() { id: userId }: AuthContextUser) {
     return this.userService.deleteUser(userId);
   }
