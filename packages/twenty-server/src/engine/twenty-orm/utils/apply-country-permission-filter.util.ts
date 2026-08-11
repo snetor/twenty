@@ -106,6 +106,22 @@ const SELF_OWNED_FILTERS: Record<
 // réelle, moins chère que la colonne dénormalisée — mais elle se décide sur la valeur
 // effective de `MessageChannelVisibility`, qui vit dans `core` et n'est lisible ni par ce
 // filtre ni par une clé API. À trancher depuis Settings → Accounts, pas depuis ce fichier.
+//
+// TRANCHÉ le 2026-08-11, et pas dans le sens espéré : le refus est MAINTENU. Deux raisons.
+//
+// 1. Le défaut n'était pas `METADATA`. Aucun chemin de connexion réel n'envoie de
+//    visibilité, et le fallback de `create-message-channel.service.ts` valait
+//    `SHARE_EVERYTHING` : la visibilité native ne protégeait donc rien par défaut. Le
+//    fallback est passé à `METADATA` pour que le raisonnement ci-dessus soit vrai.
+// 2. Même sous `METADATA`, aucun hook de rédaction ne couvre `messageThread`,
+//    `messageParticipant` ni `messageChannelMessageAssociation` : seuls `message` et
+//    `calendarEvent` en ont un. Lever le refus exposerait donc le graphe « qui parle à qui,
+//    quand » de tout le workspace, ce qui n'est pas une métadonnée anodine pour un
+//    distributeur.
+//
+// À ne pas confondre avec un autre sujet, découvert au passage : les onglets Emails et
+// Calendar ne passent PAS par ce filtre (contexte système), et sont cloisonnés séparément
+// par `CountryScopeService`. Ce refus-ci n'a jamais eu d'effet sur eux.
 
 type ApplyCountryPermissionFilterArgs<T extends ObjectLiteral> = {
   queryBuilder: WorkspaceSelectQueryBuilder<T>;
