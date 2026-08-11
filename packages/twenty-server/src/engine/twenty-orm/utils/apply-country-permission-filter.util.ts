@@ -57,26 +57,40 @@ const SELF_OWNED_FILTERS: Record<
   blocklist: (id) => ({ field: 'workspaceMemberId', filter: { eq: id } }),
 };
 
-// ⚠️ Restent en default-deny, et c'est un manque assumé, pas un oubli :
+// ⚠️ Restent en default-deny, et c'est un manque assumé, pas un oubli. Mais la famille
+// messagerie/agenda demande une distinction que ce commentaire affirmait à tort, et qui
+// change la conception du lot B — mesuré sur DEV le 2026-08-11 :
 //
-// - messagerie et agenda (`message`, `messageThread`, `messageChannel`,
-//   `messageParticipant`, `messageFolder`, `messageChannelMessageAssociation`,
+// - `messageChannel`, `calendarChannel` et `messageFolder` sont des **coquilles** : leurs
+//   données ont migré dans le schéma `core` (avec `connectedAccount`), hors du périmètre de
+//   l'ORM workspace. Les objets de métadonnées existent encore et renvoient **0 ligne**,
+//   alors que 3 canaux réels sont actifs et importent. Les refuser ici ne protège donc
+//   RIEN, et c'est précisément pour ça que `messageChannel` n'expose plus de
+//   `connectedAccountId` : le chemin `messageChannel -> connectedAccount.accountOwnerId`,
+//   que ce commentaire proposait comme filtre d'appartenance, **n'existe pas** sur cette
+//   surface. Corollaire : la visibilité native par canal
+//   (`MessageChannelVisibility`, appliquée dans `timeline-messaging.service.ts`) vit dans
+//   `core` et ce filtre ne peut pas la contredire.
+//
+// - le contenu, lui, est bien dans le workspace et bien refusé : `message`,
+//   `messageThread`, `messageParticipant`, `messageChannelMessageAssociation`,
 //   `messageChannelMessageAssociationMessageFolder`, `calendarEvent`,
-//   `calendarChannel`, `calendarEventParticipant`,
-//   `calendarChannelEventAssociation`). Décision métier du 2026-08-10 : un
-//   commercial ne doit PAS voir les mails ni l'agenda de ses collègues. Ces objets
-//   demandent donc un filtre d'appartenance — mais aucun ne porte de FK directe vers
-//   le membre : il faut traverser `messageChannel -> connectedAccount.accountOwnerId`
-//   (un saut) voire deux pour `message`. C'est exactement la traversée de relation
-//   que ce filtre refuse de faire, donc la vraie réponse est une colonne
+//   `calendarEventParticipant`, `calendarChannelEventAssociation`. C'est là que se joue la
+//   confidentialité, et la seule FK directe vers un membre de toute la famille est
+//   `messageParticipant.workspaceMemberId` (et son équivalent
+//   `calendarEventParticipant.workspaceMemberId`). Un filtre bâti sur elles seules rendrait
+//   visibles deux objets de jonction et aucun message : la vraie réponse reste une colonne
 //   dénormalisée, comme `scopePath` du lot B. À traiter là, pas par une rustine ici.
 //
 // - objets rattachés à un enregistrement client (`attachment`, `timelineActivity`,
 //   `noteTarget`, `taskTarget`, `visitContact`, `mission`, `companyGroup`) : leur
 //   portée est celle de leur parent. Même conclusion, même lot.
 //
-// Conséquence à connaître tant que ce n'est pas fait : un commercial scoppé n'a ni
-// onglet Emails, ni agenda, ni pièces jointes, ni historique, ni missions.
+// Conséquence à connaître tant que ce n'est pas fait : un commercial scoppé n'a ni pièces
+// jointes, ni historique, ni missions, et ne peut lire ni message ni événement d'agenda par
+// une requête d'objet. Ce que l'onglet Emails d'une fiche affiche réellement passe par un
+// resolver de `core` et reste à vérifier **par une session utilisateur** : une clé API est
+// exemptée de ce filtre, elle ne peut pas répondre à cette question.
 
 type ApplyCountryPermissionFilterArgs<T extends ObjectLiteral> = {
   queryBuilder: WorkspaceSelectQueryBuilder<T>;
