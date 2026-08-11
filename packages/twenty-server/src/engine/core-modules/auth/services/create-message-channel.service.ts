@@ -54,8 +54,15 @@ export class CreateMessageChannelService {
           connectedAccountId,
           type: MessageChannelType.EMAIL,
           handle,
-          visibility:
-            messageVisibility || MessageChannelVisibility.SHARE_EVERYTHING,
+          // Snetor : défaut `METADATA` et non `SHARE_EVERYTHING`. Le bouton
+          // « Connect with Microsoft/Google » de Settings → Accounts n'envoie AUCUNE
+          // visibilité : ce fallback est donc le réglage effectif de la quasi-totalité des
+          // comptes connectés. Un défaut partageant le corps des mails de tout le
+          // workspace n'est pas tenable pour 250 commerciaux qui ne liront jamais ce
+          // réglage. Le titulaire du compte reste exempté de la restriction
+          // (`timeline-messaging.service.ts`, `apply-messages-visibility-restrictions.service.ts`) :
+          // il voit son propre courrier en entier. Un choix explicite est respecté.
+          visibility: messageVisibility || MessageChannelVisibility.METADATA,
           syncStatus: skipMessageChannelConfiguration
             ? MessageChannelSyncStatus.ONGOING
             : MessageChannelSyncStatus.NOT_SYNCED,

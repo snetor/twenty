@@ -57,8 +57,12 @@ export const SyncEmails = () => {
   const { theme } = useContext(ThemeContext);
   const { triggerApisOAuth } = useTriggerApisOAuth();
   const setNextOnboardingStatus = useSetNextOnboardingStatus();
+  // Snetor : le radio pré-coché est le réglage que la quasi-totalité des utilisateurs
+  // conservera. Il doit donc être le plus fermé, pas le plus ouvert — même raison que le
+  // fallback serveur de `create-message-channel.service.ts`. Partager davantage reste un
+  // clic, mais devient un choix.
   const [visibility, setVisibility] = useState<MessageChannelVisibility>(
-    MessageChannelVisibility.SHARE_EVERYTHING,
+    MessageChannelVisibility.METADATA,
   );
   const [lastAuthenticatedMethod] = useAtomState(lastAuthenticatedMethodState);
   const [skipSyncEmailOnboardingStatusMutation] = useMutation(
