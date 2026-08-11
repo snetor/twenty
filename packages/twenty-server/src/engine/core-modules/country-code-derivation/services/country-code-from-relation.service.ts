@@ -17,6 +17,18 @@ import { buildFieldMapsFromFlatObjectMetadata } from 'src/engine/metadata-module
 import { buildObjectIdByNameMaps } from 'src/engine/metadata-modules/flat-object-metadata/utils/build-object-id-by-name-maps.util';
 import { GlobalWorkspaceOrmManager } from 'src/engine/twenty-orm/global-workspace-datasource/global-workspace-orm.manager';
 
+// La dérivation est une lecture SYSTÈME, pas une lecture de l'utilisateur : elle résout
+// l'isoCode d'un pays (ou le countryCode de la company parente) que l'appelant vient
+// lui-même de désigner par sa FK, pour dénormaliser la colonne qui porte le cloisonnement.
+// Sans ce bypass, la lecture passe par le choke-point ORM et est refusée
+// (« Entity performing the request does not have permission ») : le catch avale l'erreur,
+// `countryCode` reste vide, et l'enregistrement naît invisible pour tout le monde — le
+// symptôme exact que ce module est censé supprimer.
+//
+// Pas de fuite : la seule information rendue est un code pays à 2 lettres déduit d'une
+// relation que l'appelant a fournie, et elle est écrite sur l'enregistrement qu'il crée.
+const SYSTEM_READ = { shouldBypassPermissionChecks: true } as const;
+
 export type InjectCountryCodeParams = {
   records: CountryCodeRecord[];
   objectMetadataNameSingular: string;
@@ -153,7 +165,7 @@ export class CountryCodeFromRelationService {
       const countryRepository =
         await this.globalWorkspaceOrmManager.getRepository<
           ObjectLiteral & { id: string; isoCode?: string | null }
-        >(workspaceId, 'country');
+        >(workspaceId, 'country', SYSTEM_READ);
       const countries = await countryRepository.find({
         where: { id: In(fkIds) },
       });
@@ -172,7 +184,7 @@ export class CountryCodeFromRelationService {
     const companyRepository =
       await this.globalWorkspaceOrmManager.getRepository<
         ObjectLiteral & { id: string; countryCode?: string | null }
-      >(workspaceId, 'company');
+      >(workspaceId, 'company', SYSTEM_READ);
     const companies = await companyRepository.find({
       where: { id: In(fkIds) },
     });
