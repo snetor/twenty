@@ -88,9 +88,18 @@ const SELF_OWNED_FILTERS: Record<
 //
 // Conséquence à connaître tant que ce n'est pas fait : un commercial scoppé n'a ni pièces
 // jointes, ni historique, ni missions, et ne peut lire ni message ni événement d'agenda par
-// une requête d'objet. Ce que l'onglet Emails d'une fiche affiche réellement passe par un
-// resolver de `core` et reste à vérifier **par une session utilisateur** : une clé API est
-// exemptée de ce filtre, elle ne peut pas répondre à cette question.
+// une requête d'objet.
+//
+// ⚠️ Avant de lever ce refus, connaître ce qui a été mesuré le 2026-08-11 sur la requête
+// d'objet générique `messages`, avec un contexte qui n'est pas propriétaire du canal :
+// `subject` et `text` reviennent tous deux à la valeur
+// `FIELD_RESTRICTED_ADDITIONAL_PERMISSIONS_REQUIRED`, alors que `receivedAt` reste lisible.
+// La visibilité native par canal s'applique donc **au-delà de l'onglet Emails** : lever le
+// refus ici exposerait les métadonnées (dates, fils, participants) mais pas le contenu, tant
+// que la visibilité du canal n'est pas `SHARE_EVERYTHING`. C'est une option de conception
+// réelle, moins chère que la colonne dénormalisée — mais elle se décide sur la valeur
+// effective de `MessageChannelVisibility`, qui vit dans `core` et n'est lisible ni par ce
+// filtre ni par une clé API. À trancher depuis Settings → Accounts, pas depuis ce fichier.
 
 type ApplyCountryPermissionFilterArgs<T extends ObjectLiteral> = {
   queryBuilder: WorkspaceSelectQueryBuilder<T>;
