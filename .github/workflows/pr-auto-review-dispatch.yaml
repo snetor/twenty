@@ -12,7 +12,12 @@ concurrency:
 
 jobs:
   dispatch:
-    if: github.event.pull_request.draft == false
+    # Ce job appelle `twentyhq/ci-privileged`, un dépôt propre à l'upstream, avec un secret
+    # que les forks n'ont pas : il y échoue donc systématiquement. Combiné à un ruleset qui
+    # exige une revue approuvée, cela rend toute PR de fork non mergeable autrement qu'en
+    # `--admin`, c'est-à-dire en contournant la barrière de revue. Le garde de dépôt le fait
+    # simplement sauter hors de l'upstream, sans rien changer au comportement upstream.
+    if: github.repository == 'twentyhq/twenty' && github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
