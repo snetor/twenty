@@ -27,6 +27,15 @@ const COUNTRY_AGNOSTIC_OBJECTS = new Set<string>([
   'country', // référentiel des 76 pays
   'product', // catalogue produit (master data, non pays-spécifique)
   'workspaceMember', // annuaire interne Twenty (assignation, mentions, avatars)
+  // Annuaire commercial interne : mêmes données que workspaceMember, vues du métier
+  // (nom, email, territoire). Refuser `salesperson` alors que `workspaceMember` est
+  // visible n'apportait aucune confidentialité et cassait toute vue portant le nom
+  // du commercial.
+  'salesperson',
+  'salespersonCountry', // jonction commercial <-> pays du même annuaire
+  // Objet de configuration : un dashboard ne porte pas de donnée client, ses widgets
+  // interrogent les objets métier, qui restent filtrés à la source.
+  'dashboard',
 ]);
 
 // Objets « personnels » sans countryCode : un utilisateur scoppé voit SES propres
@@ -43,7 +52,31 @@ const SELF_OWNED_FILTERS: Record<
     field: 'createdBy',
     filter: { workspaceMemberId: { eq: id } },
   }),
+  // Liste d'exclusion de synchronisation : donnée strictement personnelle, portée
+  // par une FK directe vers le membre.
+  blocklist: (id) => ({ field: 'workspaceMemberId', filter: { eq: id } }),
 };
+
+// ⚠️ Restent en default-deny, et c'est un manque assumé, pas un oubli :
+//
+// - messagerie et agenda (`message`, `messageThread`, `messageChannel`,
+//   `messageParticipant`, `messageFolder`, `messageChannelMessageAssociation`,
+//   `messageChannelMessageAssociationMessageFolder`, `calendarEvent`,
+//   `calendarChannel`, `calendarEventParticipant`,
+//   `calendarChannelEventAssociation`). Décision métier du 2026-08-10 : un
+//   commercial ne doit PAS voir les mails ni l'agenda de ses collègues. Ces objets
+//   demandent donc un filtre d'appartenance — mais aucun ne porte de FK directe vers
+//   le membre : il faut traverser `messageChannel -> connectedAccount.accountOwnerId`
+//   (un saut) voire deux pour `message`. C'est exactement la traversée de relation
+//   que ce filtre refuse de faire, donc la vraie réponse est une colonne
+//   dénormalisée, comme `scopePath` du lot B. À traiter là, pas par une rustine ici.
+//
+// - objets rattachés à un enregistrement client (`attachment`, `timelineActivity`,
+//   `noteTarget`, `taskTarget`, `visitContact`, `mission`, `companyGroup`) : leur
+//   portée est celle de leur parent. Même conclusion, même lot.
+//
+// Conséquence à connaître tant que ce n'est pas fait : un commercial scoppé n'a ni
+// onglet Emails, ni agenda, ni pièces jointes, ni historique, ni missions.
 
 type ApplyCountryPermissionFilterArgs<T extends ObjectLiteral> = {
   queryBuilder: WorkspaceSelectQueryBuilder<T>;
