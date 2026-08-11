@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 
+import { CountryScopeService } from 'src/engine/core-modules/country-scope/services/country-scope.service';
 import { TIMELINE_THREADS_DEFAULT_PAGE_SIZE } from 'src/engine/core-modules/messaging/constants/messaging.constants';
 import { type TimelineThreadsWithTotalDTO } from 'src/engine/core-modules/messaging/dtos/timeline-threads-with-total.dto';
 import { TimelineMessagingService } from 'src/engine/core-modules/messaging/services/timeline-messaging.service';
@@ -14,6 +15,7 @@ export class GetMessagesService {
   constructor(
     private readonly globalWorkspaceOrmManager: GlobalWorkspaceOrmManager,
     private readonly timelineMessagingService: TimelineMessagingService,
+    private readonly countryScopeService: CountryScopeService,
   ) {}
 
   async getMessagesFromPersonIds(
@@ -25,9 +27,27 @@ export class GetMessagesService {
   ): Promise<TimelineThreadsWithTotalDTO> {
     const offset = (page - 1) * pageSize;
 
+    // Snetor — cloisonnement par pays. Les trois entrées de l'onglet Emails
+    // (`personId`, `companyId`, `opportunityId`) se rejoignent ici, et tout ce chemin
+    // s'exécute en contexte système : le filtre du choke-point ORM ne s'y applique pas.
+    // Le périmètre est donc posé à la main, au seul endroit qui les couvre toutes.
+    const personIdsInScope =
+      await this.countryScopeService.keepPersonIdsInScope({
+        personIds,
+        workspaceMemberId,
+        workspaceId,
+      });
+
+    if (personIdsInScope.length === 0) {
+      return {
+        totalNumberOfThreads: 0,
+        timelineThreads: [],
+      };
+    }
+
     const { messageThreads, totalNumberOfThreads } =
       await this.timelineMessagingService.getAndCountMessageThreads(
-        personIds,
+        personIdsInScope,
         workspaceId,
         offset,
         pageSize,

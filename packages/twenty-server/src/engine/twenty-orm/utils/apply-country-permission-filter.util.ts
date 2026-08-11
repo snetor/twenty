@@ -8,15 +8,21 @@ import { buildFieldMapsFromFlatObjectMetadata } from 'src/engine/metadata-module
 import { type FlatObjectMetadata } from 'src/engine/metadata-modules/flat-object-metadata/types/flat-object-metadata.type';
 import { type WorkspaceInternalContext } from 'src/engine/twenty-orm/interfaces/workspace-internal-context.interface';
 import { type WorkspaceSelectQueryBuilder } from 'src/engine/twenty-orm/repository/workspace-select-query-builder';
+import {
+  readMemberCountryScopeField,
+  resolveCountryScope,
+} from 'src/engine/twenty-orm/utils/resolve-country-scope.util';
 
 // Cloisonnement par pays (AGPL, autonome). Branché au choke-point ORM unique
 // `WorkspaceSelectQueryBuilder.validatePermissions()`, après les checks object-level.
 // N'importe ni ne réutilise le code Enterprise (`apply-row-level-permission-predicates.util.ts`),
 // qui n'est qu'un patron de forme.
+//
+// La sémantique de `allowedCountries` elle-même vit dans `resolve-country-scope.util.ts`,
+// parce qu'elle doit aussi servir aux chemins en contexte système que ce filtre laisse
+// passer (onglet Emails, cf. `get-messages.service.ts`).
 
-const ALL_COUNTRIES = '*';
 const COUNTRY_FIELD = 'countryCode';
-const MEMBER_SCOPE_FIELD = 'allowedCountries';
 
 // Objets de référence/catalogue sans rattachement pays (pas de donnée client
 // confidentielle) : restent visibles par un utilisateur scoppé. TOUT autre objet
@@ -121,26 +127,18 @@ export const applyCountryPermissionFilter = <T extends ObjectLiteral>({
   }
 
   // 2. Scope de l'utilisateur courant, lu sur le champ custom hydraté du workspaceMember.
-  const raw = Object.entries(authContext.workspaceMember).find(
-    ([key]) => key === MEMBER_SCOPE_FIELD,
-  )?.[1] as string | null | undefined;
+  //    Champ absent (workspace non provisionné) ou « tous pays » → no-op total. Champ
+  //    présent mais vide ≠ absent : c'est un default-deny (un membre Snetor sans pays ne
+  //    voit rien). Cf. `resolve-country-scope.util.ts`.
+  const scope = resolveCountryScope(
+    readMemberCountryScopeField(authContext.workspaceMember),
+  );
 
-  // Cloisonnement NON provisionné dans ce workspace : le champ `allowedCountries`
-  // est absent du workspaceMember (workspaces upstream/tests sans le champ Snetor)
-  // → no-op total. NB : champ présent mais vide ('' / null) ≠ absent → default-deny
-  //   (un membre Snetor sans pays ne voit rien).
-  if (raw === undefined) {
+  if (scope.kind === 'unscoped') {
     return;
   }
 
-  if (raw === ALL_COUNTRIES) {
-    return; // « tous pays » (managers de zone large / ExCom / admins) : pas de filtre
-  }
-
-  const allowed = (raw ?? '')
-    .split(';')
-    .map((iso) => iso.trim().toUpperCase())
-    .filter((iso) => iso.length > 0);
+  const { allowed } = scope;
 
   // 3. Objet porteur d'un `countryCode` ? → cloisonnement direct.
   const { fieldIdByName } = buildFieldMapsFromFlatObjectMetadata(
