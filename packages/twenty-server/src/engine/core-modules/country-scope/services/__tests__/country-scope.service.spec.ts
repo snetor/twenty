@@ -107,4 +107,48 @@ describe('CountryScopeService', () => {
     await expect(keepPersonIdsInScope([])).resolves.toEqual([]);
     expect(workspaceMemberRepository.findOne).not.toHaveBeenCalled();
   });
+
+  describe('resolveScopeForUser', () => {
+    const resolveScopeForUser = (userId: string | undefined) =>
+      service.resolveScopeForUser({ userId, workspaceId: 'workspace-id' });
+
+    it('rend unscoped sans userId (exécution sans utilisateur : workflow, job)', async () => {
+      await expect(resolveScopeForUser(undefined)).resolves.toEqual({
+        kind: 'unscoped',
+      });
+      expect(workspaceMemberRepository.findOne).not.toHaveBeenCalled();
+    });
+
+    it('rend le périmètre du membre correspondant au userId', async () => {
+      workspaceMemberRepository.findOne.mockResolvedValue({
+        id: 'workspace-member-id',
+        allowedCountries: 'CI;SN',
+      });
+
+      await expect(resolveScopeForUser('user-id')).resolves.toEqual({
+        kind: 'countries',
+        allowed: ['CI', 'SN'],
+      });
+    });
+
+    it('rend unscoped pour un membre « tous pays »', async () => {
+      workspaceMemberRepository.findOne.mockResolvedValue({
+        id: 'workspace-member-id',
+        allowedCountries: '*',
+      });
+
+      await expect(resolveScopeForUser('user-id')).resolves.toEqual({
+        kind: 'unscoped',
+      });
+    });
+
+    it('default-deny si le membre est introuvable', async () => {
+      workspaceMemberRepository.findOne.mockResolvedValue(null);
+
+      await expect(resolveScopeForUser('user-id')).resolves.toEqual({
+        kind: 'countries',
+        allowed: [],
+      });
+    });
+  });
 });
