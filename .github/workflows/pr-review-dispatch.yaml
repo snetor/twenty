@@ -13,7 +13,13 @@ concurrency:
 
 jobs:
   dispatch:
+    # Snetor : reprise du garde de #10, sur le workflow renommé. Ce job mint un token
+    # d'App GitHub pour `twentyhq/ci-privileged` — un dépôt et des credentials propres à
+    # l'upstream, que les forks n'ont pas. Sans ce garde, `create-github-app-token` échoue
+    # et le check `dispatch` reste rouge sur toute PR, ce qui rend le fork non mergeable
+    # autrement qu'en `--admin`, c'est-à-dire en contournant la revue.
     if: >
+      github.repository == 'twentyhq/twenty' &&
       github.event.pull_request.draft == false &&
       (github.event.action != 'labeled' || startsWith(github.event.label.name, 'pr-review-'))
     runs-on: ubuntu-latest
