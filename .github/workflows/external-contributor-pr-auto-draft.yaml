@@ -8,7 +8,13 @@ permissions: {}
 
 jobs:
   dispatch:
+    # Même cause que le garde posé sur `pr-auto-review-dispatch.yaml` (#10), et le même
+    # symptôme : ce job appelle `twentyhq/ci-privileged` avec un secret que les forks n'ont
+    # pas, `gh` sort en code 4, et le check `dispatch` reste rouge sur toute PR. Il visait
+    # les contributeurs externes de l'upstream ; hors de l'upstream, il n'a aucun dépôt à
+    # appeler. Le garde de dépôt le fait sauter sans rien changer au comportement upstream.
     if: |
+      github.repository == 'twentyhq/twenty' &&
       github.event.pull_request.draft == false &&
       github.event.pull_request.author_association != 'MEMBER' &&
       github.event.pull_request.author_association != 'OWNER' &&
