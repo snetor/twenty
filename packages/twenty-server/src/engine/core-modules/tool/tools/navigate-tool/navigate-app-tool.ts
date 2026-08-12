@@ -6,6 +6,7 @@ import { NavigateAppToolOutput } from 'twenty-shared/ai';
 import { FieldMetadataType, type ObjectRecord } from 'twenty-shared/types';
 import { isDefined } from 'twenty-shared/utils';
 
+import { CountryScopeService } from 'src/engine/core-modules/country-scope/services/country-scope.service';
 import {
   type NavigateAppInput,
   NavigateAppInputZodSchema,
@@ -14,6 +15,7 @@ import { type ToolInput } from 'src/engine/core-modules/tool/types/tool-input.ty
 import { ToolOutput } from 'src/engine/core-modules/tool/types/tool-output.type';
 import { type ToolExecutionContext } from 'src/engine/core-modules/tool/types/tool-execution-context.type';
 import { type Tool } from 'src/engine/core-modules/tool/types/tool.type';
+import { buildFieldMapsFromFlatObjectMetadata } from 'src/engine/metadata-modules/flat-field-metadata/utils/build-field-maps-from-flat-object-metadata.util';
 import { WorkspaceManyOrAllFlatEntityMapsCacheService } from 'src/engine/metadata-modules/flat-entity/services/workspace-many-or-all-flat-entity-maps-cache.service';
 import { findFlatEntityByIdInFlatEntityMaps } from 'src/engine/metadata-modules/flat-entity/utils/find-flat-entity-by-id-in-flat-entity-maps.util';
 import { type FlatObjectMetadata } from 'src/engine/metadata-modules/flat-object-metadata/types/flat-object-metadata.type';
@@ -22,6 +24,11 @@ import { NavigationMenuItemService } from 'src/engine/metadata-modules/navigatio
 import { ViewService } from 'src/engine/metadata-modules/view/services/view.service';
 import { GlobalWorkspaceOrmManager } from 'src/engine/twenty-orm/global-workspace-datasource/global-workspace-orm.manager';
 import { buildSystemAuthContext } from 'src/engine/twenty-orm/utils/build-system-auth-context.util';
+import {
+  COUNTRY_FIELD,
+  isCountryInScope,
+  readRecordCountryCodeField,
+} from 'src/engine/twenty-orm/utils/resolve-country-scope.util';
 
 @Injectable()
 export class NavigateAppTool implements Tool {
@@ -38,6 +45,7 @@ export class NavigateAppTool implements Tool {
     private readonly viewService: ViewService,
     private readonly workspaceManyOrAllFlatEntityMapsCacheService: WorkspaceManyOrAllFlatEntityMapsCacheService,
     private readonly globalWorkspaceOrmManager: GlobalWorkspaceOrmManager,
+    private readonly countryScopeService: CountryScopeService,
   ) {}
 
   async execute(
@@ -73,6 +81,7 @@ export class NavigateAppTool implements Tool {
           input.objectNameSingular,
           input.recordName,
           context.workspaceId,
+          context.userId,
         );
       case 'wait':
         return this.wait(input.durationMs);
@@ -263,6 +272,7 @@ export class NavigateAppTool implements Tool {
     objectNameSingular: string,
     recordName: string,
     workspaceId: string,
+    userId?: string,
   ): Promise<ToolOutput<NavigateAppToolOutput>> {
     const { flatObjectMetadataMaps, flatFieldMetadataMaps } =
       await this.workspaceManyOrAllFlatEntityMapsCacheService.getOrRecomputeManyOrAllFlatEntityMaps(
@@ -323,7 +333,7 @@ export class NavigateAppTool implements Tool {
     const isFullName =
       labelIdentifierField.type === FieldMetadataType.FULL_NAME;
 
-    const selectColumns = isFullName
+    const baseSelectColumns = isFullName
       ? [
           'id',
           `${labelIdentifierField.name}FirstName`,
@@ -331,9 +341,30 @@ export class NavigateAppTool implements Tool {
         ]
       : ['id', labelIdentifierField.name];
 
+    // Snetor — cloisonnement par pays. Cette recherche lit TOUS les enregistrements de
+    // l'objet en bypass de permissions et en contexte système : ni les permissions
+    // object-level ni le filtre pays ne s'y appliquent. Sans le périmètre posé ici, l'outil
+    // rend le libellé et l'id de clients d'un autre pays — et il est exposé sans aucun flag
+    // de permission (`action-tool.provider.ts`), donc à tout rôle disposant de l'agent.
+    const scope = await this.countryScopeService.resolveScopeForUser({
+      userId,
+      workspaceId,
+    });
+
+    const { fieldIdByName } = buildFieldMapsFromFlatObjectMetadata(
+      flatFieldMetadataMaps,
+      flatObjectMetadata,
+    );
+    const shouldFilterByCountry =
+      scope.kind === 'countries' && isDefined(fieldIdByName[COUNTRY_FIELD]);
+
+    const selectColumns = shouldFilterByCountry
+      ? [...baseSelectColumns, COUNTRY_FIELD]
+      : baseSelectColumns;
+
     const authContext = buildSystemAuthContext(workspaceId);
 
-    const records =
+    const allRecords =
       await this.globalWorkspaceOrmManager.executeInWorkspaceContext(
         async () => {
           const repository =
@@ -349,6 +380,12 @@ export class NavigateAppTool implements Tool {
         },
         authContext,
       );
+
+    const records = shouldFilterByCountry
+      ? allRecords.filter((record) =>
+          isCountryInScope(scope, readRecordCountryCodeField(record)),
+        )
+      : allRecords;
 
     const recordsWithDisplayName = records.map((record) => {
       let displayName: string;
