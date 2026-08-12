@@ -6,6 +6,7 @@ import { isDefined } from 'twenty-shared/utils';
 import { GlobalWorkspaceOrmManager } from 'src/engine/twenty-orm/global-workspace-datasource/global-workspace-orm.manager';
 import { buildSystemAuthContext } from 'src/engine/twenty-orm/utils/build-system-auth-context.util';
 import {
+  type CountryScope,
   isCountryInScope,
   readMemberCountryScopeField,
   readRecordCountryCodeField,
@@ -32,6 +33,52 @@ export class CountryScopeService {
   constructor(
     private readonly globalWorkspaceOrmManager: GlobalWorkspaceOrmManager,
   ) {}
+
+  /**
+   * Périmètre du membre correspondant à un `userId`, pour les surfaces qui ne connaissent
+   * que l'utilisateur — les outils de l'agent, dont le `ToolExecutionContext`.
+   *
+   * `userId` absent = exécution sans utilisateur (workflow, job) : rendu `unscoped`, comme
+   * le fait le filtre ORM pour tout contexte non-utilisateur. Un membre introuvable est en
+   * revanche un cas anormal, et il est rendu `{ countries: [] }` — default-deny.
+   */
+  async resolveScopeForUser({
+    userId,
+    workspaceId,
+  }: {
+    userId: string | undefined;
+    workspaceId: string;
+  }): Promise<CountryScope> {
+    if (!isDefined(userId)) {
+      return { kind: 'unscoped' };
+    }
+
+    const authContext = buildSystemAuthContext(workspaceId);
+
+    return this.globalWorkspaceOrmManager.executeInWorkspaceContext(
+      async () => {
+        const workspaceMemberRepository =
+          await this.globalWorkspaceOrmManager.getRepository<WorkspaceMemberWorkspaceEntity>(
+            workspaceId,
+            'workspaceMember',
+            { shouldBypassPermissionChecks: true },
+          );
+
+        const workspaceMember = await workspaceMemberRepository.findOne({
+          where: { userId },
+        });
+
+        if (!isDefined(workspaceMember)) {
+          return { kind: 'countries', allowed: [] };
+        }
+
+        return resolveCountryScope(
+          readMemberCountryScopeField(workspaceMember),
+        );
+      },
+      authContext,
+    );
+  }
 
   /**
    * Restreint une liste de personnes au périmètre pays du membre courant.
