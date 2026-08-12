@@ -18,10 +18,12 @@ import {
   isDefined,
   isValidUrl,
 } from 'twenty-shared/utils';
-import { H2Title, IconTrash } from 'twenty-ui/display';
+import { IconTrash } from 'twenty-ui/icon';
+import { H2Title } from 'twenty-ui/typography';
 import { Button } from 'twenty-ui/input';
 import { Section } from 'twenty-ui/layout';
 import { useNavigateSettings } from '~/hooks/useNavigateSettings';
+import { SETTINGS_API_WEBHOOKS_TABS } from '~/pages/settings/api-webhooks/constants/SettingsApiWebhooksTabs';
 import { SettingsDatabaseEventsForm } from '@/settings/components/SettingsDatabaseEventsForm';
 
 const DELETE_WEBHOOK_MODAL_ID = 'delete-webhook-modal';
@@ -80,8 +82,13 @@ export const SettingsDevelopersWebhookForm = ({
             href: getSettingsPath(SettingsPath.General),
           },
           {
-            children: t`APIs & Webhooks`,
-            href: getSettingsPath(SettingsPath.ApiWebhooks),
+            children: t`MCP & APIs`,
+            href: getSettingsPath(
+              SettingsPath.ApiWebhooks,
+              undefined,
+              undefined,
+              SETTINGS_API_WEBHOOKS_TABS.TABS_IDS.WEBHOOKS,
+            ),
           },
           { children: isCreationMode ? t`New` : getTitle() },
         ]}
@@ -89,7 +96,15 @@ export const SettingsDevelopersWebhookForm = ({
           <SaveAndCancelButtons
             isSaveDisabled={!canSave}
             isCancelDisabled={formConfig.formState.isSubmitting}
-            onCancel={() => navigate(SettingsPath.ApiWebhooks)}
+            onCancel={() =>
+              navigate(
+                SettingsPath.ApiWebhooks,
+                undefined,
+                undefined,
+                undefined,
+                SETTINGS_API_WEBHOOKS_TABS.TABS_IDS.WEBHOOKS,
+              )
+            }
             onSave={formConfig.handleSubmit(handleSave)}
           />
         }

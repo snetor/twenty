@@ -9,6 +9,7 @@ import { t } from '@lingui/core/macro';
 import { SettingsPath } from 'twenty-shared/types';
 import {
   type ConnectionParametersInput,
+  EmailConnectionSecurity,
   SaveImapSmtpCaldavAccountDocument,
 } from '~/generated-metadata/graphql';
 import { useNavigateSettings } from '~/hooks/useNavigateSettings';
@@ -34,13 +35,30 @@ type UseConnectionFormProps = {
 };
 
 export type ConnectionFormData = {
+  name: string;
   handle: string;
 } & ImapSmtpCaldavAccountInput;
 
 const DEFAULT_PROTOCOL_VALUES: Record<string, ConnectionParametersInput> = {
-  IMAP: { host: '', port: 993, password: '', secure: true },
-  SMTP: { host: '', username: '', port: 587, password: '', secure: true },
-  CALDAV: { host: '', port: 443, password: '', secure: true },
+  IMAP: {
+    host: '',
+    port: 993,
+    password: '',
+    connectionSecurity: EmailConnectionSecurity.SSL_TLS,
+  },
+  SMTP: {
+    host: '',
+    username: '',
+    port: 587,
+    password: '',
+    connectionSecurity: EmailConnectionSecurity.STARTTLS,
+  },
+  CALDAV: {
+    host: '',
+    port: 443,
+    password: '',
+    connectionSecurity: EmailConnectionSecurity.SSL_TLS,
+  },
 };
 
 export const useImapSmtpCaldavConnectionForm = ({
@@ -55,6 +73,7 @@ export const useImapSmtpCaldavConnectionForm = ({
       isEditing ? connectionImapSmtpCalDavUpdate : connectionImapSmtpCalDav,
     ),
     defaultValues: {
+      name: '',
       handle: '',
       ...DEFAULT_PROTOCOL_VALUES,
     },
@@ -72,6 +91,7 @@ export const useImapSmtpCaldavConnectionForm = ({
   useEffect(() => {
     if (isDefined(connectedAccount)) {
       reset({
+        name: connectedAccount.connectionParameters?.name || '',
         handle: connectedAccount.handle || '',
         IMAP: {
           ...DEFAULT_PROTOCOL_VALUES.IMAP,
@@ -151,7 +171,10 @@ export const useImapSmtpCaldavConnectionForm = ({
               ? { id: connectedAccountId }
               : {}),
             handle: formValues.handle,
-            connectionParameters,
+            connectionParameters: {
+              ...connectionParameters,
+              name: formValues.name,
+            },
           },
         });
         if (!isDefined(data)) return;

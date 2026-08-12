@@ -7,5 +7,8 @@
  *                              |___/
  */
 
+export { PROVISIONED_WORKSPACE_ACTIVATION_STATUSES } from './constants/ProvisionedWorkspaceActivationStatuses';
 export { WorkspaceActivationStatus } from './types/WorkspaceActivationStatus';
-export { isWorkspaceActiveOrSuspended } from './utils/isWorkspaceActiveOrSuspended';
+export type { WorkspaceCompanyEnrichment } from './types/WorkspaceCompanyEnrichment';
+export type { WorkspaceCompanyEnrichmentResult } from './types/WorkspaceCompanyEnrichmentResult';
+export { isWorkspaceProvisioned } from './utils/isWorkspaceProvisioned';

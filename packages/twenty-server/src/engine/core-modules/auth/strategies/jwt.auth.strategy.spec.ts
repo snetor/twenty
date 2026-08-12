@@ -8,7 +8,10 @@ import {
 } from 'src/engine/core-modules/auth/auth.exception';
 import { type JwtPayload } from 'src/engine/core-modules/auth/types/jwt-payload.type';
 import { JwtTokenTypeEnum } from 'src/engine/core-modules/auth/types/jwt-token-type.enum';
+import { ImpersonationAuthorizationService } from 'src/engine/core-modules/impersonation/services/impersonation-authorization.service';
+import { NodeEnvironment } from 'src/engine/core-modules/twenty-config/interfaces/node-environment.interface';
 import { WorkspaceEntity } from 'src/engine/core-modules/workspace/workspace.entity';
+import { WorkspaceActivationStatus } from 'twenty-shared/workspace';
 
 import { JwtAuthStrategy } from './jwt.auth.strategy';
 
@@ -17,6 +20,7 @@ describe('JwtAuthStrategy', () => {
   let userWorkspaceRepository: any;
   let jwtWrapperService: any;
   let permissionsService: any;
+  let twentyConfigService: any;
   let workspaceCacheService: any;
   let coreEntityCacheService: any;
 
@@ -50,6 +54,12 @@ describe('JwtAuthStrategy', () => {
 
     permissionsService = {
       userHasWorkspaceSettingPermission: jest.fn(),
+    };
+
+    twentyConfigService = {
+      get: jest.fn((key: string) =>
+        key === 'NODE_ENV' ? NodeEnvironment.DEVELOPMENT : undefined,
+      ),
     };
 
     workspaceCacheService = {
@@ -118,9 +128,12 @@ describe('JwtAuthStrategy', () => {
     new JwtAuthStrategy(
       jwtWrapperService,
       userWorkspaceRepository,
-      permissionsService,
       workspaceCacheService,
       coreEntityCacheService,
+      new ImpersonationAuthorizationService(
+        permissionsService,
+        twentyConfigService,
+      ),
     );
 
   describe('API_KEY validation', () => {
@@ -332,6 +345,61 @@ describe('JwtAuthStrategy', () => {
       expect(user.user?.lastName).toBe('lastNameDefault');
       expect(user.userWorkspaceId).toBe(validUserWorkspaceId);
     });
+
+    it('should reject when the user workspace belongs to a different workspace than the token', async () => {
+      const validUserId = 'valid-user-id';
+      const validUserWorkspaceId = randomUUID();
+      const tokenWorkspaceId = randomUUID();
+      const otherWorkspaceId = randomUUID();
+
+      const payload = {
+        sub: validUserId,
+        type: JwtTokenTypeEnum.ACCESS,
+        userWorkspaceId: validUserWorkspaceId,
+        workspaceId: tokenWorkspaceId,
+      };
+
+      const mockWorkspace = new WorkspaceEntity();
+
+      mockWorkspace.id = tokenWorkspaceId;
+      workspaceStore[tokenWorkspaceId] = mockWorkspace;
+      userStore[validUserId] = { id: validUserId, lastName: 'lastNameDefault' };
+
+      coreEntityCacheService.get.mockImplementation(
+        async (keyName: string, entityId: string) => {
+          if (keyName === 'workspaceEntity') {
+            return workspaceStore[entityId] ?? null;
+          }
+
+          if (keyName === 'user') {
+            return userStore[entityId] ?? null;
+          }
+
+          if (keyName === 'userWorkspaceEntity') {
+            return {
+              id: validUserWorkspaceId,
+              workspaceId: otherWorkspaceId,
+              user: { id: validUserId },
+              workspace: { id: otherWorkspaceId },
+            };
+          }
+
+          return null;
+        },
+      );
+
+      strategy = createStrategy();
+
+      await expect(strategy.validate(payload as JwtPayload)).rejects.toThrow(
+        new AuthException(
+          'User or user workspace not found',
+          expect.any(String),
+          {
+            userFriendlyMessage: msg`User does not have access to this workspace`,
+          },
+        ),
+      );
+    });
   });
 
   describe('APPLICATION_ACCESS token validation', () => {
@@ -363,6 +431,182 @@ describe('JwtAuthStrategy', () => {
         await strategy.validate(payload as JwtPayload);
       } catch (e) {
         expect(e.code).toBe(AuthExceptionCode.APPLICATION_NOT_FOUND);
+      }
+    });
+
+    it('should reject an application token bound to a user that cannot be resolved', async () => {
+      const validApplicationId = randomUUID();
+      const validWorkspaceId = randomUUID();
+      const removedUserId = randomUUID();
+
+      const payload = {
+        sub: validApplicationId,
+        type: JwtTokenTypeEnum.APPLICATION_ACCESS,
+        applicationId: validApplicationId,
+        workspaceId: validWorkspaceId,
+        userId: removedUserId,
+        userWorkspaceId: randomUUID(),
+      };
+
+      const mockWorkspace = new WorkspaceEntity();
+
+      mockWorkspace.id = validWorkspaceId;
+      workspaceStore[validWorkspaceId] = mockWorkspace;
+      applicationStore[validWorkspaceId] = {
+        [validApplicationId]: { id: validApplicationId },
+      };
+
+      strategy = createStrategy();
+
+      try {
+        await strategy.validate(payload as JwtPayload);
+        throw new Error('Expected validate to reject');
+      } catch (e) {
+        expect(e.code).toBe(AuthExceptionCode.USER_NOT_FOUND);
+      }
+    });
+
+    it('should reject an application token whose user is no longer a workspace member', async () => {
+      const validApplicationId = randomUUID();
+      const validWorkspaceId = randomUUID();
+      const validUserId = randomUUID();
+      const validUserWorkspaceId = randomUUID();
+
+      const payload = {
+        sub: validApplicationId,
+        type: JwtTokenTypeEnum.APPLICATION_ACCESS,
+        applicationId: validApplicationId,
+        workspaceId: validWorkspaceId,
+        userId: validUserId,
+        userWorkspaceId: validUserWorkspaceId,
+      };
+
+      const mockWorkspace = new WorkspaceEntity();
+
+      mockWorkspace.id = validWorkspaceId;
+      mockWorkspace.activationStatus = WorkspaceActivationStatus.ACTIVE;
+      workspaceStore[validWorkspaceId] = mockWorkspace;
+      applicationStore[validWorkspaceId] = {
+        [validApplicationId]: { id: validApplicationId },
+      };
+      userStore[validUserId] = { id: validUserId };
+
+      coreEntityCacheService.get.mockImplementation(
+        async (keyName: string, entityId: string) => {
+          if (keyName === 'workspaceEntity') {
+            return workspaceStore[entityId] ?? null;
+          }
+
+          if (keyName === 'user') {
+            return userStore[entityId] ?? null;
+          }
+
+          if (keyName === 'userWorkspaceEntity') {
+            return {
+              id: validUserWorkspaceId,
+              workspaceId: validWorkspaceId,
+              user: { id: validUserId },
+              workspace: { id: validWorkspaceId },
+            };
+          }
+
+          return null;
+        },
+      );
+
+      strategy = createStrategy();
+
+      try {
+        await strategy.validate(payload as JwtPayload);
+        throw new Error('Expected validate to reject');
+      } catch (e) {
+        expect(e.code).toBe(AuthExceptionCode.FORBIDDEN_EXCEPTION);
+      }
+    });
+
+    it('should reject an application token whose workspace member is soft-deleted', async () => {
+      const validApplicationId = randomUUID();
+      const validWorkspaceId = randomUUID();
+      const validUserId = randomUUID();
+      const validUserWorkspaceId = randomUUID();
+      const validWorkspaceMemberId = randomUUID();
+
+      const payload = {
+        sub: validApplicationId,
+        type: JwtTokenTypeEnum.APPLICATION_ACCESS,
+        applicationId: validApplicationId,
+        workspaceId: validWorkspaceId,
+        userId: validUserId,
+        userWorkspaceId: validUserWorkspaceId,
+      };
+
+      const mockWorkspace = new WorkspaceEntity();
+
+      mockWorkspace.id = validWorkspaceId;
+      mockWorkspace.activationStatus = WorkspaceActivationStatus.ACTIVE;
+      workspaceStore[validWorkspaceId] = mockWorkspace;
+      applicationStore[validWorkspaceId] = {
+        [validApplicationId]: { id: validApplicationId },
+      };
+      userStore[validUserId] = { id: validUserId };
+
+      workspaceCacheService.getOrRecompute.mockImplementation(
+        async (workspaceId: string, cacheKeys: string[]) => {
+          const result: Record<string, any> = {};
+
+          if (cacheKeys.includes('flatWorkspaceMemberMaps')) {
+            result.flatWorkspaceMemberMaps = {
+              byId: {
+                [validWorkspaceMemberId]: {
+                  id: validWorkspaceMemberId,
+                  userId: validUserId,
+                  deletedAt: new Date(),
+                },
+              },
+              idByUserId: { [validUserId]: validWorkspaceMemberId },
+            };
+          }
+
+          if (cacheKeys.includes('flatApplicationMaps')) {
+            result.flatApplicationMaps = {
+              byId: applicationStore[workspaceId] ?? {},
+            };
+          }
+
+          return result;
+        },
+      );
+
+      coreEntityCacheService.get.mockImplementation(
+        async (keyName: string, entityId: string) => {
+          if (keyName === 'workspaceEntity') {
+            return workspaceStore[entityId] ?? null;
+          }
+
+          if (keyName === 'user') {
+            return userStore[entityId] ?? null;
+          }
+
+          if (keyName === 'userWorkspaceEntity') {
+            return {
+              id: validUserWorkspaceId,
+              workspaceId: validWorkspaceId,
+              user: { id: validUserId },
+              workspace: { id: validWorkspaceId },
+            };
+          }
+
+          return null;
+        },
+      );
+
+      strategy = createStrategy();
+
+      try {
+        await strategy.validate(payload as JwtPayload);
+        throw new Error('Expected validate to reject');
+      } catch (e) {
+        expect(e.code).toBe(AuthExceptionCode.FORBIDDEN_EXCEPTION);
       }
     });
   });
@@ -516,6 +760,7 @@ describe('JwtAuthStrategy', () => {
           if (keyName === 'userWorkspaceEntity') {
             return {
               id: validUserWorkspaceId,
+              workspaceId: validWorkspaceId,
               user: mockUser,
               workspace: mockWorkspace,
             };
@@ -583,6 +828,7 @@ describe('JwtAuthStrategy', () => {
           if (keyName === 'userWorkspaceEntity') {
             return {
               id: validUserWorkspaceId,
+              workspaceId: validWorkspaceId,
               user: mockUser,
               workspace: mockWorkspace,
             };
@@ -644,6 +890,7 @@ describe('JwtAuthStrategy', () => {
           if (keyName === 'userWorkspaceEntity') {
             return {
               id: validUserWorkspaceId,
+              workspaceId: validWorkspaceId,
               user: mockUser,
               workspace: mockWorkspace,
             };
@@ -718,6 +965,7 @@ describe('JwtAuthStrategy', () => {
           if (keyName === 'userWorkspaceEntity') {
             return {
               id: validUserWorkspaceId,
+              workspaceId: validWorkspaceId,
               user: mockUser,
               workspace: mockWorkspace,
             };
@@ -826,6 +1074,7 @@ describe('JwtAuthStrategy', () => {
           if (keyName === 'userWorkspaceEntity') {
             return {
               id: validUserWorkspaceId,
+              workspaceId: validWorkspaceId,
               user: mockUser,
               workspace: mockWorkspace,
             };
@@ -906,6 +1155,7 @@ describe('JwtAuthStrategy', () => {
           if (keyName === 'userWorkspaceEntity') {
             return {
               id: validUserWorkspaceId,
+              workspaceId: validWorkspaceId,
               user: mockUser,
               workspace: mockWorkspace,
             };

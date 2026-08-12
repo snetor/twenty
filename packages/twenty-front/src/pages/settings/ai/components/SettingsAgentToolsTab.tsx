@@ -6,7 +6,8 @@ import { Dropdown } from '@/ui/layout/dropdown/components/Dropdown';
 import { DropdownContent } from '@/ui/layout/dropdown/components/DropdownContent';
 import { DropdownMenuItemsContainer } from '@/ui/layout/dropdown/components/DropdownMenuItemsContainer';
 import { isDefined } from 'twenty-shared/utils';
-import { H2Title, IconLock, IconPuzzle, IconTool } from 'twenty-ui/display';
+import { IconLock, IconPuzzle, IconTool } from 'twenty-ui/icon';
+import { H2Title } from 'twenty-ui/typography';
 import { SearchInput } from 'twenty-ui/input';
 import { Section } from 'twenty-ui/layout';
 import { MenuItemToggle } from 'twenty-ui/navigation';
@@ -49,7 +50,9 @@ export const SettingsAgentToolsTab = () => {
       const searchNormalized = normalizeSearchText(searchTerm);
 
       const matchesSearch =
-        normalizeSearchText(tool.name).includes(searchNormalized) ||
+        normalizeSearchText(tool.label ?? tool.name).includes(
+          searchNormalized,
+        ) ||
         normalizeSearchText(tool.description ?? '').includes(searchNormalized);
 
       if (!matchesSearch) {
@@ -66,7 +69,7 @@ export const SettingsAgentToolsTab = () => {
 
       return showCustomTools;
     })
-    .sort((a, b) => a.name.localeCompare(b.name));
+    .sort((a, b) => (a.label ?? a.name).localeCompare(b.label ?? b.name));
 
   return (
     <Section>

@@ -1,20 +1,21 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
 
-import { toPlainText } from '@react-email/render';
 import { isNonEmptyString } from '@sniptt/guards';
-import DOMPurify from 'dompurify';
 import { MAX_EMAIL_RECIPIENTS } from 'twenty-shared/constants';
 import {
   ConnectedAccountProvider,
   type EmailAttachment,
-  FileFolder,
 } from 'twenty-shared/types';
-import { isDefined, isValidUuid } from 'twenty-shared/utils';
-import { In, LessThanOrEqual } from 'typeorm';
+import { isDefined, isNonEmptyArray, isValidUuid } from 'twenty-shared/utils';
+import { In, IsNull, LessThanOrEqual, type Repository } from 'typeorm';
 import { z } from 'zod';
 
 import { FileEntity } from 'src/engine/core-modules/file/entities/file.entity';
 import { FileService } from 'src/engine/core-modules/file/services/file.service';
+import { compileOutboundEmailContent } from 'src/engine/core-modules/email/utils/compile-outbound-email-content.util';
+import { sanitizeOutboundEmailSubject } from 'src/engine/core-modules/email/utils/sanitize-outbound-email-html.util';
+import { EMAIL_ATTACHMENT_FILE_FOLDERS } from 'src/engine/core-modules/tool/tools/email-tool/constants/email-attachment-file-folders.const';
 import {
   EmailToolException,
   EmailToolExceptionCode,
@@ -22,8 +23,9 @@ import {
 import { type ComposeEmailParams } from 'src/engine/core-modules/tool/tools/email-tool/types/compose-email-params.type';
 import { EmailComposerResult } from 'src/engine/core-modules/tool/tools/email-tool/types/email-composer-result.type';
 import { parseCommaSeparatedEmails } from 'src/engine/core-modules/tool/tools/email-tool/utils/parse-comma-separated-emails.util';
+import { selectConnectedAccountIdForCaller } from 'src/engine/core-modules/tool/tools/email-tool/utils/select-connected-account-id-for-caller.util';
 import { type ToolExecutionContext } from 'src/engine/core-modules/tool/types/tool-execution-context.type';
-import { ConnectedAccountMetadataService } from 'src/engine/metadata-modules/connected-account/connected-account-metadata.service';
+import { ConnectedAccountEntity } from 'src/engine/metadata-modules/connected-account/entities/connected-account.entity';
 import { GlobalWorkspaceOrmManager } from 'src/engine/twenty-orm/global-workspace-datasource/global-workspace-orm.manager';
 import { buildSystemAuthContext } from 'src/engine/twenty-orm/utils/build-system-auth-context.util';
 import { InjectWorkspaceScopedRepository } from 'src/engine/twenty-orm/workspace-scoped-repository/inject-workspace-scoped-repository.decorator';
@@ -44,85 +46,96 @@ export class EmailComposerService {
 
   constructor(
     private readonly globalWorkspaceOrmManager: GlobalWorkspaceOrmManager,
-    private readonly connectedAccountMetadataService: ConnectedAccountMetadataService,
+    @InjectRepository(ConnectedAccountEntity)
+    private readonly connectedAccountRepository: Repository<ConnectedAccountEntity>,
     @InjectWorkspaceScopedRepository(FileEntity)
     private readonly fileRepository: WorkspaceScopedRepository<FileEntity>,
     private readonly fileService: FileService,
   ) {}
 
-  private async getConnectedAccount({
+  private async getConnectedAccountOrThrow({
     connectedAccountId,
     workspaceId,
-    userWorkspaceId,
   }: {
     connectedAccountId: string;
     workspaceId: string;
-    userWorkspaceId: string | undefined;
-  }) {
+  }): Promise<ConnectedAccountEntity> {
     if (!isValidUuid(connectedAccountId)) {
       throw new EmailToolException(
-        `Connected Account ID is not a valid UUID`,
+        `Connected account id is not a valid UUID`,
         EmailToolExceptionCode.INVALID_CONNECTED_ACCOUNT_ID,
       );
     }
 
-    const connectedAccount =
-      await this.connectedAccountMetadataService.findAccessibleConnectedAccountById(
-        {
-          id: connectedAccountId,
-          userWorkspaceId,
-          workspaceId,
+    const authContext = buildSystemAuthContext(workspaceId);
+
+    return this.globalWorkspaceOrmManager.executeInWorkspaceContext(
+      async () => {
+        const connectedAccount = await this.connectedAccountRepository.findOne({
+          where: { id: connectedAccountId, workspaceId },
           relations: {
             messageChannels: {
               messageFolders: true,
             },
           },
-        },
-      );
+        });
 
-    if (!isDefined(connectedAccount)) {
-      throw new EmailToolException(
-        `Connected Account '${connectedAccountId}' not found`,
-        EmailToolExceptionCode.CONNECTED_ACCOUNT_NOT_FOUND,
-      );
-    }
+        if (!isDefined(connectedAccount)) {
+          throw new EmailToolException(
+            `No connected account found for id '${connectedAccountId}'`,
+            EmailToolExceptionCode.CONNECTED_ACCOUNT_NOT_FOUND,
+          );
+        }
 
-    return connectedAccount;
+        return connectedAccount;
+      },
+      authContext,
+    );
   }
 
-  private async getDefaultConnectedAccountOrThrow({
+  private async getDefaultConnectedAccountIdOrThrow({
     workspaceId,
     userWorkspaceId,
   }: {
     workspaceId: string;
-    userWorkspaceId: string | undefined;
-  }) {
-    const { userConnectedAccounts, workspaceSharedConnectedAccounts } =
-      await this.connectedAccountMetadataService.findAccessibleConnectedAccounts(
-        {
+    userWorkspaceId?: string;
+  }): Promise<string> {
+    const authContext = buildSystemAuthContext(workspaceId);
+
+    return this.globalWorkspaceOrmManager.executeInWorkspaceContext(
+      async () => {
+        const allAccounts = await this.connectedAccountRepository.find({
+          where: { workspaceId, archivedAt: IsNull() },
+          order: { createdAt: 'ASC', id: 'ASC' },
+        });
+
+        if (!isNonEmptyArray(allAccounts)) {
+          throw new EmailToolException(
+            'No connected accounts found for this workspace',
+            EmailToolExceptionCode.CONNECTED_ACCOUNT_NOT_FOUND,
+          );
+        }
+
+        if (!isDefined(userWorkspaceId)) {
+          return allAccounts[0].id;
+        }
+
+        const connectedAccountId = selectConnectedAccountIdForCaller({
+          connectedAccounts: allAccounts,
           userWorkspaceId,
-          workspaceId,
-          relations: {
-            messageChannels: {
-              messageFolders: true,
-            },
-          },
-        },
-      );
+        });
 
-    // Prefer the caller's own account; fall back to a workspace-shared one, but
-    // never silently default to another member's private account.
-    const connectedAccount =
-      userConnectedAccounts[0] ?? workspaceSharedConnectedAccounts[0];
+        if (!isDefined(connectedAccountId)) {
+          throw new EmailToolException(
+            `No connected account available for user workspace '${userWorkspaceId}'`,
+            EmailToolExceptionCode.CONNECTED_ACCOUNT_NOT_FOUND,
+          );
+        }
 
-    if (!isDefined(connectedAccount)) {
-      throw new EmailToolException(
-        'No connected accounts found for this workspace',
-        EmailToolExceptionCode.CONNECTED_ACCOUNT_NOT_FOUND,
-      );
-    }
-
-    return connectedAccount;
+        return connectedAccountId;
+      },
+      authContext,
+    );
   }
 
   private normalizeRecipients(parameters: ComposeEmailParams): {
@@ -197,7 +210,6 @@ export class EmailComposerService {
   private async getAttachments(
     files: Array<EmailAttachment>,
     workspaceId: string,
-    fileFolder: FileFolder,
   ): Promise<MessageAttachment[]> {
     if (files.length === 0) {
       return [];
@@ -236,7 +248,7 @@ export class EmailComposerService {
       const fileStream = await this.fileService.getFileStreamById({
         fileId: fileMetadata.id,
         workspaceId,
-        fileFolder,
+        allowedFileFolders: EMAIL_ATTACHMENT_FILE_FOLDERS,
       });
 
       if (fileStream === null) {
@@ -324,10 +336,10 @@ export class EmailComposerService {
   async composeEmail(
     parameters: ComposeEmailParams,
     context: ToolExecutionContext,
-    options: { attachmentsFileFolder: FileFolder },
   ): Promise<EmailComposerResult> {
     const { workspaceId, userWorkspaceId } = context;
-    const { subject, body, files, inReplyTo, connectedAccountId } = parameters;
+    const { subject, body, files, inReplyTo } = parameters;
+    let { connectedAccountId } = parameters;
 
     let recipients: { to: string[]; cc: string[]; bcc: string[] };
 
@@ -363,20 +375,24 @@ export class EmailComposerService {
 
     const toRecipientsDisplay = recipients.to.join(', ');
 
-    const connectedAccount = isNonEmptyString(connectedAccountId)
-      ? await this.getConnectedAccount({
-          connectedAccountId,
-          workspaceId,
-          userWorkspaceId,
-        })
-      : await this.getDefaultConnectedAccountOrThrow({
-          workspaceId,
-          userWorkspaceId,
-        });
+    if (!connectedAccountId) {
+      connectedAccountId = await this.getDefaultConnectedAccountIdOrThrow({
+        workspaceId,
+        userWorkspaceId,
+      });
+    }
 
-    const messageChannel = connectedAccount.messageChannels.find(
-      (channel) => channel.handle === connectedAccount.handle,
-    );
+    const connectedAccount = await this.getConnectedAccountOrThrow({
+      connectedAccountId,
+      workspaceId,
+    });
+
+    const messageChannel =
+      connectedAccount.provider === ConnectedAccountProvider.EMAIL_GROUP
+        ? connectedAccount.messageChannels[0]
+        : connectedAccount.messageChannels.find(
+            (channel) => channel.handle === connectedAccount.handle,
+          );
 
     const isSmtpOnlyAccount =
       connectedAccount.provider === ConnectedAccountProvider.IMAP_SMTP_CALDAV &&
@@ -387,31 +403,23 @@ export class EmailComposerService {
       !isDefined(connectedAccount.connectionParameters?.SMTP)
     ) {
       throw new EmailToolException(
-        `SMTP is not configured for connected account '${connectedAccount.id}'`,
+        `SMTP is not configured for connected account '${connectedAccountId}'`,
         EmailToolExceptionCode.CONNECTED_ACCOUNT_NOT_FOUND,
       );
     }
 
     if (!isSmtpOnlyAccount && !isDefined(messageChannel)) {
       throw new EmailToolException(
-        `No message channel found for connected account '${connectedAccount.id}'`,
+        `No message channel found for connected account '${connectedAccountId}'`,
         EmailToolExceptionCode.CONNECTED_ACCOUNT_NOT_FOUND,
       );
     }
 
-    const attachments = await this.getAttachments(
-      files || [],
-      workspaceId,
-      options.attachmentsFileFolder,
-    );
+    const attachments = await this.getAttachments(files || [], workspaceId);
 
-    const { JSDOM } = await import('jsdom');
-    const window = new JSDOM('').window;
-    const purify = DOMPurify(window);
-
-    const sanitizedHtmlBody = purify.sanitize(body || '');
-    const plainTextBody = toPlainText(sanitizedHtmlBody);
-    const sanitizedSubject = purify.sanitize(subject || '');
+    const { html: sanitizedHtmlBody, plainText: plainTextBody } =
+      await compileOutboundEmailContent(body ?? '');
+    const sanitizedSubject = await sanitizeOutboundEmailSubject(subject || '');
 
     const { threadExternalId, references } =
       isDefined(inReplyTo) && isDefined(messageChannel)

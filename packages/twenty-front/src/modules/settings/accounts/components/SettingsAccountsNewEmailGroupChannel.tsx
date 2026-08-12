@@ -4,13 +4,12 @@ import { z } from 'zod';
 
 import { SettingsPath } from 'twenty-shared/types';
 import { getSettingsPath } from 'twenty-shared/utils';
-import { H2Title } from 'twenty-ui/display';
+import { H2Title } from 'twenty-ui/typography';
 import { Section } from 'twenty-ui/layout';
 
 import { useCreateEmailGroupChannel } from '@/settings/accounts/hooks/useCreateEmailGroupChannel';
 import { SaveAndCancelButtons } from '@/settings/components/SaveAndCancelButtons/SaveAndCancelButtons';
 import { SettingsPageContainer } from '@/settings/components/SettingsPageContainer';
-import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { SettingsTextInput } from '@/ui/input/components/SettingsTextInput';
 import { SettingsPageLayout } from '@/settings/components/layout/SettingsPageLayout';
 import { useNavigateSettings } from '~/hooks/useNavigateSettings';
@@ -18,52 +17,50 @@ import { useNavigateSettings } from '~/hooks/useNavigateSettings';
 export const SettingsAccountsNewEmailGroupChannel = () => {
   const { t } = useLingui();
   const navigate = useNavigateSettings();
-  const { enqueueErrorSnackBar } = useSnackBar();
   const { createEmailGroupChannel, loading } = useCreateEmailGroupChannel();
 
   const [handle, setHandle] = useState('');
+  const [displayName, setDisplayName] = useState('');
 
   const isHandleValidEmail = z.email().safeParse(handle).success;
   const canSave = isHandleValidEmail && !loading;
 
   const handleSave = useCallback(async () => {
-    try {
-      const result = await createEmailGroupChannel(handle);
-      const messageChannelId =
-        result.data?.createEmailGroupChannel.messageChannel.id;
+    const trimmedDisplayName = displayName.trim();
+    const result = await createEmailGroupChannel(
+      handle,
+      trimmedDisplayName.length > 0 ? trimmedDisplayName : undefined,
+    );
+    const messageChannelId =
+      result.data?.createEmailGroupChannel.messageChannel.id;
 
-      if (messageChannelId) {
-        navigate(SettingsPath.EmailGroupChannelDetail, {
-          messageChannelId,
-        });
-      }
-    } catch {
-      enqueueErrorSnackBar({
-        message: t`Failed to create email handle. Email handles may not be configured on this server.`,
+    if (messageChannelId) {
+      navigate(SettingsPath.EmailGroupChannelDetail, {
+        messageChannelId,
       });
     }
-  }, [createEmailGroupChannel, handle, navigate, enqueueErrorSnackBar, t]);
+  }, [createEmailGroupChannel, displayName, handle, navigate]);
 
   return (
     <SettingsPageLayout
-      title={t`New Email Handle`}
+      title={t`New Email Channel`}
       links={[
         {
           children: t`Workspace`,
           href: getSettingsPath(SettingsPath.General),
         },
         {
-          children: t`Email`,
-          href: getSettingsPath(SettingsPath.WorkspaceEmail),
+          children: t`Communication`,
+          href: getSettingsPath(SettingsPath.WorkspaceCommunications),
         },
-        { children: t`New Email Handle` },
+        { children: t`New Email Channel` },
       ]}
       actionButton={
         <SaveAndCancelButtons
           isSaveDisabled={!canSave}
           isCancelDisabled={loading}
           isLoading={loading}
-          onCancel={() => navigate(SettingsPath.WorkspaceEmail)}
+          onCancel={() => navigate(SettingsPath.WorkspaceCommunications)}
           onSave={handleSave}
         />
       }
@@ -80,6 +77,31 @@ export const SettingsAccountsNewEmailGroupChannel = () => {
             placeholder="support@mycompany.com"
             value={handle}
             onChange={setHandle}
+            onInputEnter={() => {
+              if (canSave) {
+                handleSave();
+              }
+            }}
+            disabled={loading}
+          />
+        </Section>
+        <Section>
+          <H2Title
+            title={t`Display Name`}
+            description={t`The name recipients see next to your address in their inbox, instead of the address alone.`}
+          />
+          <SettingsTextInput
+            instanceId="email-group-display-name"
+            label={t`Display Name`}
+            placeholder={t`Support Team`}
+            value={displayName}
+            maxLength={255}
+            onChange={setDisplayName}
+            onInputEnter={() => {
+              if (canSave) {
+                handleSave();
+              }
+            }}
             disabled={loading}
           />
         </Section>

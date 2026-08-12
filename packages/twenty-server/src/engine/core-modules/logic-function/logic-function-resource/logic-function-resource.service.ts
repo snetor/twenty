@@ -4,13 +4,12 @@ import crypto from 'crypto';
 import { promises as fs } from 'fs';
 import { dirname, join } from 'path';
 import { type QueryRunner } from 'typeorm';
-
 import { FileFolder } from 'twenty-shared/types';
 import { isDefined } from 'twenty-shared/utils';
 
 import { FileStorageExceptionCode } from 'src/engine/core-modules/file-storage/interfaces/file-storage-exception';
 
-import { FileStorageService } from 'src/engine/core-modules/file-storage/file-storage.service';
+import { FileStorageService } from 'src/engine/core-modules/file-storage/services/file-storage.service';
 import {
   getLogicFunctionSeedProjectFiles,
   LogicFunctionSeedProjectFile,
@@ -228,6 +227,17 @@ export class LogicFunctionResourceService {
       },
     });
 
+    const builtFileExists = await this.fileStorageService.checkFileExists({
+      workspaceId,
+      applicationUniversalIdentifier,
+      fileFolder: FileFolder.BuiltLogicFunction,
+      resourcePath: fromBuiltHandlerPath,
+    });
+
+    if (!builtFileExists) {
+      return;
+    }
+
     await this.fileStorageService.copy({
       from: {
         workspaceId,
@@ -299,6 +309,49 @@ export class LogicFunctionResourceService {
     }
 
     await Promise.all(promises);
+
+    await this.removeBuildTimeSdkFromDependencies(
+      join(inMemoryFolderPath, 'package.json'),
+    );
+  }
+
+  // twenty-sdk is build-time only and twenty-client-sdk is injected at runtime
+  // by Twenty (Lambda SDK layer / server-served modules), so neither needs to
+  // be resolved by the Lambda yarn install. Apps should already declare them as
+  // devDependencies (skipped by `yarn workspaces focus --production`); this is a
+  // safety net for apps that still list them under "dependencies".
+  private async removeBuildTimeSdkFromDependencies(
+    packageJsonPath: string,
+  ): Promise<void> {
+    const packageJson = JSON.parse(
+      await fs.readFile(packageJsonPath, 'utf-8'),
+    ) as { dependencies?: Record<string, string> };
+
+    const dependencies = packageJson.dependencies;
+
+    if (!isDefined(dependencies)) {
+      return;
+    }
+
+    const packagesToRemove = ['twenty-sdk', 'twenty-client-sdk'];
+
+    const packagesToRemoveFromDependencies = packagesToRemove.filter(
+      (packageName) => isDefined(dependencies[packageName]),
+    );
+
+    if (packagesToRemoveFromDependencies.length === 0) {
+      return;
+    }
+
+    for (const packageName of packagesToRemoveFromDependencies) {
+      delete dependencies[packageName];
+    }
+
+    await fs.writeFile(
+      packageJsonPath,
+      `${JSON.stringify(packageJson, null, 2)}\n`,
+      'utf-8',
+    );
   }
 
   async getBuiltCode({

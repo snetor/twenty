@@ -11,7 +11,7 @@ import { WorkspaceDomainsService } from 'src/engine/core-modules/domain/workspac
 import { EmailVerificationService } from 'src/engine/core-modules/email-verification/services/email-verification.service';
 import { MessageQueue } from 'src/engine/core-modules/message-queue/message-queue.constants';
 import { TwentyConfigService } from 'src/engine/core-modules/twenty-config/twenty-config.service';
-import { type UserWorkspaceEntity } from 'src/engine/core-modules/user-workspace/user-workspace.entity';
+import { UserWorkspaceEntity } from 'src/engine/core-modules/user-workspace/user-workspace.entity';
 import { UserWorkspaceService } from 'src/engine/core-modules/user-workspace/user-workspace.service';
 import { UserService } from 'src/engine/core-modules/user/services/user.service';
 import { WorkspaceMemberTranspiler } from 'src/engine/core-modules/user/services/workspace-member-transpiler.service';
@@ -23,6 +23,7 @@ import {
   PermissionsExceptionCode,
 } from 'src/engine/metadata-modules/permissions/permissions.exception';
 import { CoreEntityCacheService } from 'src/engine/core-entity-cache/services/core-entity-cache.service';
+import { ConnectedAccountMetadataService } from 'src/engine/metadata-modules/connected-account/connected-account-metadata.service';
 import { UserRoleService } from 'src/engine/metadata-modules/user-role/user-role.service';
 import { GlobalWorkspaceOrmManager } from 'src/engine/twenty-orm/global-workspace-datasource/global-workspace-orm.manager';
 import { type WorkspaceRepository } from 'src/engine/twenty-orm/repository/workspace.repository';
@@ -52,6 +53,10 @@ describe('UserService', () => {
             save: jest.fn(),
             softDelete: jest.fn(),
             update: jest.fn(),
+            manager: {
+              connection: { driver: { options: { type: 'postgres' } } },
+            },
+            metadata: { columns: [] },
           },
         },
         {
@@ -90,6 +95,18 @@ describe('UserService', () => {
           provide: UserRoleService,
           useValue: {
             validateUserWorkspaceIsNotUniqueAdminOrThrow: jest.fn(),
+          },
+        },
+        {
+          provide: getRepositoryToken(UserWorkspaceEntity),
+          useValue: {
+            find: jest.fn().mockResolvedValue([]),
+          },
+        },
+        {
+          provide: ConnectedAccountMetadataService,
+          useValue: {
+            transferOwnership: jest.fn(),
           },
         },
         {
@@ -135,9 +152,7 @@ describe('UserService', () => {
   });
 
   describe('loadWorkspaceMember', () => {
-    it('returns null when workspace is not active/suspended', async () => {
-      // isWorkspaceActiveOrSuspendedSpy.mockReturnValue(false);
-
+    it('returns null when workspace is not provisioned', async () => {
       const res = await service.loadWorkspaceMember(
         { id: 'u1' } as Pick<AuthContextUser, 'id'>,
         { id: 'w1' } as WorkspaceEntity,
@@ -177,10 +192,31 @@ describe('UserService', () => {
       });
       expect(res).toEqual({ id: 'wm1', userId: 'u1' });
     });
+
+    it('fetches from workspace member repo when workspace is created', async () => {
+      jest.spyOn(mockWorkspaceMemberRepo, 'findOne').mockResolvedValue({
+        id: 'wm1',
+        userId: 'u1',
+      } as WorkspaceMemberWorkspaceEntity);
+
+      jest
+        .spyOn(globalWorkspaceOrmManager, 'getRepository')
+        .mockResolvedValue(mockWorkspaceMemberRepo);
+
+      const res = await service.loadWorkspaceMember(
+        { id: 'u1' } as Pick<AuthContextUser, 'id'>,
+        {
+          id: 'w1',
+          activationStatus: WorkspaceActivationStatus.CREATED,
+        } as WorkspaceEntity,
+      );
+
+      expect(res).toEqual({ id: 'wm1', userId: 'u1' });
+    });
   });
 
   describe('loadWorkspaceMembers', () => {
-    it('returns [] when workspace is not active/suspended', async () => {
+    it('returns [] when workspace is not provisioned', async () => {
       const res = await service.loadWorkspaceMembers({
         id: 'w1',
         activationStatus: WorkspaceActivationStatus.INACTIVE,
@@ -214,7 +250,7 @@ describe('UserService', () => {
   });
 
   describe('loadDeletedWorkspaceMembersOnly', () => {
-    it('returns [] when workspace is not active/suspended', async () => {
+    it('returns [] when workspace is not provisioned', async () => {
       const res = await service.loadDeletedWorkspaceMembersOnly({
         id: 'w1',
         activationStatus: WorkspaceActivationStatus.INACTIVE,

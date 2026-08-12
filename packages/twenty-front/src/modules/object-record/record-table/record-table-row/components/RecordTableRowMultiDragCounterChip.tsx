@@ -1,7 +1,8 @@
 import { originalDragSelectionComponentState } from '@/object-record/record-drag/states/originalDragSelectionComponentState';
+import { useRecordIndexContextOrThrow } from '@/object-record/record-index/contexts/RecordIndexContext';
 import { useAtomComponentStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomComponentStateValue';
 import { styled } from '@linaria/react';
-import { NotificationCounter } from 'twenty-ui/navigation';
+import { NotificationCounter } from 'twenty-ui/data-display';
 
 const StyledNotificationCounterContainer = styled.div`
   left: -7px;
@@ -11,8 +12,11 @@ const StyledNotificationCounterContainer = styled.div`
 `;
 
 export const RecordTableRowMultiDragCounterChip = () => {
+  const { recordIndexId } = useRecordIndexContextOrThrow();
+
   const originalDragSelection = useAtomComponentStateValue(
     originalDragSelectionComponentState,
+    recordIndexId,
   );
 
   const selectedCount = originalDragSelection.length ?? 0;

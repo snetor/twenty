@@ -2,8 +2,11 @@ import { Test, type TestingModule } from '@nestjs/testing';
 import { getDataSourceToken, getRepositoryToken } from '@nestjs/typeorm';
 
 import { CacheStorageNamespace } from 'src/engine/core-modules/cache-storage/types/cache-storage-namespace.enum';
+import { CronTriggerDeduplicationService } from 'src/engine/core-modules/cron/services/cron-trigger-deduplication.service';
 import { ExceptionHandlerService } from 'src/engine/core-modules/exception-handler/exception-handler.service';
+import { FeatureFlagService } from 'src/engine/core-modules/feature-flag/services/feature-flag.service';
 import { WorkspaceEntity } from 'src/engine/core-modules/workspace/workspace.entity';
+import { WorkspaceCacheService } from 'src/engine/workspace-cache/services/workspace-cache.service';
 import { WORKFLOW_CRON_TRIGGER_CACHE_KEY } from 'src/modules/workflow/workflow-trigger/automated-trigger/crons/constants/workflow-cron-trigger-cache-key.constant';
 import { WORKFLOW_CRON_TRIGGER_CACHE_TTL_MS } from 'src/modules/workflow/workflow-trigger/automated-trigger/crons/constants/workflow-cron-trigger-cache-ttl.constant';
 import { WorkflowCronTriggerCronJob } from 'src/modules/workflow/workflow-trigger/automated-trigger/crons/jobs/workflow-cron-trigger-cron.job';
@@ -35,6 +38,18 @@ const mockCacheStorageService = {
   hashSetWithExpire: jest.fn(),
 };
 
+const mockCronTriggerDeduplicationService = {
+  shouldDispatch: jest.fn(),
+};
+
+const mockFeatureFlagService = {
+  isFeatureEnabled: jest.fn(),
+};
+
+const mockWorkspaceCacheService = {
+  getOrRecompute: jest.fn(),
+};
+
 describe('WorkflowCronTriggerCronJob', () => {
   let job: WorkflowCronTriggerCronJob;
 
@@ -42,6 +57,9 @@ describe('WorkflowCronTriggerCronJob', () => {
     jest.clearAllMocks();
     jest.useFakeTimers();
     jest.setSystemTime(new Date('2026-04-02T15:00:30.000Z'));
+    mockCronTriggerDeduplicationService.shouldDispatch.mockResolvedValue(true);
+    // Default flag off so the existing suite exercises the workspace-table path.
+    mockFeatureFlagService.isFeatureEnabled.mockResolvedValue(false);
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -65,6 +83,18 @@ describe('WorkflowCronTriggerCronJob', () => {
         {
           provide: CacheStorageNamespace.ModuleWorkflow,
           useValue: mockCacheStorageService,
+        },
+        {
+          provide: CronTriggerDeduplicationService,
+          useValue: mockCronTriggerDeduplicationService,
+        },
+        {
+          provide: FeatureFlagService,
+          useValue: mockFeatureFlagService,
+        },
+        {
+          provide: WorkspaceCacheService,
+          useValue: mockWorkspaceCacheService,
         },
       ],
     }).compile();
@@ -117,7 +147,10 @@ describe('WorkflowCronTriggerCronJob', () => {
       );
     });
 
-    it('should not enqueue jobs when cron pattern does not match', async () => {
+    it('should not enqueue jobs when the trigger is not due', async () => {
+      mockCronTriggerDeduplicationService.shouldDispatch.mockResolvedValue(
+        false,
+      );
       mockCacheStorageService.hashGetValues.mockResolvedValue([
         JSON.stringify({
           workspaceId: WORKSPACE_1,
@@ -248,6 +281,34 @@ describe('WorkflowCronTriggerCronJob', () => {
 
       expect(mockCacheStorageService.hashSet).not.toHaveBeenCalled();
       expect(mockCacheStorageService.hashSetWithExpire).not.toHaveBeenCalled();
+    });
+
+    it('reads cron triggers from the core trigger map when dispatch-from-core is enabled', async () => {
+      mockFeatureFlagService.isFeatureEnabled.mockResolvedValue(true);
+      mockCacheStorageService.hashGetValues.mockResolvedValue([]);
+      mockWorkspaceRepository.find.mockResolvedValue([{ id: WORKSPACE_1 }]);
+      mockWorkspaceCacheService.getOrRecompute.mockResolvedValue({
+        workflowAutomatedTriggerMaps: {
+          byWorkflowId: {
+            'workflow-1': {
+              workflowId: 'workflow-1',
+              workflowVersionId: 'version-1',
+              type: 'CRON',
+              settings: { pattern: '* * * * *' },
+            },
+          },
+        },
+      } as any);
+
+      await job.handle();
+
+      // Source is the core map, not the workspace table.
+      expect(mockCoreDataSource.query).not.toHaveBeenCalled();
+      expect(mockMessageQueueService.add).toHaveBeenCalledWith(
+        WorkflowTriggerJob.name,
+        { workspaceId: WORKSPACE_1, workflowId: 'workflow-1', payload: {} },
+        { retryLimit: 3 },
+      );
     });
   });
 

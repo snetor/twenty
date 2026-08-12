@@ -32,10 +32,9 @@ const TEMPLATE_PACKAGE_JSON = {
   version: '0.1.0',
   license: 'MIT',
   scripts: { twenty: 'twenty' },
-  dependencies: {
-    'twenty-client-sdk': '0.0.0',
-  },
+  dependencies: {},
   devDependencies: {
+    'twenty-client-sdk': '0.0.0',
     'twenty-sdk': '0.0.0',
   },
 };
@@ -152,7 +151,7 @@ describe('copyBaseApplicationProject', () => {
     expect(packageJson.devDependencies['twenty-sdk']).toBe(
       createTwentyAppPackageJson.version,
     );
-    expect(packageJson.dependencies['twenty-client-sdk']).toBe(
+    expect(packageJson.devDependencies['twenty-client-sdk']).toBe(
       createTwentyAppPackageJson.version,
     );
   });
@@ -212,6 +211,23 @@ describe('copyBaseApplicationProject', () => {
 
     expect(content).toContain("APP_DESCRIPTION = ''");
   });
+
+  it.each(['CHANGELOG.md', 'SETUP.md'])(
+    'should seed %s in the base template',
+    async (seedFileName) => {
+      const templateDirectory = join(
+        __dirname,
+        '..',
+        '..',
+        'constants',
+        'template',
+      );
+
+      expect(await fs.pathExists(join(templateDirectory, seedFileName))).toBe(
+        true,
+      );
+    },
+  );
 
   it('should generate unique UUIDs across different scaffolds', async () => {
     const firstAppDir = join(testAppDirectory, 'app1');

@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 
-import { TypeOrmQueryService } from '@ptc-org/nestjs-query-typeorm';
 import { isDefined } from 'twenty-shared/utils';
 import { type FindOneOptions, type Repository } from 'typeorm';
 
@@ -16,7 +15,6 @@ import {
   FieldMetadataExceptionCode,
 } from 'src/engine/metadata-modules/field-metadata/field-metadata.exception';
 import { WorkspaceManyOrAllFlatEntityMapsCacheService } from 'src/engine/metadata-modules/flat-entity/services/workspace-many-or-all-flat-entity-maps-cache.service';
-import { findFlatEntityByIdInFlatEntityMapsOrThrow } from 'src/engine/metadata-modules/flat-entity/utils/find-flat-entity-by-id-in-flat-entity-maps-or-throw.util';
 import { findFlatEntityByUniversalIdentifierOrThrow } from 'src/engine/metadata-modules/flat-entity/utils/find-flat-entity-by-universal-identifier-or-throw.util';
 import { findFlatEntityByUniversalIdentifier } from 'src/engine/metadata-modules/flat-entity/utils/find-flat-entity-by-universal-identifier.util';
 import { findManyFlatEntityByUniversalIdentifierInUniversalFlatEntityMapsOrThrow } from 'src/engine/metadata-modules/flat-entity/utils/find-many-flat-entity-by-universal-identifier-in-universal-flat-entity-maps-or-throw.util';
@@ -34,7 +32,7 @@ import { WorkspaceMigrationValidateBuildAndRunService } from 'src/engine/workspa
 import { UniversalFlatViewField } from 'src/engine/workspace-manager/workspace-migration/universal-flat-entity/types/universal-flat-view-field.type';
 
 @Injectable()
-export class FieldMetadataService extends TypeOrmQueryService<FieldMetadataEntity> {
+export class FieldMetadataService {
   constructor(
     @InjectRepository(FieldMetadataEntity)
     private readonly fieldMetadataRepository: Repository<FieldMetadataEntity>,
@@ -42,8 +40,27 @@ export class FieldMetadataService extends TypeOrmQueryService<FieldMetadataEntit
     private readonly workspaceMigrationValidateBuildAndRunService: WorkspaceMigrationValidateBuildAndRunService,
     private readonly applicationService: ApplicationService,
     private readonly workspaceCacheService: WorkspaceCacheService,
-  ) {
-    super(fieldMetadataRepository);
+  ) {}
+
+  async findManyWithinWorkspace({
+    workspaceId,
+    fieldMetadataId,
+    objectMetadataId,
+    limit,
+  }: {
+    workspaceId: string;
+    fieldMetadataId?: string;
+    objectMetadataId?: string;
+    limit: number;
+  }): Promise<FieldMetadataEntity[]> {
+    return this.fieldMetadataRepository.find({
+      where: {
+        workspaceId,
+        ...(isDefined(fieldMetadataId) ? { id: fieldMetadataId } : {}),
+        ...(isDefined(objectMetadataId) ? { objectMetadataId } : {}),
+      },
+      take: limit,
+    });
   }
 
   async createOneField({
@@ -341,8 +358,8 @@ export class FieldMetadataService extends TypeOrmQueryService<FieldMetadataEntit
         },
       );
 
-    return findFlatEntityByIdInFlatEntityMapsOrThrow({
-      flatEntityId: flatFieldMetadatasToUpdate[0].id,
+    return findFlatEntityByUniversalIdentifierOrThrow({
+      universalIdentifier: flatFieldMetadatasToUpdate[0].universalIdentifier,
       flatEntityMaps: recomputedFlatFieldMetadataMaps,
     });
   }

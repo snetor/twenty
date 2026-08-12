@@ -46,8 +46,9 @@ export const createExecuteToolTool = (
   toolRegistry: ToolRegistryService,
   context: ToolContext,
   options?: {
-    excludeTools?: Set<string>;
+    isToolAllowed?: (toolName: string) => boolean;
     compactOutput?: boolean;
+    spillLargeOutput?: boolean;
   },
 ) => ({
   description:
@@ -56,7 +57,7 @@ export const createExecuteToolTool = (
   execute: async (parameters: ExecuteToolInput): Promise<ToolOutput> => {
     const { toolName, arguments: args = {} } = parameters;
 
-    if (options?.excludeTools?.has(toolName)) {
+    if (options?.isToolAllowed?.(toolName) === false) {
       return {
         success: false,
         message: `Tool "${toolName}" is not available`,
@@ -66,6 +67,7 @@ export const createExecuteToolTool = (
 
     return toolRegistry.resolveAndExecute(toolName, args, context, {
       compactOutput: options?.compactOutput,
+      spillLargeOutput: options?.spillLargeOutput,
     });
   },
 });

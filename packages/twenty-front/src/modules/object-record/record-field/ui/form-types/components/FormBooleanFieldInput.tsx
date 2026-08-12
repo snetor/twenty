@@ -1,4 +1,4 @@
-import { FormFieldInputContainer } from '@/object-record/record-field/ui/form-types/components/FormFieldInputContainer';
+import { FormFieldInputContainer } from '@/ui/input/components/FormFieldInputContainer';
 import { FormFieldInputInnerContainer } from '@/object-record/record-field/ui/form-types/components/FormFieldInputInnerContainer';
 import { FormFieldInputRowContainer } from '@/object-record/record-field/ui/form-types/components/FormFieldInputRowContainer';
 import { VariableChipStandalone } from '@/object-record/record-field/ui/form-types/components/VariableChipStandalone';
@@ -7,11 +7,11 @@ import { InputLabel } from '@/ui/input/components/InputLabel';
 import { Select } from '@/ui/input/components/Select';
 import { GenericDropdownContentWidth } from '@/ui/layout/dropdown/constants/GenericDropdownContentWidth';
 import { useRemoveFocusItemFromFocusStackById } from '@/ui/utilities/focus/hooks/useRemoveFocusItemFromFocusStackById';
-import { isStandaloneVariableString } from '@/workflow/utils/isStandaloneVariableString';
+import { isStandaloneVariableString } from 'twenty-shared/workflow';
 import { useLingui } from '@lingui/react/macro';
 import { useContext, useId, useState } from 'react';
 import { isDefined } from 'twenty-shared/utils';
-import { IconCheck, IconCircleOff, IconX } from 'twenty-ui/display';
+import { IconCheck, IconCircleOff, IconX } from 'twenty-ui/icon';
 import { ThemeContext } from 'twenty-ui/theme-constants';
 
 type FormBooleanFieldInputProps = {

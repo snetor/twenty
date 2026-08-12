@@ -3,10 +3,15 @@ import { InjectRepository } from '@nestjs/typeorm';
 
 import chalk from 'chalk';
 import { isNonEmptyString } from '@sniptt/guards';
-import { WorkspaceActivationStatus } from 'twenty-shared/workspace';
+import {
+  PROVISIONED_WORKSPACE_ACTIVATION_STATUSES,
+  WorkspaceActivationStatus,
+} from 'twenty-shared/workspace';
 import { isDefined } from 'twenty-shared/utils';
-import { In, MoreThanOrEqual, Repository } from 'typeorm';
+import { MoreThanOrEqual, Repository } from 'typeorm';
 
+import { CommandShutdownService } from 'src/database/commands/command-runners/command-shutdown.service';
+import { activationStatusIn } from 'src/database/commands/command-runners/utils/activation-status-in.util';
 import { WorkspaceEntity } from 'src/engine/core-modules/workspace/workspace.entity';
 import { GlobalWorkspaceDataSource } from 'src/engine/twenty-orm/global-workspace-datasource/global-workspace-datasource';
 import { GlobalWorkspaceOrmManager } from 'src/engine/twenty-orm/global-workspace-datasource/global-workspace-orm.manager';
@@ -37,12 +42,10 @@ export type WorkspaceIteratorReport = {
   success: {
     workspaceId: string;
   }[];
+  interrupted: boolean;
 };
 
-const DEFAULT_ACTIVATION_STATUSES = [
-  WorkspaceActivationStatus.ACTIVE,
-  WorkspaceActivationStatus.SUSPENDED,
-];
+const DEFAULT_ACTIVATION_STATUSES = PROVISIONED_WORKSPACE_ACTIVATION_STATUSES;
 
 @Injectable()
 export class WorkspaceIteratorService {
@@ -52,7 +55,12 @@ export class WorkspaceIteratorService {
     @InjectRepository(WorkspaceEntity)
     private readonly workspaceRepository: Repository<WorkspaceEntity>,
     private readonly globalWorkspaceOrmManager: GlobalWorkspaceOrmManager,
+    private readonly commandShutdownService: CommandShutdownService,
   ) {}
+
+  listenToShutdownSignals(): void {
+    this.commandShutdownService.listenToShutdownSignals();
+  }
 
   async iterate(args: WorkspaceIteratorArgs): Promise<WorkspaceIteratorReport> {
     const { callback, ...options } = args;
@@ -60,6 +68,7 @@ export class WorkspaceIteratorService {
     const report: WorkspaceIteratorReport = {
       fail: [],
       success: [],
+      interrupted: false,
     };
 
     const workspaceIdsToProcess =
@@ -72,6 +81,17 @@ export class WorkspaceIteratorService {
     }
 
     for (const [index, workspaceId] of workspaceIdsToProcess.entries()) {
+      if (this.commandShutdownService.isShutdownRequested()) {
+        this.logger.warn(
+          `Shutdown requested, stopping before workspace ${workspaceId}. ` +
+            `${workspaceIdsToProcess.length - index} workspace(s) left untouched.`,
+        );
+
+        report.interrupted = true;
+
+        break;
+      }
+
       this.logger.log(
         `Running on workspace ${workspaceId} ${index + 1}/${workspaceIdsToProcess.length}`,
       );
@@ -89,6 +109,15 @@ export class WorkspaceIteratorService {
             const dataSource = isNonEmptyString(workspace?.databaseSchema)
               ? await this.globalWorkspaceOrmManager.getGlobalWorkspaceDataSource()
               : undefined;
+
+            if (!isDefined(dataSource)) {
+              this.logger.warn(
+                `Could not retrieve a workspace data source for workspace ${workspaceId} ` +
+                  `(index ${index + 1}/${workspaceIdsToProcess.length}): ` +
+                  `workspaceRowFound=${isDefined(workspace)}, ` +
+                  `databaseSchema=${JSON.stringify(workspace?.databaseSchema ?? null)}`,
+              );
+            }
 
             await callback({
               workspaceId,
@@ -145,7 +174,7 @@ export class WorkspaceIteratorService {
     const workspaces = await this.workspaceRepository.find({
       select: ['id'],
       where: {
-        activationStatus: In(activationStatuses),
+        activationStatus: activationStatusIn(activationStatuses),
         ...(options.startFromWorkspaceId
           ? { id: MoreThanOrEqual(options.startFromWorkspaceId) }
           : {}),

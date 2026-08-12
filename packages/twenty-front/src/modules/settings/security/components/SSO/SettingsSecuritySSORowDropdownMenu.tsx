@@ -8,7 +8,7 @@ import { DropdownMenuItemsContainer } from '@/ui/layout/dropdown/components/Drop
 import { useCloseDropdown } from '@/ui/layout/dropdown/hooks/useCloseDropdown';
 import { useLingui } from '@lingui/react/macro';
 import { isDefined } from 'twenty-shared/utils';
-import { IconArchive, IconDotsVertical, IconTrash } from 'twenty-ui/display';
+import { IconArchive, IconDotsVertical, IconTrash } from 'twenty-ui/icon';
 import { LightIconButton } from 'twenty-ui/input';
 import { MenuItem } from 'twenty-ui/navigation';
 import { SsoIdentityProviderStatus } from '~/generated-metadata/graphql';
@@ -72,7 +72,11 @@ export const SettingsSecuritySSORowDropdownMenu = ({
       dropdownId={dropdownId}
       dropdownPlacement="right-start"
       clickableComponent={
-        <LightIconButton Icon={IconDotsVertical} accent="tertiary" />
+        <LightIconButton
+          Icon={IconDotsVertical}
+          accent="tertiary"
+          aria-label={t`More options`}
+        />
       }
       dropdownComponents={
         <DropdownContent>

@@ -5,6 +5,11 @@ export const computeOrderedMigrationActions = (
   aggregatedOrchestratorActionsReport: OrchestratorActionsReport,
 ): AllUniversalWorkspaceMigrationAction[] => {
   return [
+    ...aggregatedOrchestratorActionsReport.searchFieldMetadata.delete,
+    ...aggregatedOrchestratorActionsReport.searchFieldMetadata.create,
+    ...aggregatedOrchestratorActionsReport.searchFieldMetadata.update,
+    ///
+
     // Object and fields and indexes
     ...aggregatedOrchestratorActionsReport.index.delete,
     ...aggregatedOrchestratorActionsReport.fieldMetadata.delete,
@@ -18,7 +23,6 @@ export const computeOrderedMigrationActions = (
     ///
 
     // Views
-    ...aggregatedOrchestratorActionsReport.view.delete,
     ...aggregatedOrchestratorActionsReport.view.create,
     ...aggregatedOrchestratorActionsReport.view.update,
     ...aggregatedOrchestratorActionsReport.viewField.delete,
@@ -39,6 +43,7 @@ export const computeOrderedMigrationActions = (
     ...aggregatedOrchestratorActionsReport.viewSort.create,
     ...aggregatedOrchestratorActionsReport.viewSort.update,
     ...aggregatedOrchestratorActionsReport.viewSort.delete,
+    ...aggregatedOrchestratorActionsReport.view.delete,
     ///
 
     // Logic functions
@@ -53,8 +58,17 @@ export const computeOrderedMigrationActions = (
     ...aggregatedOrchestratorActionsReport.role.update,
     ///
 
-    // Role targets
+    // Role targets delete before agents (roleTarget may FK to agent)
     ...aggregatedOrchestratorActionsReport.roleTarget.delete,
+    ///
+
+    // Agents (must exist before roleTarget create/update that reference them)
+    ...aggregatedOrchestratorActionsReport.agent.delete,
+    ...aggregatedOrchestratorActionsReport.agent.create,
+    ...aggregatedOrchestratorActionsReport.agent.update,
+    ///
+
+    // Role targets create/update after agents exist
     ...aggregatedOrchestratorActionsReport.roleTarget.create,
     ...aggregatedOrchestratorActionsReport.roleTarget.update,
     ///
@@ -71,22 +85,13 @@ export const computeOrderedMigrationActions = (
     ...aggregatedOrchestratorActionsReport.fieldPermission.update,
     ///
 
-    // Permission flags
+    // Permission flag definitions and their role assignments.
     ...aggregatedOrchestratorActionsReport.rolePermissionFlag.delete,
-    ...aggregatedOrchestratorActionsReport.rolePermissionFlag.create,
-    ...aggregatedOrchestratorActionsReport.rolePermissionFlag.update,
-    ///
-
-    // Permission flag definitions
     ...aggregatedOrchestratorActionsReport.permissionFlag.delete,
     ...aggregatedOrchestratorActionsReport.permissionFlag.create,
+    ...aggregatedOrchestratorActionsReport.rolePermissionFlag.create,
     ...aggregatedOrchestratorActionsReport.permissionFlag.update,
-    ///
-
-    // Agents
-    ...aggregatedOrchestratorActionsReport.agent.delete,
-    ...aggregatedOrchestratorActionsReport.agent.create,
-    ...aggregatedOrchestratorActionsReport.agent.update,
+    ...aggregatedOrchestratorActionsReport.rolePermissionFlag.update,
     ///
 
     // Skills

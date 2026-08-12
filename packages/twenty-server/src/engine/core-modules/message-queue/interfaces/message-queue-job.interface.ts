@@ -1,8 +1,13 @@
-// oxlint-disable-next-line @typescripttypescript/no-explicit-any
+// oxlint-disable-next-line typescript/no-explicit-any
 export interface MessageQueueJob<T = any> {
   id: string;
   name: string;
   data: T;
+  abortSignal?: AbortSignal;
+}
+
+export interface MessageQueueJobContext {
+  abortSignal?: AbortSignal;
 }
 
 export interface MessageQueueCronJobData<
@@ -12,6 +17,6 @@ export interface MessageQueueCronJobData<
 }
 
 export interface MessageQueueJobData {
-  // oxlint-disable-next-line @typescripttypescript/no-explicit-any
+  // oxlint-disable-next-line typescript/no-explicit-any
   [key: string]: any;
 }

@@ -8,7 +8,9 @@ import * as tar from 'tar';
 import { cleanupApplicationAndAppRegistration } from 'test/integration/metadata/suites/application/utils/cleanup-application-and-app-registration.util';
 import { type DataSource } from 'typeorm';
 
-const TEST_WORKSPACE_ID = '20202020-1c25-4d02-bf25-6aeccf7ea419';
+import { SEED_APPLE_WORKSPACE_ID } from 'src/engine/workspace-manager/dev-seeder/core/constants/seeder-workspaces.constant';
+
+const TEST_WORKSPACE_ID = SEED_APPLE_WORKSPACE_ID;
 
 const MARKETPLACE_QUERY = `
   query {
@@ -19,8 +21,8 @@ const MARKETPLACE_QUERY = `
       author
       sourcePackage
       category
-      logo
-      isFeatured
+      logoUrl
+      isVetted
     }
   }
 `;
@@ -66,6 +68,7 @@ describe('Marketplace Catalog Sync (integration)', () => {
     sourcePackage: string;
     latestAvailableVersion?: string;
     manifest?: Record<string, unknown>;
+    category?: string;
   }): Promise<string> => {
     const id = crypto.randomUUID();
     const oAuthClientId = crypto.randomUUID();
@@ -75,8 +78,8 @@ describe('Marketplace Catalog Sync (integration)', () => {
         (id, "universalIdentifier", name, "oAuthClientId",
          "oAuthRedirectUris", "oAuthScopes", "workspaceId",
          "sourceType", "sourcePackage", "latestAvailableVersion",
-         "manifest", "isListed")
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
+         "manifest", "isListed", "category")
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
       [
         id,
         params.universalIdentifier,
@@ -90,6 +93,7 @@ describe('Marketplace Catalog Sync (integration)', () => {
         params.latestAvailableVersion ?? '1.0.0',
         params.manifest ? JSON.stringify(params.manifest) : null,
         true,
+        params.category ?? null,
       ],
     );
 
@@ -144,6 +148,7 @@ describe('Marketplace Catalog Sync (integration)', () => {
             category: 'Data',
           },
         },
+        category: 'Data',
       });
     });
 
@@ -244,10 +249,10 @@ describe('Marketplace Catalog Sync (integration)', () => {
       await fs.writeFile(join(sourceDir, 'manifest.json'), manifest);
       await fs.writeFile(join(sourceDir, 'package.json'), packageJson);
 
-      await tar.create(
-        { file: tarballPath, gzip: true, cwd: sourceDir },
-        ['manifest.json', 'package.json'],
-      );
+      await tar.create({ file: tarballPath, gzip: true, cwd: sourceDir }, [
+        'manifest.json',
+        'package.json',
+      ]);
 
       const tarballBuffer = await fs.readFile(tarballPath);
 

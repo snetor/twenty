@@ -27,6 +27,7 @@ export type ConnectedAccountVisibility = 'user' | 'workspace';
 @Entity({ name: 'connectedAccount', schema: 'core' })
 @Index('IDX_CONNECTED_ACCOUNT_CONNECTION_PROVIDER_ID', ['connectionProviderId'])
 @Index('IDX_CONNECTED_ACCOUNT_APPLICATION_ID', ['applicationId'])
+@Index('IDX_CONNECTED_ACCOUNT_HANDLE_PROVIDER', ['handle', 'provider'])
 @Check(
   'CHK_connectedAccount_accessToken_encrypted',
   `"accessToken" IS NULL OR "accessToken" LIKE 'enc:v2:%'`,
@@ -64,6 +65,9 @@ export class ConnectedAccountEntity extends WorkspaceRelatedEntity {
 
   @Column({ type: 'timestamptz', nullable: true })
   authFailedAt: Date | null;
+
+  @Column({ type: 'timestamptz', nullable: true })
+  archivedAt: Date | null;
 
   @Column({ type: 'varchar', array: true, nullable: true })
   handleAliases: string[] | null;

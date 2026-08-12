@@ -3,11 +3,13 @@ import { InjectRepository } from '@nestjs/typeorm';
 import assert from 'assert';
 
 import { msg } from '@lingui/core/macro';
-import { TypeOrmQueryService } from '@ptc-org/nestjs-query-typeorm';
 import { isNonEmptyString } from '@sniptt/guards';
 import { SOURCE_LOCALE } from 'twenty-shared/translations';
 import { assertIsDefinedOrThrow, isDefined } from 'twenty-shared/utils';
-import { isWorkspaceActiveOrSuspended } from 'twenty-shared/workspace';
+import {
+  isWorkspaceProvisioned,
+  WorkspaceActivationStatus,
+} from 'twenty-shared/workspace';
 import { type QueryRunner, In, IsNull, Not, Repository } from 'typeorm';
 
 import { CoreEntityCacheService } from 'src/engine/core-entity-cache/services/core-entity-cache.service';
@@ -41,16 +43,21 @@ import {
   PermissionsExceptionCode,
   PermissionsExceptionMessage,
 } from 'src/engine/metadata-modules/permissions/permissions.exception';
+import { ConnectedAccountMetadataService } from 'src/engine/metadata-modules/connected-account/connected-account-metadata.service';
 import { UserRoleService } from 'src/engine/metadata-modules/user-role/user-role.service';
 import { GlobalWorkspaceOrmManager } from 'src/engine/twenty-orm/global-workspace-datasource/global-workspace-orm.manager';
 import { buildSystemAuthContext } from 'src/engine/twenty-orm/utils/build-system-auth-context.util';
+import { STANDARD_ROLE } from 'src/engine/workspace-manager/twenty-standard-application/constants/standard-role.constant';
 import { WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
 
 // oxlint-disable-next-line twenty/inject-workspace-repository
-export class UserService extends TypeOrmQueryService<UserEntity> {
+export class UserService {
   constructor(
     @InjectRepository(UserEntity)
     private readonly userRepository: Repository<UserEntity>,
+    @InjectRepository(UserWorkspaceEntity)
+    private readonly userWorkspaceRepository: Repository<UserWorkspaceEntity>,
+    private readonly connectedAccountMetadataService: ConnectedAccountMetadataService,
     private readonly workspaceDomainsService: WorkspaceDomainsService,
     private readonly emailVerificationService: EmailVerificationService,
     private readonly workspaceService: WorkspaceService,
@@ -62,15 +69,36 @@ export class UserService extends TypeOrmQueryService<UserEntity> {
     private readonly coreEntityCacheService: CoreEntityCacheService,
     private readonly workspaceMemberTranspiler: WorkspaceMemberTranspiler,
     private readonly twentyConfigService: TwentyConfigService,
-  ) {
-    super(userRepository);
+  ) {}
+
+  async refreshWorkspaceIfPendingOrOngoingCreation<
+    TWorkspace extends Pick<WorkspaceEntity, 'id' | 'activationStatus'>,
+  >(workspace: TWorkspace): Promise<TWorkspace | WorkspaceEntity> {
+    const isPendingOrOngoingCreation =
+      workspace.activationStatus ===
+        WorkspaceActivationStatus.PENDING_CREATION ||
+      workspace.activationStatus === WorkspaceActivationStatus.ONGOING_CREATION;
+
+    if (!isPendingOrOngoingCreation) {
+      return workspace;
+    }
+
+    const freshWorkspace = await this.workspaceService.findOneWorkspaceById(
+      workspace.id,
+    );
+
+    return freshWorkspace ?? workspace;
   }
 
   async loadWorkspaceMember(
     user: Pick<AuthContextUser, 'id'>,
     workspace: Pick<WorkspaceEntity, 'id' | 'activationStatus'>,
   ) {
-    if (!isWorkspaceActiveOrSuspended(workspace)) {
+    // The given workspace can be a stale cache snapshot right after activateWorkspace ran on another instance (#20322)
+    const refreshedWorkspace =
+      await this.refreshWorkspaceIfPendingOrOngoingCreation(workspace);
+
+    if (!isWorkspaceProvisioned(refreshedWorkspace)) {
       return null;
     }
 
@@ -99,7 +127,11 @@ export class UserService extends TypeOrmQueryService<UserEntity> {
     workspace: Pick<WorkspaceEntity, 'id' | 'activationStatus'>,
     withDeleted = false,
   ) {
-    if (!isWorkspaceActiveOrSuspended(workspace)) {
+    // The given workspace can be a stale cache snapshot right after activateWorkspace ran on another instance (#20322)
+    const refreshedWorkspace =
+      await this.refreshWorkspaceIfPendingOrOngoingCreation(workspace);
+
+    if (!isWorkspaceProvisioned(refreshedWorkspace)) {
       return [];
     }
 
@@ -186,7 +218,7 @@ export class UserService extends TypeOrmQueryService<UserEntity> {
     workspace: Pick<WorkspaceEntity, 'id' | 'activationStatus'>;
     userIds: string[];
   }): Promise<WorkspaceMemberWorkspaceEntity[]> {
-    if (!isWorkspaceActiveOrSuspended(workspace) || userIds.length === 0) {
+    if (!isWorkspaceProvisioned(workspace) || userIds.length === 0) {
       return [];
     }
 
@@ -213,7 +245,7 @@ export class UserService extends TypeOrmQueryService<UserEntity> {
   async loadDeletedWorkspaceMembersOnly(
     workspace: Pick<WorkspaceEntity, 'id' | 'activationStatus'>,
   ) {
-    if (!isWorkspaceActiveOrSuspended(workspace)) {
+    if (!isWorkspaceProvisioned(workspace)) {
       return [];
     }
 
@@ -267,9 +299,11 @@ export class UserService extends TypeOrmQueryService<UserEntity> {
   async deleteUserWorkspaceAndPotentiallyDeleteUser({
     userId,
     workspaceId,
+    actingUserWorkspaceId,
   }: {
     userId: string;
     workspaceId: string;
+    actingUserWorkspaceId?: string;
   }) {
     const user = await this.userRepository.findOne({
       where: {
@@ -290,6 +324,7 @@ export class UserService extends TypeOrmQueryService<UserEntity> {
 
     await this.removeUserFromWorkspaceAndPotentiallyDeleteWorkspace(
       userWorkspace,
+      actingUserWorkspaceId,
     );
 
     if (user.userWorkspaces.length === 1) {
@@ -302,6 +337,7 @@ export class UserService extends TypeOrmQueryService<UserEntity> {
 
   async removeUserFromWorkspaceAndPotentiallyDeleteWorkspace(
     userWorkspace: UserWorkspaceEntity,
+    actingUserWorkspaceId?: string,
   ) {
     const workspaceId = userWorkspace.workspaceId;
     const authContext = buildSystemAuthContext(workspaceId);
@@ -362,6 +398,20 @@ export class UserService extends TypeOrmQueryService<UserEntity> {
 
     assert(workspaceMember, 'WorkspaceMember not found');
 
+    const custodianUserWorkspaceId =
+      await this.resolveConnectedAccountsCustodianUserWorkspaceId({
+        removedUserWorkspace: userWorkspace,
+        actingUserWorkspaceId,
+      });
+
+    if (isDefined(custodianUserWorkspaceId)) {
+      await this.connectedAccountMetadataService.transferOwnership({
+        fromUserWorkspaceId: userWorkspaceId,
+        toUserWorkspaceId: custodianUserWorkspaceId,
+        workspaceId,
+      });
+    }
+
     await this.globalWorkspaceOrmManager.executeInWorkspaceContext(async () => {
       const workspaceMemberRepository =
         await this.globalWorkspaceOrmManager.getRepository<WorkspaceMemberWorkspaceEntity>(
@@ -378,6 +428,55 @@ export class UserService extends TypeOrmQueryService<UserEntity> {
     await this.userWorkspaceService.deleteUserWorkspace({
       userWorkspaceId,
     });
+  }
+
+  private async resolveConnectedAccountsCustodianUserWorkspaceId({
+    removedUserWorkspace,
+    actingUserWorkspaceId,
+  }: {
+    removedUserWorkspace: UserWorkspaceEntity;
+    actingUserWorkspaceId?: string;
+  }): Promise<string | undefined> {
+    const otherUserWorkspaces = await this.userWorkspaceRepository.find({
+      where: {
+        workspaceId: removedUserWorkspace.workspaceId,
+        id: Not(removedUserWorkspace.id),
+      },
+      order: { createdAt: 'ASC' },
+    });
+
+    if (otherUserWorkspaces.length === 0) {
+      return undefined;
+    }
+
+    const actingUserWorkspace = otherUserWorkspaces.find(
+      (otherUserWorkspace) => otherUserWorkspace.id === actingUserWorkspaceId,
+    );
+
+    if (isDefined(actingUserWorkspace)) {
+      return actingUserWorkspace.id;
+    }
+
+    const rolesByUserWorkspaceId =
+      await this.userRoleService.getRolesByUserWorkspaces({
+        userWorkspaceIds: otherUserWorkspaces.map(
+          (otherUserWorkspace) => otherUserWorkspace.id,
+        ),
+        workspaceId: removedUserWorkspace.workspaceId,
+      });
+
+    const oldestAdminUserWorkspace = otherUserWorkspaces.find(
+      (otherUserWorkspace) =>
+        rolesByUserWorkspaceId
+          .get(otherUserWorkspace.id)
+          ?.some(
+            (role) =>
+              role.universalIdentifier ===
+              STANDARD_ROLE.admin.universalIdentifier,
+          ),
+    );
+
+    return (oldestAdminUserWorkspace ?? otherUserWorkspaces[0]).id;
   }
 
   async hasUserAccessToWorkspaceOrThrow(userId: string, workspaceId: string) {
@@ -446,9 +545,15 @@ export class UserService extends TypeOrmQueryService<UserEntity> {
 
     user.isEmailVerified = true;
 
-    return queryRunner
+    const savedUser = queryRunner
       ? await queryRunner.manager.save(UserEntity, user)
       : await this.userRepository.save(user);
+
+    if (!queryRunner) {
+      await this.coreEntityCacheService.invalidate('user', userId);
+    }
+
+    return savedUser;
   }
 
   async updateEmailFromVerificationToken(userId: string, email: string) {
@@ -457,6 +562,8 @@ export class UserService extends TypeOrmQueryService<UserEntity> {
     user.email = email;
 
     const updatedUser = await this.userRepository.save(user);
+
+    await this.coreEntityCacheService.invalidate('user', user.id);
 
     await this.enqueueWorkspaceMemberEmailUpdate({
       userId: user.id,

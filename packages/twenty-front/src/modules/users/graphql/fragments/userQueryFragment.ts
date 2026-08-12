@@ -23,6 +23,7 @@ export const USER_QUERY_FRAGMENT = gql`
     canImpersonate
     supportUserHash
     onboardingStatus
+    isWorkspaceCreator
     workspaceMember {
       ...WorkspaceMemberQueryFragment
     }
@@ -35,6 +36,7 @@ export const USER_QUERY_FRAGMENT = gql`
     currentUserWorkspace {
       id
       permissionFlags
+      isImpersonating
       objectsPermissions {
         ...ObjectPermissionFragment
       }
@@ -52,6 +54,7 @@ export const USER_QUERY_FRAGMENT = gql`
       allowImpersonation
       activationStatus
       isPublicInviteLinkEnabled
+      workspaceDiscoverability
       isGoogleAuthEnabled
       isMicrosoftAuthEnabled
       isPasswordAuthEnabled
@@ -69,7 +72,7 @@ export const USER_QUERY_FRAGMENT = gql`
         id
         name
         universalIdentifier
-        logo
+        logoUrl
       }
       isCustomDomainEnabled
       workspaceUrls {
@@ -79,9 +82,12 @@ export const USER_QUERY_FRAGMENT = gql`
         key
         value
       }
-      metadataVersion
       currentBillingSubscription {
         ...CurrentBillingSubscriptionFragment
+      }
+      billingCustomer {
+        id
+        hasPaymentMethod
       }
       billingSubscriptions {
         ...BillingSubscriptionFragment

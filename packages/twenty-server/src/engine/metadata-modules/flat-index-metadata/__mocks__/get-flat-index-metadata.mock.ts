@@ -27,19 +27,11 @@ export const getFlatIndexMetadataMock = (
     indexWhereClause: null,
     isCustom: false,
     isUnique: false,
+    isSystemSideEffect: false,
     name: 'defaultFlatIndexMetadataName',
     updatedAt: createdAt,
     workspaceId: faker.string.uuid(),
     applicationId: faker.string.uuid(),
     ...overrides,
   };
-};
-
-export const getStandardFlatIndexMetadataMock = (
-  overrides: Omit<FlatIndexMetadataOverrides, 'isCustom'>,
-) => {
-  return getFlatIndexMetadataMock({
-    isCustom: false,
-    ...overrides,
-  });
 };

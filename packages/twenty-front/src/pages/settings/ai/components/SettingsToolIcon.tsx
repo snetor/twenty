@@ -3,10 +3,10 @@ import { useContext } from 'react';
 
 import { useObjectMetadataItems } from '@/object-metadata/hooks/useObjectMetadataItems';
 import { getObjectColorWithFallback } from '@/object-metadata/utils/getObjectColorWithFallback';
+import { getAbsoluteImageUrl } from '~/utils/image/getAbsoluteImageUrl';
 import { isDefined } from 'twenty-shared/utils';
+import { Avatar, getIconTileColorShades } from 'twenty-ui/data-display';
 import {
-  Avatar,
-  getIconTileColorShades,
   IconCode,
   IconEdit,
   IconPlus,
@@ -14,16 +14,10 @@ import {
   IconTrash,
   useIcons,
   type IconComponent,
-} from 'twenty-ui/display';
+} from 'twenty-ui/icon';
 import { ThemeContext, themeCssVariables } from 'twenty-ui/theme-constants';
-
-type ApplicationInfo = {
-  name: string;
-};
-
-type MarketplaceAppInfo = {
-  logo?: string | null;
-};
+import { type SettingsAgentToolApplication } from '~/pages/settings/ai/types/SettingsAgentToolApplication';
+import { type SettingsAgentToolMarketplaceApp } from '~/pages/settings/ai/types/SettingsAgentToolMarketplaceApp';
 
 type SettingsToolIconProps = {
   icon?: string | null;
@@ -32,6 +26,10 @@ type SettingsToolIconProps = {
   application?: ApplicationInfo;
   marketplaceApp?: MarketplaceAppInfo;
 };
+
+type ApplicationInfo = Pick<SettingsAgentToolApplication, 'name'>;
+
+type MarketplaceAppInfo = Pick<SettingsAgentToolMarketplaceApp, 'logoUrl'>;
 
 const getOperationIcon = (toolName: string): IconComponent | null => {
   if (toolName.startsWith('create_')) return IconPlus;
@@ -45,7 +43,7 @@ const getOperationIcon = (toolName: string): IconComponent | null => {
 
 const StyledCompositeContainer = styled.div`
   align-items: center;
-  border-radius: 4px;
+  border-radius: ${themeCssVariables.border.radius.sm};
   box-sizing: border-box;
   display: flex;
   flex-shrink: 0;
@@ -63,7 +61,7 @@ const StyledMainIconWrapper = styled.div<{
   background-color: ${({ $backgroundColor }) => $backgroundColor};
   border: ${({ $borderColor }) =>
     $borderColor ? `1px solid ${$borderColor}` : 'none'};
-  border-radius: 4px;
+  border-radius: ${themeCssVariables.border.radius.sm};
   box-sizing: border-box;
   display: flex;
   inset: 0;
@@ -74,7 +72,7 @@ const StyledMainIconWrapper = styled.div<{
 const StyledOperationOverlay = styled.div`
   align-items: center;
   background-color: ${themeCssVariables.grayScale.gray4};
-  border-radius: 4px;
+  border-radius: ${themeCssVariables.border.radius.sm};
   bottom: -5px;
   display: flex;
   height: 14px;
@@ -95,11 +93,10 @@ export const SettingsToolIcon = ({
   const { theme } = useContext(ThemeContext);
   const { objectMetadataItems } = useObjectMetadataItems();
 
-  // Custom tools: application/marketplace icons
-  if (isDefined(application) && isDefined(marketplaceApp?.logo)) {
+  if (isDefined(application) && isDefined(marketplaceApp?.logoUrl)) {
     return (
       <Avatar
-        avatarUrl={marketplaceApp?.logo ?? null}
+        avatarUrl={getAbsoluteImageUrl(marketplaceApp.logoUrl)}
         placeholder={application.name}
         placeholderColorSeed={application.name}
         type="squared"
@@ -119,7 +116,6 @@ export const SettingsToolIcon = ({
     );
   }
 
-  // System tools: icon from server, color derived from object metadata
   const MainIcon = isDefined(icon) ? getIcon(icon) : IconCode;
   const OperationIcon = isDefined(toolName) ? getOperationIcon(toolName) : null;
 
@@ -148,7 +144,7 @@ export const SettingsToolIcon = ({
           <OperationIcon
             size="12px"
             stroke={theme.icon.stroke.md}
-            color={themeCssVariables.grayScale.gray10}
+            color={theme.font.color.tertiary}
           />
         </StyledOperationOverlay>
       </StyledCompositeContainer>
@@ -172,5 +168,11 @@ export const SettingsToolIcon = ({
     );
   }
 
-  return <MainIcon size={16} />;
+  return (
+    <MainIcon
+      size={16}
+      stroke={theme.icon.stroke.md}
+      color={theme.font.color.tertiary}
+    />
+  );
 };

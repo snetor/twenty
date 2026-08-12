@@ -13,6 +13,10 @@ const StyledNavigationDrawerItemBreadcrumbContainer = styled.div`
   margin-right: ${themeCssVariables.spacing[2]};
   width: 9px;
 
+  [data-dnd-dragging] & {
+    display: none;
+  }
+
   @media (max-width: ${MOBILE_VIEWPORT}px) {
     height: ${themeCssVariables.spacing[8]};
   }
@@ -37,13 +41,13 @@ const StyledSecondaryFullVerticalBar = styled.div<{ darker: boolean }>`
       ? themeCssVariables.font.color.tertiary
       : themeCssVariables.border.color.strong};
 
-  height: 28px;
+  height: calc(${themeCssVariables.spacing[7]} + 1px);
   position: relative;
   top: -17px;
   width: 1px;
 
   @media (max-width: ${MOBILE_VIEWPORT}px) {
-    height: ${themeCssVariables.spacing[8]};
+    height: calc(${themeCssVariables.spacing[8]} + 1px);
   }
 `;
 

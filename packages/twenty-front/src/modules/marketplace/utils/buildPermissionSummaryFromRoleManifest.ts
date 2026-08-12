@@ -1,18 +1,18 @@
 import { type RoleManifest } from 'twenty-shared/application';
 import { isDefined } from 'twenty-shared/utils';
 import {
-  IconCode,
   type IconComponent,
   IconCurrencyDollar,
   IconDatabase,
   IconHierarchy,
   IconKey,
+  IconPlug,
   IconSettings,
   IconSettingsAutomation,
   IconSparkles,
   IconTool,
   IconUsers,
-} from 'twenty-ui/display';
+} from 'twenty-ui/icon';
 import { SystemPermissionFlag } from 'twenty-shared/constants';
 
 export type PermissionSummaryItem = {
@@ -112,8 +112,8 @@ export const buildPermissionSummaryFromRoleManifest = (
       Icon: IconCurrencyDollar,
     },
     [SystemPermissionFlag.API_KEYS_AND_WEBHOOKS]: {
-      label: 'Manage API keys and webhooks',
-      Icon: IconCode,
+      label: 'Manage MCP, API keys, and webhooks',
+      Icon: IconPlug,
     },
     [SystemPermissionFlag.AI]: {
       label: 'Run AI agents',

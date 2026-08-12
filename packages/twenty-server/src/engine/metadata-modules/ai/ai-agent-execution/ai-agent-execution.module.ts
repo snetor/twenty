@@ -5,12 +5,14 @@ import { ApplicationModule } from 'src/engine/core-modules/application/applicati
 import { BillingModule } from 'src/engine/core-modules/billing/billing.module';
 import { WorkspaceDomainsModule } from 'src/engine/core-modules/domain/workspace-domains/workspace-domains.module';
 import { FileUrlModule } from 'src/engine/core-modules/file/file-url/file-url.module';
+import { MetricsModule } from 'src/engine/core-modules/metrics/metrics.module';
 import { ToolProviderModule } from 'src/engine/core-modules/tool-provider/tool-provider.module';
 import { UserWorkspaceModule } from 'src/engine/core-modules/user-workspace/user-workspace.module';
 import { WorkspaceEntity } from 'src/engine/core-modules/workspace/workspace.entity';
 import { AiAgentModule } from 'src/engine/metadata-modules/ai/ai-agent/ai-agent.module';
 import { AgentEntity } from 'src/engine/metadata-modules/ai/ai-agent/entities/agent.entity';
 import { AiBillingModule } from 'src/engine/metadata-modules/ai/ai-billing/ai-billing.module';
+import { AiGraphqlApiExceptionInterceptor } from 'src/engine/metadata-modules/ai/interceptors/ai-graphql-api-exception.interceptor';
 import { AiModelsModule } from 'src/engine/metadata-modules/ai/ai-models/ai-models.module';
 import { PermissionsModule } from 'src/engine/metadata-modules/permissions/permissions.module';
 import { RoleTargetEntity } from 'src/engine/metadata-modules/role-target/role-target.entity';
@@ -36,6 +38,7 @@ import { AgentRunService } from './services/agent-run.service';
     BillingModule,
     FileUrlModule,
     WorkspaceDomainsModule,
+    MetricsModule,
     UserWorkspaceModule,
     UserRoleModule,
     PermissionsModule,
@@ -53,6 +56,7 @@ import { AgentRunService } from './services/agent-run.service';
   providers: [
     AgentAsyncExecutorService,
     AgentActorContextService,
+    AiGraphqlApiExceptionInterceptor,
     AgentMessagePartResolver,
     AgentRunResolver,
     AgentRunService,

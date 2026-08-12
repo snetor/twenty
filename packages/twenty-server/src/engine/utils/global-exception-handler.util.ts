@@ -18,7 +18,8 @@ import {
   TimeoutError,
   ValidationError,
 } from 'src/engine/core-modules/graphql/utils/graphql-errors.util';
-import { type CustomException } from 'src/utils/custom-exception';
+import { CustomException } from 'src/utils/custom-exception';
+import { isDefined } from 'twenty-shared/utils';
 
 const graphQLPredefinedExceptions = {
   400: ValidationError,
@@ -63,6 +64,14 @@ export const shouldCaptureException = (
   statusCode?: number,
 ): boolean => {
   if (
+    exception instanceof CustomException &&
+    isDefined(exception.statusCode) &&
+    exception.statusCode < 500
+  ) {
+    return false;
+  }
+
+  if (
     exception instanceof GraphQLError &&
     (exception?.extensions?.http?.status ?? 500) < 500
   ) {
@@ -95,14 +104,19 @@ export const handleException = <
   user,
   workspace,
   statusCode,
+  shouldBeCapturedBySentry = true,
 }: {
   exception: T;
   exceptionHandlerService: ExceptionHandlerService;
   user?: ExceptionHandlerUser;
   workspace?: ExceptionHandlerWorkspace;
   statusCode?: number;
+  shouldBeCapturedBySentry?: boolean;
 }): T => {
-  if (shouldCaptureException(exception, statusCode)) {
+  if (
+    shouldBeCapturedBySentry &&
+    shouldCaptureException(exception, statusCode)
+  ) {
     exceptionHandlerService.captureExceptions([exception], { user, workspace });
   }
 

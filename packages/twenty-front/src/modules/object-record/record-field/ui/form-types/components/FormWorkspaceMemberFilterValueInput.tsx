@@ -10,13 +10,13 @@ import {
 } from 'react';
 import { CoreObjectNameSingular } from 'twenty-shared/types';
 import { isDefined } from 'twenty-shared/utils';
-import { IconChevronDown, IconUserCircle } from 'twenty-ui/display';
+import { IconChevronDown, IconUserCircle } from 'twenty-ui/icon';
 import { ThemeContext, themeCssVariables } from 'twenty-ui/theme-constants';
 import { type JsonValue } from 'type-fest';
 
 import { MAX_WORKSPACE_MEMBERS_TO_DISPLAY } from '@/object-record/object-filter-dropdown/components/ObjectFilterDropdownActorSelect';
 import { CURRENT_WORKSPACE_MEMBER_SELECTABLE_ITEM_ID } from '@/object-record/object-filter-dropdown/constants/CurrentWorkspaceMemberSelectableItemId';
-import { FormFieldInputContainer } from '@/object-record/record-field/ui/form-types/components/FormFieldInputContainer';
+import { FormFieldInputContainer } from '@/ui/input/components/FormFieldInputContainer';
 import { FormFieldInputInnerContainer } from '@/object-record/record-field/ui/form-types/components/FormFieldInputInnerContainer';
 import { FormFieldInputRowContainer } from '@/object-record/record-field/ui/form-types/components/FormFieldInputRowContainer';
 import { FormWorkspaceMemberFilterValueInputDropdownContent } from '@/object-record/record-field/ui/form-types/components/FormWorkspaceMemberFilterValueInputDropdownContent';
@@ -31,7 +31,7 @@ import { useRecordsForSelect } from '@/object-record/select/hooks/useRecordsForS
 import { type SelectableItem } from '@/object-record/select/types/SelectableItem';
 import { InputLabel } from '@/ui/input/components/InputLabel';
 import { Dropdown } from '@/ui/layout/dropdown/components/Dropdown';
-import { isStandaloneVariableString } from '@/workflow/utils/isStandaloneVariableString';
+import { isStandaloneVariableString } from 'twenty-shared/workflow';
 
 const StyledFormSelectContainerWrapper = styled.div<{ readonly?: boolean }>`
   cursor: ${({ readonly }) => (readonly ? 'default' : 'pointer')};

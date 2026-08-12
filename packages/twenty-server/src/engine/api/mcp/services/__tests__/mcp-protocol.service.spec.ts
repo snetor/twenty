@@ -1,5 +1,6 @@
 import { HttpException, HttpStatus } from '@nestjs/common';
 import { Test, type TestingModule } from '@nestjs/testing';
+import { FieldActorSource } from 'twenty-shared/types';
 
 import { JSON_RPC_ERROR_CODE } from 'src/engine/api/mcp/constants/json-rpc-error-code.const';
 import { MCP_CLOSED_WORLD_READ_ONLY_TOOL_ANNOTATIONS } from 'src/engine/api/mcp/constants/mcp-closed-world-read-only-tool-annotations.const';
@@ -17,12 +18,14 @@ import { type McpToolAnnotations } from 'src/engine/api/mcp/types/mcp-tool-annot
 import { type FlatApiKey } from 'src/engine/core-modules/api-key/types/flat-api-key.type';
 import { ApiKeyRoleService } from 'src/engine/core-modules/api-key/services/api-key-role.service';
 import { EXECUTE_TOOL_TOOL_NAME } from 'src/engine/core-modules/tool-provider/tools/execute-tool.tool';
+import { GET_TOOL_CATALOG_TOOL_NAME } from 'src/engine/core-modules/tool-provider/tools/get-tool-catalog.tool';
 import { LEARN_TOOLS_TOOL_NAME } from 'src/engine/core-modules/tool-provider/tools/learn-tools.tool';
 import { LOAD_SKILL_TOOL_NAME } from 'src/engine/core-modules/tool-provider/tools/load-skill.tool';
 import { ToolRegistryService } from 'src/engine/core-modules/tool-provider/services/tool-registry.service';
 import { type FlatWorkspace } from 'src/engine/core-modules/workspace/types/flat-workspace.type';
 import { WorkspaceManyOrAllFlatEntityMapsCacheService } from 'src/engine/metadata-modules/flat-entity/services/workspace-many-or-all-flat-entity-maps-cache.service';
 import { SkillService } from 'src/engine/metadata-modules/skill/skill.service';
+import { WorkspaceCacheService } from 'src/engine/workspace-cache/services/workspace-cache.service';
 import { UserRoleService } from 'src/engine/metadata-modules/user-role/user-role.service';
 
 describe('McpProtocolService', () => {
@@ -44,6 +47,7 @@ describe('McpProtocolService', () => {
   const EXPECTED_MCP_TOOL_NAMES = [
     LEARN_TOOLS_TOOL_NAME,
     EXECUTE_TOOL_TOOL_NAME,
+    GET_TOOL_CATALOG_TOOL_NAME,
     LOAD_SKILL_TOOL_NAME,
     LIST_OBJECT_METADATA_NAMES_TOOL_NAME,
     LIST_SKILLS_TOOL_NAME,
@@ -56,6 +60,7 @@ describe('McpProtocolService', () => {
   > = {
     [LEARN_TOOLS_TOOL_NAME]: MCP_CLOSED_WORLD_READ_ONLY_TOOL_ANNOTATIONS,
     [EXECUTE_TOOL_TOOL_NAME]: MCP_EXECUTE_TOOL_ANNOTATIONS,
+    [GET_TOOL_CATALOG_TOOL_NAME]: MCP_CLOSED_WORLD_READ_ONLY_TOOL_ANNOTATIONS,
     [LOAD_SKILL_TOOL_NAME]: MCP_CLOSED_WORLD_READ_ONLY_TOOL_ANNOTATIONS,
     [LIST_OBJECT_METADATA_NAMES_TOOL_NAME]:
       MCP_CLOSED_WORLD_READ_ONLY_TOOL_ANNOTATIONS,
@@ -119,6 +124,17 @@ describe('McpProtocolService', () => {
           useValue: {
             getOrRecomputeManyOrAllFlatEntityMaps: jest.fn().mockResolvedValue({
               flatObjectMetadataMaps: { byUniversalIdentifier: {} },
+            }),
+          },
+        },
+        {
+          provide: WorkspaceCacheService,
+          useValue: {
+            getOrRecompute: jest.fn().mockResolvedValue({
+              flatWorkspaceMemberMaps: {
+                idByUserId: {},
+                byId: {},
+              },
             }),
           },
         },
@@ -252,7 +268,7 @@ describe('McpProtocolService', () => {
       expect(result).toBeNull();
     });
 
-    it('should build a ToolSet with exactly 6 tools and pass it to executor for tools/call', async () => {
+    it('should build the meta-tool set by name and pass it to executor for tools/call', async () => {
       userRoleService.getRoleIdForUserWorkspace.mockResolvedValue(mockRoleId);
 
       const mockToolCallResponse = {
@@ -301,9 +317,15 @@ describe('McpProtocolService', () => {
         mockRequest.params,
         undefined,
       );
+
+      const [, toolSet] = mcpToolExecutorService.handleToolCall.mock.calls[0];
+
+      expect(Object.keys(toolSet).sort()).toEqual(
+        [...EXPECTED_MCP_TOOL_NAMES].sort(),
+      );
     });
 
-    it('should build a ToolSet with exactly 6 tools and pass it to executor for tools/list', async () => {
+    it('should build the meta-tool set by name and pass it to executor for tools/list', async () => {
       userRoleService.getRoleIdForUserWorkspace.mockResolvedValue(mockRoleId);
 
       mcpToolExecutorService.handleToolsListing.mockReturnValue({
@@ -337,6 +359,38 @@ describe('McpProtocolService', () => {
             ]),
           ),
         ),
+      );
+
+      const [, toolSet] =
+        mcpToolExecutorService.handleToolsListing.mock.calls[0];
+
+      expect(Object.keys(toolSet).sort()).toEqual(
+        [...EXPECTED_MCP_TOOL_NAMES].sort(),
+      );
+    });
+
+    it('should pass actorContext with FieldActorSource.AGENT to getToolsByName', async () => {
+      userRoleService.getRoleIdForUserWorkspace.mockResolvedValue(mockRoleId);
+
+      const mockRequest: JsonRpc = {
+        jsonrpc: '2.0',
+        method: 'tools/list',
+        id: '123',
+      };
+
+      await service.handleMCPCoreQuery(mockRequest, {
+        workspace: mockWorkspace,
+        userWorkspaceId: mockUserWorkspaceId,
+        apiKey: undefined,
+      });
+
+      expect(_toolRegistryService.getToolsByName).toHaveBeenCalledWith(
+        expect.any(Array),
+        expect.objectContaining({
+          actorContext: expect.objectContaining({
+            source: FieldActorSource.AGENT,
+          }),
+        }),
       );
     });
 

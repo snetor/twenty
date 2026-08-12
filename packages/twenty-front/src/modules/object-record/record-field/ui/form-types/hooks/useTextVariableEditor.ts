@@ -1,5 +1,5 @@
-import { getInitialEditorContent } from '@/workflow/workflow-variables/utils/getInitialEditorContent';
-import { VariableTag } from '@/workflow/workflow-variables/utils/variableTag';
+import { getInitialEditorContent } from '@/advanced-text-editor/utils/getInitialEditorContent';
+import { WorkflowVariableTag } from '@/workflow/workflow-variables/extensions/WorkflowVariableTag';
 import Document from '@tiptap/extension-document';
 import HardBreak from '@tiptap/extension-hard-break';
 import Paragraph from '@tiptap/extension-paragraph';
@@ -9,6 +9,7 @@ import { UndoRedo } from '@tiptap/extensions/undo-redo';
 import { Slice } from '@tiptap/pm/model';
 
 import { type Editor, useEditor } from '@tiptap/react';
+import { useEffect } from 'react';
 import { isDefined, parseJson } from 'twenty-shared/utils';
 import { type JsonValue } from 'type-fest';
 
@@ -47,7 +48,7 @@ export const useTextVariableEditor = ({
       Placeholder.configure({
         placeholder,
       }),
-      VariableTag,
+      WorkflowVariableTag,
       ...(multiline
         ? [
             HardBreak.configure({
@@ -130,6 +131,10 @@ export const useTextVariableEditor = ({
     enablePasteRules: false,
     injectCSS: false,
   });
+
+  useEffect(() => {
+    editor?.setEditable(!readonly, false);
+  }, [editor, readonly]);
 
   return editor;
 };

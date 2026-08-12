@@ -1,8 +1,10 @@
 import { Field, InputType } from '@nestjs/graphql';
 
 import { Type } from 'class-transformer';
+import { ObjectOpenRecordIn } from 'twenty-shared/types';
 import {
   IsBoolean,
+  IsEnum,
   IsNotEmpty,
   IsOptional,
   IsString,
@@ -70,7 +72,7 @@ export class UpdateObjectPayload {
   @IsUUID()
   @IsOptional()
   @Field(() => UUIDScalarType, { nullable: true })
-  imageIdentifierFieldMetadataId?: string;
+  imageIdentifierFieldMetadataId?: string | null;
 
   @IsBoolean()
   @IsOptional()
@@ -81,6 +83,11 @@ export class UpdateObjectPayload {
   @IsOptional()
   @Field({ nullable: true })
   isSearchable?: boolean;
+
+  @IsEnum(ObjectOpenRecordIn)
+  @IsOptional()
+  @Field(() => ObjectOpenRecordIn, { nullable: true })
+  openRecordIn?: ObjectOpenRecordIn;
 }
 
 @InputType()
