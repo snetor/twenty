@@ -74,9 +74,16 @@ describe('NavigateAppTool — périmètre pays sur navigateToRecord', () => {
     tool = module.get<NavigateAppTool>(NavigateAppTool);
   });
 
+  // Depuis la v2.30, l'entrée de l'outil est imbriquée sous `navigation`.
   const navigateToRecord = (recordName: string) =>
     tool.execute(
-      { type: 'navigateToRecord', objectNameSingular: 'company', recordName },
+      {
+        navigation: {
+          type: 'navigateToRecord',
+          objectNameSingular: 'company',
+          recordName,
+        },
+      },
       { workspaceId: 'workspace-id', userId: 'user-id' },
     );
 
@@ -93,6 +100,8 @@ describe('NavigateAppTool — périmètre pays sur navigateToRecord', () => {
 
     expect(result.success).toBe(false);
     expect(result.result).toBeUndefined();
+    // Garde-fou : l'échec doit venir du filtrage, pas d'une entrée rejetée en amont.
+    expect(find).toHaveBeenCalled();
   });
 
   it('trouve une société du périmètre et rend son id', async () => {

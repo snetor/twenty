@@ -30,7 +30,13 @@ jobs:
   docs-drift-check:
     needs: changed-files-check
     # Secrets are unavailable on fork PRs; skip there and on bot PRs.
+    # Snetor : le garde upstream suppose « même dépôt donc secrets présents ». C'est faux
+    # sur une PR interne d'un fork : `head.repo.full_name == github.repository` est vrai,
+    # le job tourne, et `CLAUDE_CODE_OAUTH_TOKEN` est vide — il échoue sur
+    # « did not return a structured verdict ». D'où le garde de dépôt, comme sur
+    # `pr-review-dispatch.yaml`.
     if: >-
+      github.repository == 'twentyhq/twenty' &&
       needs.changed-files-check.outputs.any_changed == 'true' &&
       github.event.pull_request.head.repo.full_name == github.repository &&
       github.event.pull_request.user.type != 'Bot'
