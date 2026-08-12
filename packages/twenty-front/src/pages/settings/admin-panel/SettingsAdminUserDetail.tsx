@@ -13,6 +13,7 @@ import {
 
 import { currentUserState } from '@/auth/states/currentUserState';
 import { useApolloAdminClient } from '@/settings/admin-panel/apollo/hooks/useApolloAdminClient';
+import { SettingsAdminServerAdminAccess } from '@/settings/admin-panel/components/SettingsAdminServerAdminAccess';
 import { SettingsAdminWorkspaceContent } from '@/settings/admin-panel/components/SettingsAdminWorkspaceContent';
 import { SETTINGS_ADMIN_USER_LOOKUP_WORKSPACE_TABS_ID } from '@/settings/admin-panel/constants/SettingsAdminUserLookupWorkspaceTabsId';
 import { useHandleImpersonate } from '@/settings/admin-panel/hooks/useHandleImpersonate';
@@ -26,13 +27,15 @@ import { DEFAULT_WORKSPACE_LOGO } from '@/ui/navigation/navigation-drawer/consta
 import { useAtomComponentStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomComponentStateValue';
 import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
 import {
-  H2Title,
   IconCalendar,
   IconEyeShare,
   IconId,
+  IconLock,
   IconMail,
   IconUser,
-} from 'twenty-ui/display';
+} from 'twenty-ui/icon';
+import { Avatar } from 'twenty-ui/data-display';
+import { H2Title } from 'twenty-ui/typography';
 import { Button } from 'twenty-ui/input';
 import { Section } from 'twenty-ui/layout';
 import { themeCssVariables } from 'twenty-ui/theme-constants';
@@ -91,6 +94,8 @@ export const SettingsAdminUserDetail = () => {
         }) ?? '',
     })) ?? [];
 
+  const displayName = userFullName || userId || '';
+
   const userInfoItems = [
     {
       Icon: IconUser,
@@ -114,9 +119,21 @@ export const SettingsAdminUserDetail = () => {
         ? new Date(user.createdAt).toLocaleDateString()
         : '',
     },
+    ...(currentUser?.canAccessFullAdminPanel && isDefined(userId)
+      ? [
+          {
+            Icon: IconLock,
+            label: t`Server access`,
+            value: (
+              <SettingsAdminServerAdminAccess
+                userId={userId}
+                userLabel={displayName}
+              />
+            ),
+          },
+        ]
+      : []),
   ];
-
-  const displayName = userFullName || userId || '';
 
   if (isLoading) {
     return <SettingsSkeletonLoader />;
@@ -124,6 +141,15 @@ export const SettingsAdminUserDetail = () => {
 
   return (
     <SettingsPageLayout
+      title={displayName}
+      icon={
+        <Avatar
+          placeholder={displayName}
+          placeholderColorSeed={user?.id}
+          size="md"
+          type="rounded"
+        />
+      }
       links={[
         {
           children: t`Other`,

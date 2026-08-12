@@ -4,6 +4,7 @@ import { type MessageDescriptor } from '@lingui/core';
 import { msg } from '@lingui/core/macro';
 import { assertUnreachable } from 'twenty-shared/utils';
 
+import { getBillingExceptionStatusCode } from 'src/engine/core-modules/billing/utils/get-billing-exception-status-code.util';
 import { CustomException } from 'src/utils/custom-exception';
 
 export enum BillingExceptionCode {
@@ -33,6 +34,7 @@ export enum BillingExceptionCode {
   BILLING_TOO_MUCH_SUBSCRIPTIONS_FOUND = 'BILLING_TOO_MUCH_SUBSCRIPTIONS_FOUND',
   BILLING_CREDITS_EXHAUSTED = 'BILLING_CREDITS_EXHAUSTED',
   BILLING_SUBSCRIPTION_NOT_CANCELED = 'BILLING_SUBSCRIPTION_NOT_CANCELED',
+  BILLING_CREDIT_AMOUNT_INVALID = 'BILLING_CREDIT_AMOUNT_INVALID',
 }
 
 const getBillingExceptionUserFriendlyMessage = (code: BillingExceptionCode) => {
@@ -89,6 +91,8 @@ const getBillingExceptionUserFriendlyMessage = (code: BillingExceptionCode) => {
       return msg`You have exhausted your credits. Please upgrade your plan to continue.`;
     case BillingExceptionCode.BILLING_SUBSCRIPTION_NOT_CANCELED:
       return msg`Workspace cannot be deleted: subscription is not yet canceled.`;
+    case BillingExceptionCode.BILLING_CREDIT_AMOUNT_INVALID:
+      return msg`Invalid credit amount.`;
     default:
       assertUnreachable(code);
   }
@@ -104,5 +108,6 @@ export class BillingException extends CustomException<BillingExceptionCode> {
       userFriendlyMessage:
         userFriendlyMessage ?? getBillingExceptionUserFriendlyMessage(code),
     });
+    this.statusCode = getBillingExceptionStatusCode(this);
   }
 }

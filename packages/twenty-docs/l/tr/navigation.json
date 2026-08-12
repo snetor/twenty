@@ -145,6 +145,14 @@
               "label": "Nasıl Yapılırlar"
             }
           }
+        },
+        "legal": {
+          "label": "Yasal",
+          "groups": {
+            "legalHowTos": {
+              "label": "Nasıl Yapılır Kılavuzları"
+            }
+          }
         }
       }
     },
@@ -160,6 +168,9 @@
             "appsGettingStarted": {
               "label": "Başlarken"
             },
+            "appsTutorial": {
+              "label": "Öğretici"
+            },
             "appsConfig": {
               "label": "Yapılandırma"
             },
@@ -174,6 +185,9 @@
             },
             "appsOperations": {
               "label": "İşlemler"
+            },
+            "appsTranslations": {
+              "label": "Çeviriler"
             }
           }
         },

@@ -1,3 +1,4 @@
+import { ObjectOpenRecordIn } from 'twenty-shared/types';
 import { objectMetadataItemsSelector } from '@/object-metadata/states/objectMetadataItemsSelector';
 import { type FieldMetadataItem } from '@/object-metadata/types/FieldMetadataItem';
 import { type EnrichedObjectMetadataItem } from '@/object-metadata/types/EnrichedObjectMetadataItem';
@@ -159,11 +160,10 @@ const buildFieldMetadataItemFromMarketplaceField = (
     description: field.description ?? '',
     icon: field.icon ?? 'IconField',
     isActive: true,
-    isCustom: true,
     isSystem: false,
     isNullable: true,
     isUnique: false,
-    isUIReadOnly: false,
+    isUIEditable: true,
     createdAt: now,
     updatedAt: now,
     defaultValue: null,
@@ -239,12 +239,13 @@ const buildObjectMetadataItemsFromMarketplaceApp = (
         labelPlural: appObject.labelPlural,
         description: appObject.description ?? '',
         icon: appObject.icon ?? 'IconBox',
-        isCustom: true,
         isRemote: false,
         isActive: true,
         isSystem: false,
         isSearchable: false,
-        isUIReadOnly: false,
+        isUIEditable: true,
+        isUICreatable: true,
+        openRecordIn: ObjectOpenRecordIn.USER_CHOICE,
         isLabelSyncedWithName: false,
         labelIdentifierFieldMetadataId: '',
         fields,
@@ -255,6 +256,7 @@ const buildObjectMetadataItemsFromMarketplaceApp = (
           (field) => !nonUpdatableFieldIds.has(field.id),
         ),
         indexMetadatas: [],
+        searchFieldMetadatas: [],
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };

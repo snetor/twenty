@@ -5,33 +5,25 @@ import { SettingsPath } from 'twenty-shared/types';
 import { getSettingsPath, isDefined } from 'twenty-shared/utils';
 import { FindOneApplicationRegistrationDocument } from '~/generated-metadata/graphql';
 import { useLingui } from '@lingui/react/macro';
-import { Tag } from 'twenty-ui/components';
+import { Avatar, Tag } from 'twenty-ui/data-display';
 import { TabList } from '@/ui/layout/tab-list/components/TabList';
 import { SettingsPageContainer } from '@/settings/components/SettingsPageContainer';
 import {
-  Avatar,
   IconInfoCircle,
   IconKey,
   IconSettings,
   IconWorld,
-} from 'twenty-ui/display';
+} from 'twenty-ui/icon';
 import { SettingsApplicationRegistrationConfigTab } from '~/pages/settings/applications/tabs/SettingsApplicationRegistrationConfigTab';
 import { SettingsApplicationRegistrationOAuthTab } from '~/pages/settings/applications/tabs/SettingsApplicationRegistrationOAuthTab';
 import { SettingsApplicationRegistrationDistributionTab } from '~/pages/settings/applications/tabs/SettingsApplicationRegistrationDistributionTab';
 import { SettingsApplicationRegistrationGeneralTab } from '~/pages/settings/applications/tabs/SettingsApplicationRegistrationGeneralTab';
 import { useAtomComponentStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomComponentStateValue';
 import { activeTabIdComponentState } from '@/ui/layout/tab-list/states/activeTabIdComponentState';
-import { styled } from '@linaria/react';
-import { themeCssVariables } from 'twenty-ui/theme-constants';
+import { getAbsoluteImageUrl } from '~/utils/image/getAbsoluteImageUrl';
 
 const REGISTRATION_DETAIL_TAB_LIST_ID =
   'application-registration-detail-tab-list';
-
-const StyledTitleContainer = styled.div`
-  align-items: center;
-  display: flex;
-  gap: ${themeCssVariables.spacing[2]};
-`;
 
 export const SettingsApplicationRegistrationDetails = () => {
   const { t } = useLingui();
@@ -95,17 +87,15 @@ export const SettingsApplicationRegistrationDetails = () => {
 
   return (
     <SettingsPageLayout
-      title={
-        <StyledTitleContainer>
-          <Avatar
-            type="app"
-            size="md"
-            avatarUrl={registration.logoUrl ?? undefined}
-            placeholder={registration.name}
-            placeholderColorSeed={registration.name}
-          />
-          {registration.name}
-        </StyledTitleContainer>
+      title={registration.name}
+      icon={
+        <Avatar
+          type="app"
+          size="md"
+          avatarUrl={getAbsoluteImageUrl(registration.logoUrl ?? undefined)}
+          placeholder={registration.name}
+          placeholderColorSeed={registration.name}
+        />
       }
       tag={<Tag text={t`Owner`} color={'gray'} />}
       links={[

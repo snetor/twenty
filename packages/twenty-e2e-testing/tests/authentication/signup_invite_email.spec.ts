@@ -39,13 +39,15 @@ test('Sign up with invite link via email', async ({
     await loginPage.clickContinueButton();
     await loginPage.typePassword(process.env.DEFAULT_PASSWORD);
     await loginPage.clickSignUpButton();
+    await expect(page.getByText('Create profile')).toBeVisible();
+    await expect(page.getByPlaceholder('Head of Partnerships')).toBeVisible();
     await loginPage.typeFirstName(firstName);
     await loginPage.typeLastName(lastName);
     await loginPage.clickContinueButton();
   });
 
   await test.step('Delete account from workspace', async () => {
-    await expect(page.getByRole('button', { name: 'Settings' })).toBeVisible();
+    await expect(page.getByTestId('workspace-dropdown')).toBeVisible();
     await leftMenu.goToSettings();
     await settingsPage.goToProfileSection();
     await profileSection.deleteAccount();

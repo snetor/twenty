@@ -1,10 +1,17 @@
 import { Injectable } from '@nestjs/common';
 
+import { isNonEmptyString } from '@sniptt/guards';
 import { type ToolSet } from 'ai';
 import { isDefined } from 'twenty-shared/utils';
 
-import { MetricsKeys } from 'src/engine/core-modules/metrics/types/metrics-keys.type';
+import { TOOL_EXECUTION_DURATION_MS_BUCKET_BOUNDARIES } from 'src/engine/core-modules/metrics/constants/tool-execution-duration-ms-bucket-boundaries.constant';
+import { TOOL_OUTPUT_TOKENS_BUCKET_BOUNDARIES } from 'src/engine/core-modules/metrics/constants/tool-output-tokens-bucket-boundaries.constant';
 import { MetricsService } from 'src/engine/core-modules/metrics/metrics.service';
+import { MetricsKeys } from 'src/engine/core-modules/metrics/types/metrics-keys.type';
+import { estimateToolOutputTokens } from 'src/engine/core-modules/tool-provider/utils/estimate-tool-output-tokens.util';
+import { getToolMetricName } from 'src/engine/core-modules/tool-provider/utils/get-tool-metric-name.util';
+import { isToolOutputSuccessful } from 'src/engine/core-modules/tool-provider/utils/is-tool-output-successful.util';
+import { resolveToolName } from 'src/engine/core-modules/tool-provider/utils/resolve-tool-name.util';
 
 import { JSON_RPC_ERROR_CODE } from 'src/engine/api/mcp/constants/json-rpc-error-code.const';
 import {
@@ -33,14 +40,23 @@ export class McpToolExecutorService {
     params: Record<string, unknown>,
     sseWriter?: (data: Record<string, unknown>) => void,
   ) {
-    const toolName = params.name as keyof typeof toolSet;
+    if (!isNonEmptyString(params.name)) {
+      return wrapJsonRpcResponse(id, {
+        error: {
+          code: JSON_RPC_ERROR_CODE.INVALID_PARAMS,
+          message: 'Tool name is required',
+        },
+      });
+    }
+
+    const toolName = params.name;
     const tool = toolSet[toolName];
 
     if (!isDefined(tool) || !isDefined(tool.execute)) {
       return wrapJsonRpcResponse(id, {
         error: {
           code: JSON_RPC_ERROR_CODE.INVALID_PARAMS,
-          message: `Unknown tool: ${String(params.name)}`,
+          message: `Unknown tool: ${toolName}`,
         },
       });
     }
@@ -57,15 +73,45 @@ export class McpToolExecutorService {
       });
     }
 
+    const metricToolName = getToolMetricName(
+      resolveToolName({
+        toolName,
+        input: params.arguments,
+      }),
+    );
+
+    const executionStartedAt = performance.now();
+
     try {
       const result = await tool.execute(params.arguments, {
         toolCallId: '1',
         messages: [],
       });
 
-      void this.metricsService.incrementCounterBy({
-        key: MetricsKeys.McpToolExecutionSucceeded,
+      this.metricsService.recordHistogram({
+        key: MetricsKeys.McpToolExecutionDurationMs,
+        value: performance.now() - executionStartedAt,
+        unit: 'ms',
+        attributes: { tool: metricToolName },
+        bucketBoundaries: TOOL_EXECUTION_DURATION_MS_BUCKET_BOUNDARIES,
+      });
+
+      const succeeded = isToolOutputSuccessful(result);
+
+      this.metricsService.incrementCounterBy({
+        key: succeeded
+          ? MetricsKeys.McpToolExecutionSucceeded
+          : MetricsKeys.McpToolExecutionFailed,
         amount: 1,
+        attributes: { tool: metricToolName },
+      });
+
+      this.metricsService.recordHistogram({
+        key: MetricsKeys.McpToolOutputTokens,
+        value: estimateToolOutputTokens(result),
+        unit: 'token',
+        attributes: { tool: metricToolName },
+        bucketBoundaries: TOOL_OUTPUT_TOKENS_BUCKET_BOUNDARIES,
       });
 
       return wrapJsonRpcResponse(id, {
@@ -75,9 +121,18 @@ export class McpToolExecutorService {
         },
       });
     } catch (executionError) {
-      void this.metricsService.incrementCounterBy({
+      this.metricsService.recordHistogram({
+        key: MetricsKeys.McpToolExecutionDurationMs,
+        value: performance.now() - executionStartedAt,
+        unit: 'ms',
+        attributes: { tool: metricToolName },
+        bucketBoundaries: TOOL_EXECUTION_DURATION_MS_BUCKET_BOUNDARIES,
+      });
+
+      this.metricsService.incrementCounterBy({
         key: MetricsKeys.McpToolExecutionFailed,
         amount: 1,
+        attributes: { tool: metricToolName },
       });
 
       return wrapJsonRpcResponse(id, {

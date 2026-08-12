@@ -11,6 +11,7 @@ import { type WorkspaceAuthContext } from 'src/engine/core-modules/auth/types/wo
 import { WorkspaceManyOrAllFlatEntityMapsCacheService } from 'src/engine/metadata-modules/flat-entity/services/workspace-many-or-all-flat-entity-maps-cache.service';
 import { findFlatEntityByIdInFlatEntityMaps } from 'src/engine/metadata-modules/flat-entity/utils/find-flat-entity-by-id-in-flat-entity-maps.util';
 import { FlatFieldMetadata } from 'src/engine/metadata-modules/flat-field-metadata/types/flat-field-metadata.type';
+import { buildObjectIdByNameMaps } from 'src/engine/metadata-modules/flat-object-metadata/utils/build-object-id-by-name-maps.util';
 import { PieChartConfigurationDTO } from 'src/engine/metadata-modules/page-layout-widget/dtos/pie-chart-configuration.dto';
 import { WidgetConfigurationType } from 'src/engine/metadata-modules/page-layout-widget/enums/widget-configuration-type.type';
 import { EXTRA_ITEM_TO_DETECT_TOO_MANY_GROUPS } from 'src/modules/dashboard/chart-data/constants/extra-item-to-detect-too-many-groups.constant';
@@ -22,10 +23,16 @@ import {
   generateChartDataExceptionMessage,
 } from 'src/modules/dashboard/chart-data/exceptions/chart-data.exception';
 import { ChartDataQueryService } from 'src/modules/dashboard/chart-data/services/chart-data-query.service';
+import { ChartRelationLabelService } from 'src/modules/dashboard/chart-data/services/chart-relation-label.service';
+import { RelationLabelResolution } from 'src/modules/dashboard/chart-data/types/relation-label-resolution.type';
+import { buildFormattedToRawLookupDto } from 'src/modules/dashboard/chart-data/utils/build-formatted-to-raw-lookup-dto.util';
+import { filterOutEmptyChartBuckets } from 'src/modules/dashboard/chart-data/utils/filter-out-empty-chart-buckets.util';
+import { filterOutUnresolvedRelationBuckets } from 'src/modules/dashboard/chart-data/utils/filter-out-unresolved-relation-buckets.util';
 import { getFieldMetadata } from 'src/modules/dashboard/chart-data/utils/get-field-metadata.util';
 import { getSelectOptions } from 'src/modules/dashboard/chart-data/utils/get-select-options.util';
 import { processOneDimensionalResults } from 'src/modules/dashboard/chart-data/utils/process-one-dimensional-results.util';
 import { sortChartDataIfNeeded } from 'src/modules/dashboard/chart-data/utils/sort-chart-data-if-needed.util';
+import { wrapChartDataQueryError } from 'src/modules/dashboard/chart-data/utils/wrap-chart-data-query-error.util';
 
 type GetPieChartDataParams = {
   workspaceId: string;
@@ -39,6 +46,7 @@ export class PieChartDataService {
   constructor(
     private readonly workspaceManyOrAllFlatEntityMapsCacheService: WorkspaceManyOrAllFlatEntityMapsCacheService,
     private readonly chartDataQueryService: ChartDataQueryService,
+    private readonly chartRelationLabelService: ChartRelationLabelService,
   ) {}
 
   async getPieChartData({
@@ -102,15 +110,8 @@ export class PieChartDataService {
         PIE_CHART_MAXIMUM_NUMBER_OF_SLICES +
         EXTRA_ITEM_TO_DETECT_TOO_MANY_GROUPS;
 
-      const objectIdByNameSingular: Record<string, string> = {};
-
-      for (const objMetadata of Object.values(
-        flatObjectMetadataMaps.byUniversalIdentifier,
-      )) {
-        if (isDefined(objMetadata)) {
-          objectIdByNameSingular[objMetadata.nameSingular] = objMetadata.id;
-        }
-      }
+      const { idByNameSingular: objectIdByNameSingular } =
+        buildObjectIdByNameMaps(flatObjectMetadataMaps);
 
       const rawResults = await this.chartDataQueryService.executeGroupByQuery({
         flatObjectMetadata,
@@ -133,38 +134,54 @@ export class PieChartDataService {
         splitMultiValueFields: configuration.splitMultiValueFields,
       });
 
-      return this.transformToPieChartData({
+      const filteredResults = filterOutEmptyChartBuckets({
         rawResults,
+        shouldOmitEmptyBuckets: configuration.hideEmptyCategory ?? false,
+      });
+
+      const relationLabelResolutions =
+        await this.chartRelationLabelService.resolveRelationLabels({
+          rawResults: filteredResults,
+          primaryAxis: {
+            groupByField,
+            subFieldName: configuration.groupBySubFieldName,
+          },
+          workspaceId,
+          authContext,
+          flatObjectMetadataMaps,
+          flatFieldMetadataMaps,
+        });
+
+      const resolvedResults = filterOutUnresolvedRelationBuckets({
+        rawResults: filteredResults,
+        primaryRelationLabelResolution: relationLabelResolutions.primary,
+        secondaryRelationLabelResolution: undefined,
+      });
+
+      return this.transformToPieChartData({
+        filteredRawResults: resolvedResults,
         groupByField,
         configuration,
         userTimezone: configuration.timezone ?? 'UTC',
         firstDayOfTheWeek:
           (configuration.firstDayOfTheWeek as CalendarStartDay | undefined) ??
           CalendarStartDay.MONDAY,
+        relationLabelResolution: relationLabelResolutions.primary,
       });
     } catch (error) {
-      if (error instanceof ChartDataException) {
-        throw error;
-      }
-
-      throw new ChartDataException(
-        generateChartDataExceptionMessage(
-          ChartDataExceptionCode.QUERY_EXECUTION_FAILED,
-          `Pie chart data retrieval failed: ${error instanceof Error ? error.message : String(error)}`,
-        ),
-        ChartDataExceptionCode.QUERY_EXECUTION_FAILED,
-      );
+      throw wrapChartDataQueryError(error, 'Pie chart data retrieval failed');
     }
   }
 
   private transformToPieChartData({
-    rawResults,
+    filteredRawResults,
     groupByField,
     configuration,
     userTimezone,
     firstDayOfTheWeek,
+    relationLabelResolution,
   }: {
-    rawResults: Array<{
+    filteredRawResults: Array<{
       groupByDimensionValues: unknown[];
       aggregateValue: number;
     }>;
@@ -172,15 +189,8 @@ export class PieChartDataService {
     configuration: PieChartConfigurationDTO;
     userTimezone: string;
     firstDayOfTheWeek: CalendarStartDay;
+    relationLabelResolution: RelationLabelResolution | undefined;
   }): PieChartDataDTO {
-    const filteredResults = configuration.hideEmptyCategory
-      ? rawResults.filter(
-          (result) =>
-            isDefined(result.groupByDimensionValues?.[0]) &&
-            result.aggregateValue !== 0,
-        )
-      : rawResults;
-
     const selectOptions = getSelectOptions(groupByField);
 
     const convertedFirstDayOfTheWeek =
@@ -189,21 +199,17 @@ export class PieChartDataService {
         FirstDayOfTheWeek.SUNDAY,
       );
 
-    const limitedResults = filteredResults.slice(
-      0,
-      PIE_CHART_MAXIMUM_NUMBER_OF_SLICES,
-    );
-
     const {
       processedDataPoints: rawProcessedDataPoints,
       formattedToRawLookup,
     } = processOneDimensionalResults({
-      rawResults: limitedResults,
+      rawResults: filteredRawResults,
       primaryAxisGroupByField: groupByField,
       dateGranularity: configuration.dateGranularity,
       subFieldName: configuration.groupBySubFieldName,
       userTimezone,
       firstDayOfTheWeek: convertedFirstDayOfTheWeek,
+      relationLabelResolution,
     });
 
     const processedDataPoints = rawProcessedDataPoints.map((point) => {
@@ -212,7 +218,7 @@ export class PieChartDataService {
         : null;
 
       return {
-        id: point.formattedValue,
+        key: point.formattedValue,
         value: point.aggregateValue,
         rawValue: rawValueString,
       };
@@ -223,14 +229,21 @@ export class PieChartDataService {
       orderBy: configuration.orderBy,
       manualSortOrder: configuration.manualSortOrder,
       formattedToRawLookup,
-      getFieldValue: (item) => item.id,
+      getFieldValue: (item) => item.key,
       getNumericValue: (item) => item.value,
       selectFieldOptions: selectOptions,
       fieldType: groupByField.type,
       dateGranularity: configuration.dateGranularity,
     });
 
-    const data = sortedData.map(({ rawValue: _rawValue, ...item }) => item);
+    const limitedSortedData = sortedData.slice(
+      0,
+      PIE_CHART_MAXIMUM_NUMBER_OF_SLICES,
+    );
+
+    const data = limitedSortedData.map(
+      ({ rawValue: _rawValue, ...item }) => item,
+    );
 
     return {
       data,
@@ -238,8 +251,10 @@ export class PieChartDataService {
       showDataLabels: configuration.displayDataLabel ?? false,
       showCenterMetric: configuration.showCenterMetric ?? true,
       hasTooManyGroups:
-        filteredResults.length > PIE_CHART_MAXIMUM_NUMBER_OF_SLICES,
-      formattedToRawLookup: Object.fromEntries(formattedToRawLookup),
+        filteredRawResults.length > PIE_CHART_MAXIMUM_NUMBER_OF_SLICES,
+      formattedToRawLookup: buildFormattedToRawLookupDto({
+        axisLookups: [{ formattedToRawLookup, relationLabelResolution }],
+      }),
     };
   }
 }

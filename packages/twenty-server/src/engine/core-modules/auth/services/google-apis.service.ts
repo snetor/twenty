@@ -154,11 +154,13 @@ export class GoogleAPIsService {
             handle,
             userWorkspaceId,
             workspaceId,
+            provider: ConnectedAccountProvider.GOOGLE,
           },
         });
 
         const existingAccountId = connectedAccount?.id;
         const newOrExistingConnectedAccountId = existingAccountId ?? v4();
+        const wasArchived = isDefined(connectedAccount?.archivedAt);
 
         const existingMessageChannels =
           await this.messageChannelRepository.find({
@@ -237,6 +239,40 @@ export class GoogleAPIsService {
                 skipMessageChannelConfiguration,
                 transactionManager,
               });
+            }
+
+            if (
+              wasArchived &&
+              isMessagingEnabled &&
+              isMessagingAvailable &&
+              existingMessageChannels.length > 0
+            ) {
+              await transactionManager
+                .getRepository(MessageChannelEntity)
+                .update(
+                  {
+                    connectedAccountId: newOrExistingConnectedAccountId,
+                    workspaceId,
+                  },
+                  { isSyncEnabled: true },
+                );
+            }
+
+            if (
+              wasArchived &&
+              isCalendarEnabled &&
+              isCalendarAvailable &&
+              existingCalendarChannels.length > 0
+            ) {
+              await transactionManager
+                .getRepository(CalendarChannelEntity)
+                .update(
+                  {
+                    connectedAccountId: newOrExistingConnectedAccountId,
+                    workspaceId,
+                  },
+                  { isSyncEnabled: true },
+                );
             }
           },
         );

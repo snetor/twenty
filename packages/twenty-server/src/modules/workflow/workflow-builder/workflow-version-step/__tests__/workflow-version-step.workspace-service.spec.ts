@@ -1,7 +1,8 @@
 import { Test, type TestingModule } from '@nestjs/testing';
 
-import { TRIGGER_STEP_ID } from 'twenty-shared/workflow';
+import { TRIGGER_STEP_ID, WorkflowActionType } from 'twenty-shared/workflow';
 
+import { WorkflowVersionCoreSyncService } from 'src/engine/core-modules/workflow/services/workflow-version-core-sync.service';
 import { GlobalWorkspaceOrmManager } from 'src/engine/twenty-orm/global-workspace-datasource/global-workspace-orm.manager';
 import { type WorkspaceRepository } from 'src/engine/twenty-orm/repository/workspace.repository';
 import { type WorkflowVersionWorkspaceEntity } from 'src/modules/workflow/common/standard-objects/workflow-version.workspace-entity';
@@ -13,10 +14,7 @@ import { WorkflowVersionStepHelpersWorkspaceService } from 'src/modules/workflow
 import { WorkflowVersionStepOperationsWorkspaceService } from 'src/modules/workflow/workflow-builder/workflow-version-step/workflow-version-step-operations.workspace-service';
 import { WorkflowVersionStepUpdateWorkspaceService } from 'src/modules/workflow/workflow-builder/workflow-version-step/workflow-version-step-update.workspace-service';
 import { WorkflowVersionStepWorkspaceService } from 'src/modules/workflow/workflow-builder/workflow-version-step/workflow-version-step.workspace-service';
-import {
-  type WorkflowAction,
-  WorkflowActionType,
-} from 'src/modules/workflow/workflow-executor/workflow-actions/types/workflow-action.type';
+import { type WorkflowAction } from 'src/modules/workflow/workflow-executor/workflow-actions/types/workflow-action.type';
 import { WorkflowTriggerType } from 'src/modules/workflow/workflow-trigger/types/workflow-trigger.type';
 
 jest.mock(
@@ -168,6 +166,18 @@ describe('WorkflowVersionStepWorkspaceService', () => {
             getWorkflowVersionOrFail: jest
               .fn()
               .mockResolvedValue(mockWorkflowVersion),
+          },
+        },
+        {
+          provide: WorkflowVersionCoreSyncService,
+          useValue: {
+            writeWorkflowVersionAndMirror: jest.fn(
+              async (_workspaceId: string, write: any) => {
+                await write(mockWorkflowVersionWorkspaceRepository, {});
+              },
+            ),
+            mirrorWorkflowVersionWrite: jest.fn(),
+            invalidateAutomatedTriggerMaps: jest.fn(),
           },
         },
       ],

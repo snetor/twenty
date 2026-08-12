@@ -21,12 +21,22 @@ export const seedFeatureFlags = async ({
     .orIgnore()
     .values([
       {
+        key: FeatureFlagKey.IS_AI_CHAT_PAGE_ENABLED,
+        workspaceId: workspaceId,
+        value: true,
+      },
+      {
+        key: FeatureFlagKey.IS_APP_CLAIMING_ENABLED,
+        workspaceId: workspaceId,
+        value: false,
+      },
+      {
         key: FeatureFlagKey.IS_UNIQUE_INDEXES_ENABLED,
         workspaceId: workspaceId,
         value: false,
       },
       {
-        key: FeatureFlagKey.IS_PUBLIC_DOMAIN_ENABLED,
+        key: FeatureFlagKey.IS_CALENDAR_WEEK_VIEW_ENABLED,
         workspaceId: workspaceId,
         value: true,
       },
@@ -37,11 +47,6 @@ export const seedFeatureFlags = async ({
       },
       {
         key: FeatureFlagKey.IS_JUNCTION_RELATIONS_ENABLED,
-        workspaceId: workspaceId,
-        value: true,
-      },
-      {
-        key: FeatureFlagKey.IS_MARKETPLACE_SETTING_TAB_VISIBLE,
         workspaceId: workspaceId,
         value: true,
       },

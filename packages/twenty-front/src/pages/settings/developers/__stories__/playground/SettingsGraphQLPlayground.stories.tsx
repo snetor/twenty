@@ -1,4 +1,4 @@
-import { playgroundApiKeyState } from '@/settings/playground/states/playgroundApiKeyState';
+import { playgroundApiKeyState } from '@/settings/mcp-and-apis/states/playgroundApiKeyState';
 import { jotaiStore } from '@/ui/utilities/state/jotai/jotaiStore';
 import { type Meta, type StoryObj } from '@storybook/react-vite';
 import { action } from 'storybook/actions';
@@ -12,6 +12,12 @@ import { graphqlMocks } from '~/testing/graphqlMocks';
 const meta: Meta<typeof SettingsGraphQLPlayground> = {
   title: 'Pages/Settings/Playground/GraphQLPlayground',
   component: SettingsGraphQLPlayground,
+  // graphiql 5 renders a Monaco editor that cannot spin up web workers in the
+  // headless storybook test runner and throws unhandled async errors there
+  // (Cannot read properties of undefined 'toUrl'). Exclude this 3rd-party-tool
+  // wrapper from the vitest run; it is still available in the Storybook UI.
+  // (!test removes the auto-applied `test` tag the vitest addon filters on.)
+  tags: ['!test'],
   decorators: [
     (Story) => {
       jotaiStore.set(playgroundApiKeyState.atom, {

@@ -10,7 +10,6 @@ import {
   UpgradeMigrationStatus,
 } from 'src/engine/core-modules/upgrade/upgrade-migration.entity';
 import { formatUpgradeErrorForStorage } from 'src/engine/core-modules/upgrade/utils/format-upgrade-error-for-storage.util';
-import { extractVersionFromCommandName } from 'src/engine/core-modules/upgrade/utils/extract-version-from-command-name.util';
 
 export type WorkspaceLastAttemptedCommand = {
   workspaceId: string;
@@ -30,18 +29,6 @@ export class UpgradeMigrationService {
     @InjectRepository(UpgradeMigrationEntity)
     private readonly upgradeMigrationRepository: Repository<UpgradeMigrationEntity>,
   ) {}
-
-  async getInferredVersion(commandName?: string): Promise<string | null> {
-    if (isDefined(commandName)) {
-      return extractVersionFromCommandName(commandName);
-    }
-
-    const migration = await this.getLastAttemptedInstanceCommand();
-
-    return isDefined(migration)
-      ? extractVersionFromCommandName(migration.name)
-      : null;
-  }
 
   async isLastAttemptCompleted({
     name,
@@ -166,6 +153,14 @@ export class UpgradeMigrationService {
       ? queryRunner.manager.getRepository(UpgradeMigrationEntity)
       : this.upgradeMigrationRepository;
 
+    const existingInitialMigration = await repository.findOne({
+      where: { name, attempt: 1, workspaceId, isInitial: true },
+    });
+
+    if (isDefined(existingInitialMigration)) {
+      return;
+    }
+
     await repository.save({
       name,
       status,
@@ -181,7 +176,7 @@ export class UpgradeMigrationService {
   // isInitial records are excluded — they represent activation
   // state, not execution progress.
   async getLastAttemptedCommandNameOrThrow(
-    allActiveOrSuspendedWorkspaceIds: string[],
+    allProvisionedWorkspaceIds: string[],
   ): Promise<{
     name: string;
     status: UpgradeMigrationStatus;
@@ -202,10 +197,10 @@ export class UpgradeMigrationService {
         )`,
       );
 
-    if (allActiveOrSuspendedWorkspaceIds.length > 0) {
+    if (allProvisionedWorkspaceIds.length > 0) {
       queryBuilder.andWhere(
-        '(migration."workspaceId" IS NULL OR migration."workspaceId" IN (:...allActiveOrSuspendedWorkspaceIds))',
-        { allActiveOrSuspendedWorkspaceIds },
+        '(migration."workspaceId" IS NULL OR migration."workspaceId" IN (:...allProvisionedWorkspaceIds))',
+        { allProvisionedWorkspaceIds },
       );
     } else {
       queryBuilder.andWhere('migration."workspaceId" IS NULL');

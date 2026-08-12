@@ -8,6 +8,7 @@ import { styled } from '@linaria/react';
 import { motion } from 'framer-motion';
 import { useContext, useMemo } from 'react';
 import { ThemeContext } from 'twenty-ui/theme-constants';
+import { EngineComponentKey } from '~/generated-metadata/graphql';
 
 const StyledCommandMenuItemContainer = styled(motion.div)`
   align-items: center;
@@ -30,6 +31,7 @@ const StyledContainer = styled.div`
 
 const StyledItemsContainer = styled.div`
   display: flex;
+  flex-direction: row-reverse;
   gap: ${PINNED_COMMAND_MENU_ITEMS_GAP}px;
   max-width: 100%;
   overflow: hidden;
@@ -71,7 +73,6 @@ export const PinnedCommandMenuItemButtons = () => {
               {pinnedInlineCommandMenuItems.map((item) => (
                 <StyledCommandMenuItemContainer
                   key={item.id}
-                  layout
                   initial={{ width: 0, opacity: 0 }}
                   animate={{ width: 'unset', opacity: 1 }}
                   exit={{ width: 0, opacity: 0 }}
@@ -80,7 +81,17 @@ export const PinnedCommandMenuItemButtons = () => {
                     ease: 'easeInOut',
                   }}
                 >
-                  <CommandMenuItemRenderer item={item} />
+                  <CommandMenuItemRenderer
+                    item={item}
+                    isPrimaryAction={
+                      item.engineComponentKey ===
+                        EngineComponentKey.CREATE_NEW_RECORD ||
+                      item.engineComponentKey ===
+                        EngineComponentKey.COMPOSE_CAMPAIGN ||
+                      item.engineComponentKey ===
+                        EngineComponentKey.SEND_MESSAGE_CAMPAIGN
+                    }
+                  />
                 </StyledCommandMenuItemContainer>
               ))}
             </StyledItemsContainer>

@@ -8,14 +8,13 @@ import { currentWorkspaceState } from '@/auth/states/currentWorkspaceState';
 import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
 import { t } from '@lingui/core/macro';
 import { isDefined } from 'twenty-shared/utils';
-import { buildApplicationLogoUrl } from '@/applications/utils/buildApplicationLogoUrl';
 import CustomLogo from '~/pages/settings/applications/assets/custom-illustrations/custom-logo.webp';
 import StandardLogo from '~/pages/settings/applications/assets/standard-illustrations/standard-logo.webp';
 
 type UseApplicationChipDataArgs = {
   applicationId?: string | null;
   fallbackApplicationData?: {
-    logo?: string | null;
+    logoUrl?: string | null;
     name?: string | null;
   };
 };
@@ -47,7 +46,7 @@ export const useApplicationChipData = ({
     return {
       applicationChipData: {
         name: fallbackApplicationData?.name ?? '',
-        logo: fallbackApplicationData?.logo ?? '',
+        logo: fallbackApplicationData?.logoUrl ?? '',
         seed: fallbackApplicationData?.name ?? '',
       },
     };
@@ -67,11 +66,7 @@ export const useApplicationChipData = ({
     ? new URL(StandardLogo, window.location.href).toString()
     : isCustom
       ? new URL(CustomLogo, window.location.href).toString()
-      : buildApplicationLogoUrl({
-          applicationId: application.id,
-          logo: application.logo,
-          workspaceId: currentWorkspace?.id,
-        });
+      : (application.logoUrl ?? undefined);
 
   return {
     applicationChipData: {

@@ -5,9 +5,10 @@ import { SettingsAccountsEventVisibilitySettingsCard } from '@/settings/accounts
 import { SettingsOptionCardContentToggle } from '@/settings/components/SettingsOptions/SettingsOptionCardContentToggle';
 import { styled } from '@linaria/react';
 import { t } from '@lingui/core/macro';
-import { Section } from '@react-email/components';
-import { H2Title, IconUserPlus } from 'twenty-ui/display';
-import { Card } from 'twenty-ui/layout';
+import { Section } from 'twenty-ui/layout';
+import { IconUserPlus } from 'twenty-ui/icon';
+import { H2Title } from 'twenty-ui/typography';
+import { Card } from 'twenty-ui/surfaces';
 import { themeCssVariables } from 'twenty-ui/theme-constants';
 import { type CalendarChannelVisibility } from '~/generated/graphql';
 

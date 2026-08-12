@@ -2,11 +2,9 @@ import { type SelectSizeVariant } from '@/ui/input/components/Select';
 import { styled } from '@linaria/react';
 import { useContext } from 'react';
 import { isDefined } from 'twenty-shared/utils';
-import {
-  IconChevronDown,
-  OverflowingTextWithTooltip,
-  TintedIconTile,
-} from 'twenty-ui/display';
+import { TintedIconTile } from 'twenty-ui/data-display';
+import { IconChevronDown } from 'twenty-ui/icon';
+import { OverflowingTextWithTooltip } from 'twenty-ui/surfaces';
 import { type SelectOption } from 'twenty-ui/input';
 import { ThemeContext, themeCssVariables } from 'twenty-ui/theme-constants';
 
@@ -23,16 +21,16 @@ export const StyledControlContainer = styled.div<{
   align-items: center;
   background-color: ${themeCssVariables.background.transparent.lighter};
   border: 1px solid ${themeCssVariables.border.color.medium};
-  border-bottom-left-radius: ${themeCssVariables.border.radius.sm};
+  border-bottom-left-radius: ${themeCssVariables.border.radius.md};
   border-bottom-right-radius: ${({ hasRightElement }) =>
-    hasRightElement ? '0' : themeCssVariables.border.radius.sm};
+    hasRightElement ? '0' : themeCssVariables.border.radius.md};
   border-right: ${({ hasRightElement }) =>
     hasRightElement
       ? 'none'
       : `1px solid ${themeCssVariables.border.color.medium}`};
-  border-top-left-radius: ${themeCssVariables.border.radius.sm};
+  border-top-left-radius: ${themeCssVariables.border.radius.md};
   border-top-right-radius: ${({ hasRightElement }) =>
-    hasRightElement ? '0' : themeCssVariables.border.radius.sm};
+    hasRightElement ? '0' : themeCssVariables.border.radius.md};
   box-sizing: border-box;
   color: ${({ disabled, textAccent }) =>
     disabled

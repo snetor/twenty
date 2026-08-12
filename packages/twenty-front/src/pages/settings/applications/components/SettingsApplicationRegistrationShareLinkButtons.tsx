@@ -1,16 +1,16 @@
 import { SettingsApplicationInstallPermissionValidationModal } from '@/marketplace/components/SettingsApplicationInstallPermissionValidationModal';
 import { useInstallMarketplaceAppWithPermissionValidation } from '@/marketplace/hooks/useInstallMarketplaceAppWithPermissionValidation';
+import { getMarketplaceAppDefaultRoleManifest } from '@/marketplace/utils/getMarketplaceAppDefaultRoleManifest';
 import { styled } from '@linaria/react';
 import { useLingui } from '@lingui/react/macro';
 import { useQuery } from '@apollo/client/react';
-import { type Manifest } from 'twenty-shared/application';
 import { isDefined } from 'twenty-shared/utils';
 import {
   IconArrowUpRight,
   IconCopy,
   IconDownload,
   IconInfoCircle,
-} from 'twenty-ui/display';
+} from 'twenty-ui/icon';
 import { Button } from 'twenty-ui/input';
 import { themeCssVariables } from 'twenty-ui/theme-constants';
 import { FindMarketplaceAppDetailDocument } from '~/generated-metadata/graphql';
@@ -49,15 +49,10 @@ export const SettingsApplicationRegistrationShareLinkButtons = ({
     skip: !installable || !isDefined(universalIdentifier),
   });
 
-  const manifest = detailData?.findMarketplaceAppDetail?.manifest as
-    | Manifest
-    | undefined;
-  const app = manifest?.application;
-  const displayName = app?.displayName ?? '';
+  const detail = detailData?.findMarketplaceAppDetail;
+  const displayName = detail?.name ?? '';
 
-  const defaultRole = manifest?.roles?.find(
-    (r) => r.universalIdentifier === app?.defaultRoleUniversalIdentifier,
-  );
+  const defaultRole = getMarketplaceAppDefaultRoleManifest(detail);
 
   const handleInstall = async () => {
     if (installable) {
@@ -79,7 +74,7 @@ export const SettingsApplicationRegistrationShareLinkButtons = ({
           <SettingsApplicationInstallPermissionValidationModal
             modalInstanceId={modalInstanceId}
             appDisplayName={displayName}
-            appLogoUrl={app?.logoUrl}
+            appLogoUrl={detail?.logoUrl ?? undefined}
             defaultRole={defaultRole}
             onAuthorize={handleInstall}
             isInstalling={isInstalling}

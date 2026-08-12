@@ -16,6 +16,7 @@ import { ConnectedAccountProvider } from 'twenty-shared/types';
 import { isDefined } from 'twenty-shared/utils';
 
 import { type ConnectionProviderEntity } from 'src/engine/core-modules/application/connection-provider/connection-provider.entity';
+import { ConnectionProviderLifecycleHookService } from 'src/engine/core-modules/application/connection-provider/connection-provider-lifecycle-hook.service';
 import { ConnectionProviderOAuthFlowService } from 'src/engine/core-modules/application/connection-provider/connection-provider-oauth-flow.service';
 import { ConnectionProviderService } from 'src/engine/core-modules/application/connection-provider/connection-provider.service';
 import { JwtTokenTypeEnum } from 'src/engine/core-modules/auth/types/jwt-token-type.enum';
@@ -47,6 +48,7 @@ describe('ConnectionProviderOAuthFlowService', () => {
     findOne: jest.Mock;
     findOneByOrFail: jest.Mock;
   };
+  let connectionProviderLifecycleHookService: { dispatchOnConnect: jest.Mock };
 
   const baseProvider: ConnectionProviderEntity = {
     id: 'provider-1',
@@ -95,6 +97,9 @@ describe('ConnectionProviderOAuthFlowService', () => {
         provider: ConnectedAccountProvider.APP,
       })),
     };
+    connectionProviderLifecycleHookService = {
+      dispatchOnConnect: jest.fn(),
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -112,6 +117,10 @@ describe('ConnectionProviderOAuthFlowService', () => {
         {
           provide: getRepositoryToken(ConnectedAccountEntity),
           useValue: connectedAccountRepository,
+        },
+        {
+          provide: ConnectionProviderLifecycleHookService,
+          useValue: connectionProviderLifecycleHookService,
         },
         {
           // Real prefix/round-trip behavior is asserted in
@@ -172,7 +181,7 @@ describe('ConnectionProviderOAuthFlowService', () => {
       expect(url.searchParams.get('scope')).toBe('read write');
       expect(url.searchParams.get('state')).toBe('signed-state-token');
       expect(url.searchParams.get('redirect_uri')).toBe(
-        'https://api.example.com/apps/oauth/callback',
+        'https://api.example.com/auth/apps/callback',
       );
       expect(url.searchParams.has('code_challenge')).toBe(false);
 
@@ -436,6 +445,21 @@ describe('ConnectionProviderOAuthFlowService', () => {
           state: 'bad-state',
         }),
       ).rejects.toThrow(/state/);
+    });
+
+    it('hands the created connection to the on-connect lifecycle hook', async () => {
+      const result = await service.completeAuthorizationFlow({
+        code: 'auth_code',
+        state: 'signed-state',
+      });
+
+      expect(
+        connectionProviderLifecycleHookService.dispatchOnConnect,
+      ).toHaveBeenCalledWith({
+        provider: baseProvider,
+        workspaceId: 'workspace-1',
+        connectedAccountId: result.connectedAccountId,
+      });
     });
   });
 });

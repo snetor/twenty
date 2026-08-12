@@ -28,11 +28,14 @@ export const VIEW_FRAGMENT = gql`
     kanbanAggregateOperationFieldMetadataId
     mainGroupByFieldMetadataId
     shouldHideEmptyGroups
+    kanbanColumnWidth
     anyFieldFilterValue
     calendarFieldMetadataId
+    calendarEndFieldMetadataId
     calendarLayout
     visibility
     createdByUserWorkspaceId
+    isActive
     viewFields {
       ...ViewFieldFragment
     }

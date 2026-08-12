@@ -1,15 +1,7 @@
-import {
-  setSessionId,
-  useEventTracker,
-} from '@/analytics/hooks/useEventTracker';
 import { useExecuteTasksOnAnyLocationChange } from '@/app/hooks/useExecuteTasksOnAnyLocationChange';
 import { isAppEffectRedirectEnabledState } from '@/app/states/isAppEffectRedirectEnabledState';
-import { ONBOARDING_PATHS } from '@/auth/constants/OnboardingPaths';
-import { ONGOING_USER_CREATION_PATHS } from '@/auth/constants/OngoingUserCreationPaths';
 import { useReturnToPath } from '@/auth/hooks/useReturnToPath';
-import { useRequestFreshCaptchaToken } from '@/captcha/hooks/useRequestFreshCaptchaToken';
-import { isCaptchaScriptLoadedState } from '@/captcha/states/isCaptchaScriptLoadedState';
-import { isCaptchaRequiredForPath } from '@/captcha/utils/isCaptchaRequiredForPath';
+import { useIsOnAuthOrOnboardingPage } from '@/auth/hooks/useIsOnAuthOrOnboardingPage';
 import { useSidePanelMenu } from '@/side-panel/hooks/useSidePanelMenu';
 import { isSidePanelOpenedState } from '@/side-panel/states/isSidePanelOpenedState';
 import { sidePanelPageState } from '@/side-panel/states/sidePanelPageState';
@@ -18,6 +10,7 @@ import { contextStoreCurrentViewIdComponentState } from '@/context-store/states/
 import { contextStoreCurrentViewTypeComponentState } from '@/context-store/states/contextStoreCurrentViewTypeComponentState';
 import { ContextStoreViewType } from '@/context-store/types/ContextStoreViewType';
 import { CoreObjectNamePlural } from '@/object-metadata/types/CoreObjectNamePlural';
+import { shouldOpenAiChatAfterOnboardingState } from '@/onboarding/states/shouldOpenAiChatAfterOnboardingState';
 import { useActiveRecordBoardCard } from '@/object-record/record-board/hooks/useActiveRecordBoardCard';
 import { useFocusedRecordBoardCard } from '@/object-record/record-board/hooks/useFocusedRecordBoardCard';
 import { useResetRecordBoardSelection } from '@/object-record/record-board/hooks/useResetRecordBoardSelection';
@@ -26,6 +19,7 @@ import { useResetTableRowSelection } from '@/object-record/record-table/hooks/in
 import { useActiveRecordTableRow } from '@/object-record/record-table/hooks/useActiveRecordTableRow';
 import { useFocusedRecordTableRow } from '@/object-record/record-table/hooks/useFocusedRecordTableRow';
 import { useOpenNewRecordTitleCell } from '@/object-record/record-title-cell/hooks/useOpenNewRecordTitleCell';
+import { newRecordTitleCellToOpenState } from '@/object-record/record-title-cell/states/newRecordTitleCellToOpenState';
 import { getRecordIndexIdFromObjectNamePluralAndViewId } from '@/object-record/utils/getRecordIndexIdFromObjectNamePluralAndViewId';
 import { PageFocusId } from '@/types/PageFocusId';
 import { useResetFocusStackToFocusItem } from '@/ui/utilities/focus/hooks/useResetFocusStackToFocusItem';
@@ -43,18 +37,10 @@ import {
 } from 'react-router-dom';
 import { AppBasePath, AppPath, SidePanelPages } from 'twenty-shared/types';
 import { isDefined } from 'twenty-shared/utils';
-import { AnalyticsType } from '~/generated-metadata/graphql';
 import { usePageChangeEffectNavigateLocation } from '~/hooks/usePageChangeEffectNavigateLocation';
 import { getPageLayoutIdForLocation } from '~/modules/app/utils/getPageLayoutIdForLocation';
-import { useInitializeQueryParamState } from '~/modules/app/hooks/useInitializeQueryParamState';
+import { isAiChatPath } from '~/utils/isAiChatPath';
 import { isMatchingLocation } from '~/utils/isMatchingLocation';
-import { getPageTitleFromPath } from '~/utils/title-utils';
-
-const AUTH_AND_ONBOARDING_PATHS = [
-  ...ONGOING_USER_CREATION_PATHS,
-  ...ONBOARDING_PATHS,
-  AppPath.ResetPassword,
-];
 
 // TODO: break down into smaller functions and / or hooks
 //  - moved usePageChangeEffectNavigateLocation into dedicated hook
@@ -68,10 +54,6 @@ export const PageChangeEffect = () => {
 
   const pageChangeEffectNavigateLocation =
     usePageChangeEffectNavigateLocation();
-
-  const eventTracker = useEventTracker();
-
-  const { initializeQueryParamState } = useInitializeQueryParamState();
 
   //TODO: refactor useResetTableRowSelection hook to not throw when the argument `recordTableId` is an empty string
   // - replace CoreObjectNamePlural.Person
@@ -114,9 +96,7 @@ export const PageChangeEffect = () => {
   const { saveReturnToPath, getReturnToPath, clearReturnToPath } =
     useReturnToPath();
 
-  const isOnAuthOrOnboardingPage = AUTH_AND_ONBOARDING_PATHS.some((appPath) =>
-    isMatchingLocation(location, appPath),
-  );
+  const isOnAuthOrOnboardingPage = useIsOnAuthOrOnboardingPage();
 
   const closeSidePanelUnlessNotRelevant = useCallback(() => {
     const currentPage = store.get(sidePanelPageState.atom);
@@ -159,8 +139,6 @@ export const PageChangeEffect = () => {
   }, [location, previousLocation, executeTasksOnAnyLocationChange, store]);
 
   useEffect(() => {
-    initializeQueryParamState();
-
     if (
       isDefined(pageChangeEffectNavigateLocation) &&
       isAppEffectRedirectEnabled
@@ -182,16 +160,23 @@ export const PageChangeEffect = () => {
       if (consumedReturnToPath) {
         clearReturnToPath();
       }
+
+      if (
+        store.get(shouldOpenAiChatAfterOnboardingState.atom) &&
+        !isAiChatPath(pageChangeEffectNavigateLocation)
+      ) {
+        store.set(shouldOpenAiChatAfterOnboardingState.atom, false);
+      }
     }
   }, [
     navigate,
     pageChangeEffectNavigateLocation,
-    initializeQueryParamState,
     isAppEffectRedirectEnabled,
     isOnAuthOrOnboardingPage,
     saveReturnToPath,
     getReturnToPath,
     clearReturnToPath,
+    store,
   ]);
 
   useEffect(() => {
@@ -223,7 +208,6 @@ export const PageChangeEffect = () => {
         break;
       }
       case isMatchingLocation(location, AppPath.RecordShowPage): {
-        const isNewRecord = location.state?.isNewRecord === true;
         const isSidePanelOpen = store.get(isSidePanelOpenedState.atom);
 
         if (!isSidePanelOpen) {
@@ -242,15 +226,38 @@ export const PageChangeEffect = () => {
           });
         }
 
-        if (
-          isNewRecord &&
-          isDefined(location.state?.labelIdentifierFieldName)
-        ) {
-          openNewRecordTitleCell({
-            recordId: location.state.objectRecordId,
-            fieldName: location.state.labelIdentifierFieldName,
-          });
+        const newRecordTitleCellToOpen = store.get(
+          newRecordTitleCellToOpenState.atom,
+        );
+
+        if (isDefined(newRecordTitleCellToOpen)) {
+          const objectRecordIdFromPath = matchPath(
+            AppPath.RecordShowPage,
+            location.pathname,
+          )?.params.objectRecordId;
+
+          if (newRecordTitleCellToOpen.recordId === objectRecordIdFromPath) {
+            openNewRecordTitleCell(newRecordTitleCellToOpen);
+          }
+
+          store.set(newRecordTitleCellToOpenState.atom, null);
         }
+        break;
+      }
+      case isMatchingLocation(location, AppPath.PageLayoutPage): {
+        resetFocusStackToFocusItem({
+          focusStackItem: {
+            focusId: PageFocusId.PageLayoutPage,
+            componentInstance: {
+              componentType: FocusComponentType.PAGE,
+              componentInstanceId: PageFocusId.PageLayoutPage,
+            },
+            globalHotkeysConfig: {
+              enableGlobalHotkeysWithModifiers: true,
+              enableGlobalHotkeysConflictingWithKeyboard: true,
+            },
+          },
+        });
         break;
       }
       case isMatchingLocation(location, AppPath.SignInUp): {
@@ -301,13 +308,13 @@ export const PageChangeEffect = () => {
         });
         break;
       }
-      case isMatchingLocation(location, AppPath.CreateWorkspace): {
+      case isMatchingLocation(location, AppPath.WorkspaceActivation): {
         resetFocusStackToFocusItem({
           focusStackItem: {
-            focusId: PageFocusId.CreateWorkspace,
+            focusId: PageFocusId.WorkspaceActivation,
             componentInstance: {
               componentType: FocusComponentType.PAGE,
-              componentInstanceId: PageFocusId.CreateWorkspace,
+              componentInstanceId: PageFocusId.WorkspaceActivation,
             },
             globalHotkeysConfig: {
               enableGlobalHotkeysWithModifiers: false,
@@ -397,32 +404,6 @@ export const PageChangeEffect = () => {
     openNewRecordTitleCell,
     store,
   ]);
-
-  useEffect(() => {
-    setTimeout(() => {
-      setSessionId();
-      eventTracker(AnalyticsType['PAGEVIEW'], {
-        name: getPageTitleFromPath(location.pathname),
-        properties: {
-          pathname: location.pathname,
-          locale: navigator.language,
-          userAgent: window.navigator.userAgent,
-          href: window.location.href,
-          referrer: document.referrer,
-          timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-        },
-      });
-    }, 500);
-  }, [eventTracker, location.pathname]);
-
-  const { requestFreshCaptchaToken } = useRequestFreshCaptchaToken();
-  const isCaptchaScriptLoaded = useAtomStateValue(isCaptchaScriptLoadedState);
-
-  useEffect(() => {
-    if (isCaptchaScriptLoaded && isCaptchaRequiredForPath(location.pathname)) {
-      requestFreshCaptchaToken();
-    }
-  }, [isCaptchaScriptLoaded, location.pathname, requestFreshCaptchaToken]);
 
   return <></>;
 };

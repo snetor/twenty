@@ -1,7 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
 
-import { FileFolder } from 'twenty-shared/types';
-
 import { EmailComposerService } from 'src/engine/core-modules/tool/tools/email-tool/email-composer.service';
 import { EmailToolInputZodSchema } from 'src/engine/core-modules/tool/tools/email-tool/email-tool.schema';
 import { EmailToolException } from 'src/engine/core-modules/tool/tools/email-tool/exceptions/email-tool.exception';
@@ -33,7 +31,6 @@ export class SendEmailTool implements Tool {
       const result = await this.emailComposerService.composeEmail(
         parameters,
         context,
-        { attachmentsFileFolder: FileFolder.Workflow },
       );
 
       if (!result.success) {
@@ -44,13 +41,13 @@ export class SendEmailTool implements Tool {
 
       const sendResult = await this.sendEmailService.sendComposedEmail(data);
 
-      if (data.shouldPersistMessage) {
-        await this.sendEmailService.persistSentMessage(
-          sendResult,
-          data,
-          context.workspaceId,
-        );
-      }
+      const persistedMessage = data.shouldPersistMessage
+        ? await this.sendEmailService.persistSentMessage(
+            sendResult,
+            data,
+            context.workspaceId,
+          )
+        : undefined;
 
       this.logger.log(
         `Email sent successfully to ${data.toRecipientsDisplay}${data.attachments.length > 0 ? ` with ${data.attachments.length} attachments` : ''}`,
@@ -68,6 +65,10 @@ export class SendEmailTool implements Tool {
           plainTextBody: data.plainTextBody,
           connectedAccountId: data.connectedAccount.id,
           attachmentCount: data.attachments.length,
+          headerMessageId: sendResult.headerMessageId,
+          threadExternalId: sendResult.threadExternalId,
+          messageId: persistedMessage?.messageId,
+          messageThreadId: persistedMessage?.messageThreadId,
         },
       };
     } catch (error) {
@@ -86,8 +87,7 @@ export class SendEmailTool implements Tool {
           success: false,
           message: 'Failed to send email due to insufficient permissions',
           error:
-            'The connected email account does not have permission to send emails. ' +
-            'The user should disconnect and reconnect their account in Settings > Accounts to grant the required permissions.',
+            'The connected email account does not have permission to send emails.',
         };
       }
 

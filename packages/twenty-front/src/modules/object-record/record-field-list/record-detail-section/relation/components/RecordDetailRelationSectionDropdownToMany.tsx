@@ -24,7 +24,6 @@ import { multipleRecordPickerPickableMorphItemsComponentState } from '@/object-r
 import { multipleRecordPickerSearchFilterComponentState } from '@/object-record/record-picker/multiple-record-picker/states/multipleRecordPickerSearchFilterComponentState';
 import { multipleRecordPickerSearchableObjectMetadataItemsComponentState } from '@/object-record/record-picker/multiple-record-picker/states/multipleRecordPickerSearchableObjectMetadataItemsComponentState';
 import { getRecordFieldCardRelationPickerDropdownId } from '@/object-record/record-show/utils/getRecordFieldCardRelationPickerDropdownId';
-import { recordStoreFamilyState } from '@/object-record/record-store/states/recordStoreFamilyState';
 import { recordStoreFamilySelector } from '@/object-record/record-store/states/selectors/recordStoreFamilySelector';
 import { type ObjectRecord } from '@/object-record/types/ObjectRecord';
 import { buildRecordLabelPayload } from '@/object-record/utils/buildRecordLabelPayload';
@@ -40,7 +39,7 @@ import {
   CustomError,
   isDefined,
 } from 'twenty-shared/utils';
-import { IconPlus } from 'twenty-ui/display';
+import { IconPlus } from 'twenty-ui/icon';
 import { LightIconButton } from 'twenty-ui/input';
 
 type RecordDetailRelationSectionDropdownToManyProps = {
@@ -308,32 +307,14 @@ export const RecordDetailRelationSectionDropdownToMany = ({
 
         await createTargetRecord(targetPayload);
 
-        const newJunctionId = v4();
-        const createdJunction = await createJunctionRecord({
-          id: newJunctionId,
+        // The junction is already attached to the source record's field by
+        // useCreateOneRecord's post-optimistic effect; appending it here as
+        // well would render the same target twice until a reload
+        await createJunctionRecord({
+          id: v4(),
           [sourceJoinColumnName]: recordId,
           [targetJoinColumnName]: newTargetId,
         });
-
-        if (isDefined(createdJunction)) {
-          store.set(
-            recordStoreFamilyState.atomFamily(recordId),
-            (currentRecord: ObjectRecord | null | undefined) => {
-              if (!isDefined(currentRecord)) {
-                return currentRecord;
-              }
-              const currentFieldValue = currentRecord[fieldName];
-              const updatedJunctionRecords = Array.isArray(currentFieldValue)
-                ? [...currentFieldValue, createdJunction]
-                : [createdJunction];
-
-              return {
-                ...currentRecord,
-                [fieldName]: updatedJunctionRecords,
-              } as ObjectRecord;
-            },
-          );
-        }
 
         updatePickerState(newTargetId, junctionTargetObjectMetadata.id);
         return;
@@ -348,7 +329,6 @@ export const RecordDetailRelationSectionDropdownToMany = ({
       createNewRecordAndOpenSidePanel,
       createTargetRecord,
       dropdownId,
-      fieldName,
       isMorphJunction,
       isJunctionRelation,
       junctionConfig,

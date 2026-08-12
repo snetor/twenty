@@ -3,19 +3,19 @@ import { t } from '@lingui/core/macro';
 import { useMemo } from 'react';
 import {
   IconApps,
-  IconCode,
   IconCreditCard,
   IconHierarchy,
   IconKey,
   IconLayoutSidebarRightCollapse,
   IconLockOpen,
+  IconPlug,
   IconSettings,
   IconSettingsAutomation,
   IconShield,
   IconSparkles,
   IconSpy,
   IconUsers,
-} from 'twenty-ui/display';
+} from 'twenty-ui/icon';
 import { PermissionFlagType } from '~/generated-metadata/graphql';
 
 type UseSettingsRolePermissionFlagConfigParams = {
@@ -41,9 +41,9 @@ export const useSettingsRolePermissionFlagConfig = ({
     const allPermissions: SettingsRolePermissionsSettingPermission[] = [
       {
         key: PermissionFlagType.API_KEYS_AND_WEBHOOKS,
-        name: t`API Keys & Webhooks`,
-        description: t`Manage API keys and webhooks`,
-        Icon: IconCode,
+        name: t`MCP & APIs`,
+        description: t`Manage MCP, API keys, and webhooks`,
+        Icon: IconPlug,
         isRelevantForAgents: true,
         isRelevantForApiKeys: true,
         isRelevantForUsers: true,

@@ -9,11 +9,12 @@ import { sidePanelPageState } from '@/side-panel/states/sidePanelPageState';
 import { jotaiStore } from '@/ui/utilities/state/jotai/jotaiStore';
 import { ContextStoreViewType } from '@/context-store/types/ContextStoreViewType';
 import { SidePanelPages } from 'twenty-shared/types';
-import { Icon123, useIcons } from 'twenty-ui/display';
+import { Icon123, useIcons } from 'twenty-ui/icon';
 import { getJestMetadataAndApolloMocksAndCommandMenuWrapper } from '~/testing/jest/getJestMetadataAndApolloMocksAndCommandMenuWrapper';
 import { getTestEnrichedObjectMetadataItemsMock } from '~/testing/utils/getTestEnrichedObjectMetadataItemsMock';
 
 jest.mock('uuid', () => ({
+  ...jest.requireActual('uuid'),
   v4: jest.fn().mockReturnValue('mocked-uuid'),
 }));
 

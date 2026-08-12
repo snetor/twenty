@@ -1,12 +1,10 @@
 import { useOpenRecordInSidePanel } from '@/side-panel/hooks/useOpenRecordInSidePanel';
-import { CoreObjectNameSingular } from 'twenty-shared/types';
 import { getLinkToShowPage } from '@/object-metadata/utils/getLinkToShowPage';
 import { useRecordChipData } from '@/object-record/hooks/useRecordChipData';
-import { recordIndexOpenRecordInState } from '@/object-record/record-index/states/recordIndexOpenRecordInState';
+import { useResolveOpenRecordIn } from '@/object-record/record-index/hooks/useResolveOpenRecordIn';
 import { type ObjectRecord } from '@/object-record/types/ObjectRecord';
-import { canOpenObjectInSidePanel } from '@/object-record/utils/canOpenObjectInSidePanel';
-import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
-import { ViewOpenRecordIn } from '~/generated-metadata/graphql';
+import { CoreObjectNameSingular, OpenRecordIn } from 'twenty-shared/types';
+import { getAbsoluteImageUrl } from '~/utils/image/getAbsoluteImageUrl';
 import { t } from '@lingui/core/macro';
 import { type MouseEvent } from 'react';
 import { isDefined } from 'twenty-shared/utils';
@@ -16,7 +14,7 @@ import {
   type ChipSize,
   ChipVariant,
   LinkChip,
-} from 'twenty-ui/components';
+} from 'twenty-ui/data-display';
 import { type TriggerEventType } from 'twenty-ui/utilities';
 
 export type RecordChipProps = {
@@ -57,18 +55,11 @@ export const RecordChip = ({
 
   const { openRecordInSidePanel } = useOpenRecordInSidePanel();
 
-  const recordIndexOpenRecordIn = useAtomStateValue(
-    recordIndexOpenRecordInState,
-  );
-  const canOpenInSidePanel = canOpenObjectInSidePanel(objectNameSingular);
-
-  const isSidePanelViewOpenRecordIn =
-    recordIndexOpenRecordIn === ViewOpenRecordIn.SIDE_PANEL &&
-    canOpenInSidePanel;
+  const openRecordIn = useResolveOpenRecordIn(objectNameSingular);
 
   const handleCustomClick = isDefined(onClick)
     ? onClick
-    : isSidePanelViewOpenRecordIn
+    : openRecordIn === OpenRecordIn.SIDE_PANEL
       ? (_event: MouseEvent<HTMLElement>) => {
           openRecordInSidePanel({
             recordId: record.id,
@@ -98,7 +89,7 @@ export const RecordChip = ({
               placeholder={recordChipData.name}
               placeholderColorSeed={record.id}
               avatarType={recordChipData.avatarType}
-              avatarUrl={recordChipData.avatarUrl ?? ''}
+              avatarUrl={getAbsoluteImageUrl(recordChipData.avatarUrl ?? '')}
             />
           )
         }
@@ -120,7 +111,7 @@ export const RecordChip = ({
             placeholder={recordChipData.name}
             placeholderColorSeed={record.id}
             avatarType={recordChipData.avatarType}
-            avatarUrl={recordChipData.avatarUrl ?? ''}
+            avatarUrl={getAbsoluteImageUrl(recordChipData.avatarUrl ?? '')}
           />
         )
       }

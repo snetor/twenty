@@ -67,10 +67,25 @@ export class StripeInvoiceService {
       subscription: stripeSubscriptionId,
     });
 
-    await this.stripe.invoices.finalizeInvoice(invoice.id, {
-      auto_advance: false,
-    });
+    const finalizedInvoice = await this.stripe.invoices.finalizeInvoice(
+      invoice.id,
+      {
+        auto_advance: true,
+      },
+    );
 
-    await this.stripe.invoices.pay(invoice.id);
+    if (finalizedInvoice.status === 'paid') {
+      return;
+    }
+
+    try {
+      await this.stripe.invoices.pay(invoice.id);
+    } catch (error) {
+      const refreshedInvoice = await this.stripe.invoices.retrieve(invoice.id);
+
+      if (refreshedInvoice.status !== 'paid') {
+        throw error;
+      }
+    }
   }
 }

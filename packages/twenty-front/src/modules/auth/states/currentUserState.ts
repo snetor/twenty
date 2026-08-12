@@ -9,6 +9,7 @@ export type CurrentUser = Pick<
   | 'canAccessFullAdminPanel'
   | 'canImpersonate'
   | 'onboardingStatus'
+  | 'isWorkspaceCreator'
   | 'userVars'
   | 'firstName'
   | 'lastName'
@@ -18,4 +19,6 @@ export type CurrentUser = Pick<
 export const currentUserState = createAtomState<CurrentUser | null>({
   key: 'currentUserState',
   defaultValue: null,
+  useLocalStorage: true,
+  localStorageOptions: { getOnInit: true },
 });

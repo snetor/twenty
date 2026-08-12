@@ -4,6 +4,7 @@ import { useMemo } from 'react';
 import {
   IconApi,
   IconAt,
+  IconCalendarEvent,
   IconCode,
   IconDownload,
   IconFileExport,
@@ -13,7 +14,7 @@ import {
   IconSparkles,
   IconTable,
   IconUser,
-} from 'twenty-ui/display';
+} from 'twenty-ui/icon';
 import { PermissionFlagType } from '~/generated-metadata/graphql';
 
 type UseActionRolePermissionFlagConfigParams = {
@@ -72,6 +73,16 @@ export const useActionRolePermissionFlagConfig = ({
         name: t`Send Email`,
         description: t`Send emails via connected accounts`,
         Icon: IconMail,
+        isToolPermission: true,
+        isRelevantForAgents: true,
+        isRelevantForApiKeys: true,
+        isRelevantForUsers: true,
+      },
+      {
+        key: PermissionFlagType.CREATE_CALENDAR_EVENT_TOOL,
+        name: t`Create Calendar Event`,
+        description: t`Create calendar events via connected accounts`,
+        Icon: IconCalendarEvent,
         isToolPermission: true,
         isRelevantForAgents: true,
         isRelevantForApiKeys: true,

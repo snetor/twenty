@@ -4,10 +4,9 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { buffer as streamToBuffer } from 'node:stream/consumers';
 
 import { isNonEmptyString } from '@sniptt/guards';
-import { FileTypeParser } from 'file-type';
-import { detectPdf } from '@file-type/pdf';
 import { FileFolder } from 'twenty-shared/types';
 import { isDefined } from 'twenty-shared/utils';
+import { WorkspaceActivationStatus } from 'twenty-shared/workspace';
 import { Like, type QueryRunner, Repository } from 'typeorm';
 import { v4 } from 'uuid';
 
@@ -15,17 +14,22 @@ import {
   ApplicationException,
   ApplicationExceptionCode,
 } from 'src/engine/core-modules/application/application.exception';
-import { FileStorageService } from 'src/engine/core-modules/file-storage/file-storage.service';
+import {
+  AuthException,
+  AuthExceptionCode,
+} from 'src/engine/core-modules/auth/auth.exception';
+import { FileStorageService } from 'src/engine/core-modules/file-storage/services/file-storage.service';
 import { FileWithSignedUrlDTO } from 'src/engine/core-modules/file/dtos/file-with-sign-url.dto';
 import { FileEntity } from 'src/engine/core-modules/file/entities/file.entity';
 import { FileUrlService } from 'src/engine/core-modules/file/file-url/file-url.service';
 import { extractFileInfoOrThrow } from 'src/engine/core-modules/file/utils/extract-file-info-or-throw.utils';
 import { removeFileFolderFromFileEntityPath } from 'src/engine/core-modules/file/utils/remove-file-folder-from-file-entity-path.utils';
 import { SecureHttpClientService } from 'src/engine/core-modules/secure-http-client/secure-http-client.service';
+import { UserWorkspaceEntity } from 'src/engine/core-modules/user-workspace/user-workspace.entity';
 import { WorkspaceEntity } from 'src/engine/core-modules/workspace/workspace.entity';
 import { InjectWorkspaceScopedRepository } from 'src/engine/twenty-orm/workspace-scoped-repository/inject-workspace-scoped-repository.decorator';
 import { WorkspaceScopedRepository } from 'src/engine/twenty-orm/workspace-scoped-repository/workspace-scoped-repository';
-import { getImageBufferFromUrl } from 'src/utils/image';
+import { fetchImageWithTypeFromUrl } from 'src/utils/image';
 
 @Injectable()
 export class FileCorePictureService {
@@ -35,6 +39,8 @@ export class FileCorePictureService {
     private readonly fileStorageService: FileStorageService,
     @InjectRepository(WorkspaceEntity)
     private readonly workspaceRepository: Repository<WorkspaceEntity>,
+    @InjectRepository(UserWorkspaceEntity)
+    private readonly userWorkspaceRepository: Repository<UserWorkspaceEntity>,
     @InjectWorkspaceScopedRepository(FileEntity)
     private readonly fileRepository: WorkspaceScopedRepository<FileEntity>,
     private readonly fileUrlService: FileUrlService,
@@ -137,6 +143,35 @@ export class FileCorePictureService {
     };
   }
 
+  async getPendingWorkspaceForLogoUploadOrThrow({
+    userId,
+    workspaceId,
+  }: {
+    userId: string;
+    workspaceId: string;
+  }): Promise<WorkspaceEntity> {
+    const workspace = await this.workspaceRepository.findOne({
+      where: { id: workspaceId },
+    });
+
+    const userWorkspace = await this.userWorkspaceRepository.findOne({
+      where: { userId, workspaceId },
+    });
+
+    if (
+      !isDefined(workspace) ||
+      !isDefined(userWorkspace) ||
+      workspace.activationStatus !== WorkspaceActivationStatus.PENDING_CREATION
+    ) {
+      throw new AuthException(
+        'Cannot set a logo for this workspace',
+        AuthExceptionCode.FORBIDDEN_EXCEPTION,
+      );
+    }
+
+    return workspace;
+  }
+
   async uploadWorkspaceMemberProfilePicture({
     file,
     filename,
@@ -204,16 +239,7 @@ export class FileCorePictureService {
         shouldResetTimeout: true,
       });
 
-      const buffer = await getImageBufferFromUrl(imageUrl, httpClient);
-
-      const parser = new FileTypeParser({ customDetectors: [detectPdf] });
-      const type = await parser.fromBuffer(buffer);
-
-      if (!isDefined(type) || !type.mime.startsWith('image/')) {
-        return undefined;
-      }
-
-      return { buffer, extension: type.ext };
+      return await fetchImageWithTypeFromUrl(imageUrl, httpClient);
     } catch (error) {
       this.logger.warn(
         `Failed to fetch image from URL: ${imageUrl} — ${error instanceof Error ? error.message : String(error)}`,

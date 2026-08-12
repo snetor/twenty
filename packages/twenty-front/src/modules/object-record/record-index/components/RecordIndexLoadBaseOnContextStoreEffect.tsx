@@ -3,34 +3,40 @@ import { contextStoreCurrentViewIdComponentState } from '@/context-store/states/
 import { useLoadRecordIndexStates } from '@/object-record/record-index/hooks/useLoadRecordIndexStates';
 import { useAtomComponentStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomComponentStateValue';
 import { useAtomFamilySelectorValue } from '@/ui/utilities/state/jotai/hooks/useAtomFamilySelectorValue';
-import { useCreateDefaultViewForObject } from '@/views/hooks/useCreateDefaultViewForObject';
 import { viewFromViewIdFamilySelector } from '@/views/states/selectors/viewFromViewIdFamilySelector';
+import { useIsFeatureEnabled } from '@/workspace/hooks/useIsFeatureEnabled';
 import { useEffect, useState } from 'react';
 import { isDefined } from 'twenty-shared/utils';
+import { FeatureFlagKey } from '~/generated-metadata/graphql';
 
 export const RecordIndexLoadBaseOnContextStoreEffect = () => {
   const { loadRecordIndexStates } = useLoadRecordIndexStates();
   const contextStoreCurrentViewId = useAtomComponentStateValue(
     contextStoreCurrentViewIdComponentState,
   );
-
-  const [loadedViewId, setLoadedViewId] = useState<string | undefined>(
-    undefined,
+  const isCalendarWeekViewEnabled = useIsFeatureEnabled(
+    FeatureFlagKey.IS_CALENDAR_WEEK_VIEW_ENABLED,
   );
+
+  const [loadedViewKey, setLoadedViewKey] = useState<string | undefined>();
 
   const view = useAtomFamilySelectorValue(viewFromViewIdFamilySelector, {
     viewId: contextStoreCurrentViewId ?? '',
   });
 
+  const viewGroupsSignature = (view?.viewGroups ?? [])
+    .map((viewGroup) => viewGroup.id)
+    .sort()
+    .join(',');
+
+  const currentViewLoadKey = isDefined(contextStoreCurrentViewId)
+    ? `${contextStoreCurrentViewId}-${isCalendarWeekViewEnabled}-${viewGroupsSignature}`
+    : undefined;
+
   const { objectMetadataItem } = useContextStoreObjectMetadataItemOrThrow();
 
-  const { createDefaultViewForObject } = useCreateDefaultViewForObject();
-
   useEffect(() => {
-    if (
-      isDefined(contextStoreCurrentViewId) &&
-      loadedViewId === contextStoreCurrentViewId
-    ) {
+    if (isDefined(currentViewLoadKey) && loadedViewKey === currentViewLoadKey) {
       return;
     }
 
@@ -40,17 +46,14 @@ export const RecordIndexLoadBaseOnContextStoreEffect = () => {
 
     if (isDefined(view)) {
       loadRecordIndexStates(view, objectMetadataItem);
-      setLoadedViewId(contextStoreCurrentViewId);
-    } else {
-      createDefaultViewForObject(objectMetadataItem);
+      setLoadedViewKey(currentViewLoadKey);
     }
   }, [
-    contextStoreCurrentViewId,
+    currentViewLoadKey,
     loadRecordIndexStates,
-    loadedViewId,
+    loadedViewKey,
     objectMetadataItem,
     view,
-    createDefaultViewForObject,
   ]);
 
   return <></>;
