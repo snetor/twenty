@@ -11,6 +11,9 @@ import {
   ConfigVariableExceptionCode,
 } from 'src/engine/core-modules/twenty-config/twenty-config.exception';
 import { TwentyConfigService } from 'src/engine/core-modules/twenty-config/twenty-config.service';
+import { UserWorkspaceEntity } from 'src/engine/core-modules/user-workspace/user-workspace.entity';
+import { UserEntity } from 'src/engine/core-modules/user/user.entity';
+import { WorkspaceEntity } from 'src/engine/core-modules/workspace/workspace.entity';
 
 const mockCryptoVerify = jest.fn();
 
@@ -61,6 +64,16 @@ describe('EnterprisePlanService', () => {
   const appTokenFindOneMock = jest.fn();
   const transactionMock = jest.fn();
   const fetchMock = jest.fn();
+  const workspaceCountMock = jest.fn();
+  const userCountMock = jest.fn();
+  const userWorkspaceCountMock = jest.fn();
+  const userWorkspaceGetRawOneMock = jest.fn();
+  const userWorkspaceQueryBuilderMock = {
+    select: jest.fn().mockReturnThis(),
+    where: jest.fn().mockReturnThis(),
+    getRawOne: userWorkspaceGetRawOneMock,
+  };
+  const userFindOneMock = jest.fn();
 
   let originalFetch: typeof global.fetch;
 
@@ -109,6 +122,13 @@ describe('EnterprisePlanService', () => {
     });
 
     appTokenFindOneMock.mockResolvedValue(null);
+    workspaceCountMock.mockResolvedValue(0);
+    userCountMock.mockResolvedValue(0);
+    userWorkspaceCountMock.mockResolvedValue(0);
+    userWorkspaceQueryBuilderMock.select.mockReturnThis();
+    userWorkspaceQueryBuilderMock.where.mockReturnThis();
+    userWorkspaceGetRawOneMock.mockResolvedValue({ distinctUserCount: '0' });
+    userFindOneMock.mockResolvedValue(null);
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -129,6 +149,23 @@ describe('EnterprisePlanService', () => {
               transaction: transactionMock,
             },
           },
+        },
+        {
+          provide: getRepositoryToken(UserWorkspaceEntity),
+          useValue: {
+            count: userWorkspaceCountMock,
+            createQueryBuilder: jest
+              .fn()
+              .mockReturnValue(userWorkspaceQueryBuilderMock),
+          },
+        },
+        {
+          provide: getRepositoryToken(UserEntity),
+          useValue: { count: userCountMock, findOne: userFindOneMock },
+        },
+        {
+          provide: getRepositoryToken(WorkspaceEntity),
+          useValue: { count: workspaceCountMock },
         },
       ],
     }).compile();
@@ -483,11 +520,74 @@ describe('EnterprisePlanService', () => {
       const result = await service.refreshValidityToken();
 
       expect(result).toBe(true);
-      expect(fetchMock).toHaveBeenCalledWith(`${MOCK_API_URL}/validate`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ enterpriseKey: fakeKey }),
+
+      const [validateUrl, validateOptions] = fetchMock.mock.calls[0] as [
+        string,
+        { method: string; headers: Record<string, string>; body: string },
+      ];
+
+      expect(validateUrl).toBe(`${MOCK_API_URL}/validate`);
+      expect(validateOptions.method).toBe('POST');
+
+      const validateBody = JSON.parse(validateOptions.body);
+
+      expect(validateBody.enterpriseKey).toBe(fakeKey);
+      expect(validateBody.instanceMetadata).toBeDefined();
+    });
+
+    it('should include instance metadata in the validate payload', async () => {
+      const fakeKey = createFakeJwt(MOCK_KEY_PAYLOAD);
+
+      configGetMock.mockImplementation((key: string) => {
+        if (key === 'ENTERPRISE_KEY') return fakeKey;
+        if (key === 'ENTERPRISE_API_URL') return MOCK_API_URL;
+        if (key === 'SERVER_ID') return 'server-abc';
+        if (key === 'SERVER_URL') return 'https://crm.example.com';
+        if (key === 'APP_VERSION') return '1.2.3';
+        if (key === 'NODE_ENV') return NodeEnvironment.PRODUCTION;
+        if (key === 'TELEMETRY_ENABLED') return true;
+
+        return undefined;
       });
+      mockCryptoVerify.mockReturnValue(true);
+      workspaceCountMock.mockResolvedValue(2);
+      userWorkspaceCountMock.mockResolvedValue(7);
+      userCountMock.mockResolvedValue(5);
+      userFindOneMock.mockResolvedValue({ email: 'admin@example.com' });
+
+      fetchMock.mockResolvedValue({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            validityToken: createFakeJwt(MOCK_VALIDITY_PAYLOAD),
+          }),
+      });
+      transactionMock.mockImplementation(
+        async (callback: (manager: Record<string, jest.Mock>) => void) => {
+          await callback({ update: jest.fn(), save: jest.fn() });
+        },
+      );
+      appTokenFindOneMock.mockResolvedValue({
+        value: createFakeJwt(MOCK_VALIDITY_PAYLOAD),
+      });
+
+      await service.refreshValidityToken();
+
+      const [, options] = fetchMock.mock.calls[0] as [string, { body: string }];
+      const body = JSON.parse(options.body);
+
+      expect(body.instanceMetadata).toMatchObject({
+        serverId: 'server-abc',
+        serverUrl: 'https://crm.example.com',
+        appVersion: '1.2.3',
+        nodeEnv: NodeEnvironment.PRODUCTION,
+        telemetryEnabled: true,
+        workspaceCount: 2,
+        activeUserWorkspaceCount: 7,
+        distinctUserCount: 5,
+        adminContactEmail: 'admin@example.com',
+      });
+      expect(typeof body.instanceMetadata.sentAt).toBe('string');
     });
 
     it('should return false when API returns non-OK response', async () => {
@@ -534,6 +634,39 @@ describe('EnterprisePlanService', () => {
       const result = await service.refreshValidityToken();
 
       expect(result).toBe(false);
+    });
+  });
+
+  describe('getBillableSeatCount', () => {
+    it('should count distinct users so a user in several workspaces is one seat', async () => {
+      userWorkspaceGetRawOneMock.mockResolvedValue({ distinctUserCount: '5' });
+
+      const result = await service.getBillableSeatCount();
+
+      expect(result).toBe(5);
+      expect(userWorkspaceQueryBuilderMock.select).toHaveBeenCalledWith(
+        'COUNT(DISTINCT "userWorkspace"."userId")',
+        'distinctUserCount',
+      );
+      expect(userWorkspaceQueryBuilderMock.where).toHaveBeenCalledWith(
+        '"userWorkspace"."deletedAt" IS NULL',
+      );
+    });
+
+    it('should return at least 1 when there are no active user workspaces', async () => {
+      userWorkspaceGetRawOneMock.mockResolvedValue({ distinctUserCount: '0' });
+
+      const result = await service.getBillableSeatCount();
+
+      expect(result).toBe(1);
+    });
+
+    it('should return at least 1 when the query returns no row', async () => {
+      userWorkspaceGetRawOneMock.mockResolvedValue(undefined);
+
+      const result = await service.getBillableSeatCount();
+
+      expect(result).toBe(1);
     });
   });
 

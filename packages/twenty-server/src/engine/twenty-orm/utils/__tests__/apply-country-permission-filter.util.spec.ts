@@ -42,8 +42,9 @@ const allowlistedObject = (nameSingular = 'workspaceMember') => ({
 });
 
 // Objet sans champ countryCode (paramétrable). Hors allowlist + hors self-owned
-// (ex. salesperson, mission) => default-deny ; pour task/note avec id => self-owned.
-const objectWithoutCountryCode = (nameSingular = 'salesperson') => ({
+// (ex. mission, attachment) => default-deny ; pour task/note/blocklist avec id =>
+// self-owned. NB : `salesperson` est passé dans l'allowlist (annuaire interne).
+const objectWithoutCountryCode = (nameSingular = 'mission') => ({
   objectMetadata: {
     nameSingular,
     fieldIds: ['name-field-id'],
@@ -130,7 +131,7 @@ describe('applyCountryPermissionFilter', () => {
     expect(qb.andWhere).not.toHaveBeenCalled();
   });
 
-  it('default-deny : objet sans countryCode hors allowlist (salesperson) => invisible', () => {
+  it('default-deny : objet sans countryCode hors allowlist (mission) => invisible', () => {
     const qb: any = makeQb();
     const { objectMetadata, internalContext } = objectWithoutCountryCode();
 
@@ -168,6 +169,108 @@ describe('applyCountryPermissionFilter', () => {
 
     expect(qb.andWhere).toHaveBeenCalledTimes(1);
     expect(qb.where).not.toHaveBeenCalled();
+  });
+
+  it("ne filtre pas l'annuaire commercial ni les dashboards", () => {
+    for (const name of ['salesperson', 'salespersonCountry', 'dashboard']) {
+      const qb: any = makeQb();
+      const { objectMetadata, internalContext } = allowlistedObject(name);
+
+      applyCountryPermissionFilter({
+        queryBuilder: qb,
+        objectMetadata,
+        internalContext,
+        authContext: {
+          type: 'user',
+          workspaceMember: { id: 'me-123', allowedCountries: 'ES' },
+        } as any,
+      });
+
+      expect(qb.where).not.toHaveBeenCalled();
+      expect(qb.andWhere).not.toHaveBeenCalled();
+    }
+  });
+
+  // Le contenu de la messagerie et de l'agenda reste refusé : décision métier du
+  // 2026-08-10, un commercial ne voit pas les mails ni l'agenda de ses collègues. Ces
+  // objets vivent bien dans le workspace et portent la donnée sensible.
+  it("default-deny maintenu sur le contenu de la messagerie et de l'agenda", () => {
+    for (const name of [
+      'message',
+      'messageThread',
+      'messageParticipant',
+      'messageChannelMessageAssociation',
+      'calendarEvent',
+      'calendarEventParticipant',
+      'calendarChannelEventAssociation',
+    ]) {
+      const qb: any = makeQb();
+      const { objectMetadata, internalContext } =
+        objectWithoutCountryCode(name);
+
+      applyCountryPermissionFilter({
+        queryBuilder: qb,
+        objectMetadata,
+        internalContext,
+        authContext: {
+          type: 'user',
+          workspaceMember: { id: 'me-123', allowedCountries: 'ES' },
+        } as any,
+      });
+
+      const brackets = qb.where.mock.calls[0][0];
+      const inner = { where: jest.fn(), andWhere: jest.fn() };
+
+      brackets.whereFactory(inner);
+      expect(inner.where).toHaveBeenCalledWith('1 = 0');
+    }
+  });
+
+  // Coquilles : leurs données ont migré dans le schéma `core` avec `connectedAccount`.
+  // Le refus est conservé — un objet non classé doit rester invisible — mais il ne protège
+  // rien : mesuré le 2026-08-11, ces trois objets renvoient 0 ligne alors que 3 canaux
+  // réels importent. Ce test existe pour que la raison ne se reperde pas.
+  it('default-deny conservé sur les objets vidés au profit du schéma core', () => {
+    for (const name of ['messageChannel', 'calendarChannel', 'messageFolder']) {
+      const qb: any = makeQb();
+      const { objectMetadata, internalContext } =
+        objectWithoutCountryCode(name);
+
+      applyCountryPermissionFilter({
+        queryBuilder: qb,
+        objectMetadata,
+        internalContext,
+        authContext: {
+          type: 'user',
+          workspaceMember: { id: 'me-123', allowedCountries: 'ES' },
+        } as any,
+      });
+
+      const brackets = qb.where.mock.calls[0][0];
+      const inner = { where: jest.fn(), andWhere: jest.fn() };
+
+      brackets.whereFactory(inner);
+      expect(inner.where).toHaveBeenCalledWith('1 = 0');
+    }
+  });
+
+  it('self-owned : blocklist filtrée sur le membre courant', () => {
+    const qb: any = makeQb();
+    const { objectMetadata, internalContext } =
+      objectWithoutCountryCode('blocklist');
+
+    applyCountryPermissionFilter({
+      queryBuilder: qb,
+      objectMetadata,
+      internalContext,
+      authContext: {
+        type: 'user',
+        workspaceMember: { id: 'me-123', allowedCountries: 'ES' },
+      } as any,
+    });
+
+    expect(qb.where).toHaveBeenCalledTimes(1);
+    expect(qb.andWhere).not.toHaveBeenCalled();
   });
 
   it('self-owned : task avec workspaceMember.id => filtre par appartenance pose (pas un deny)', () => {

@@ -120,11 +120,13 @@ export class MicrosoftAPIsService {
             handle,
             userWorkspaceId: userWorkspaceId,
             workspaceId,
+            provider: ConnectedAccountProvider.MICROSOFT,
           },
         });
 
         const existingAccountId = connectedAccount?.id;
         const newOrExistingConnectedAccountId = existingAccountId ?? v4();
+        const wasArchived = isDefined(connectedAccount?.archivedAt);
 
         const existingMessageChannels =
           await this.messageChannelRepository.find({
@@ -216,6 +218,30 @@ export class MicrosoftAPIsService {
                 transactionManager,
               });
             }
+
+            if (wasArchived && existingMessageChannels.length > 0) {
+              await transactionManager
+                .getRepository(MessageChannelEntity)
+                .update(
+                  {
+                    connectedAccountId: newOrExistingConnectedAccountId,
+                    workspaceId,
+                  },
+                  { isSyncEnabled: true },
+                );
+            }
+
+            if (wasArchived && existingCalendarChannels.length > 0) {
+              await transactionManager
+                .getRepository(CalendarChannelEntity)
+                .update(
+                  {
+                    connectedAccountId: newOrExistingConnectedAccountId,
+                    workspaceId,
+                  },
+                  { isSyncEnabled: true },
+                );
+            }
           },
         );
 
@@ -295,19 +321,20 @@ export class MicrosoftAPIsService {
             },
           });
 
-          for (const calendarChannel of calendarChannels) {
-            if (
+          const syncableCalendarChannels = calendarChannels.filter(
+            (calendarChannel) =>
               calendarChannel.syncStage !==
-              CalendarChannelSyncStage.PENDING_CONFIGURATION
-            ) {
-              await this.calendarQueueService.add<CalendarEventListFetchJobData>(
-                CalendarEventListFetchJob.name,
-                {
-                  calendarChannelId: calendarChannel.id,
-                  workspaceId,
-                },
-              );
-            }
+              CalendarChannelSyncStage.PENDING_CONFIGURATION,
+          );
+
+          for (const calendarChannel of syncableCalendarChannels) {
+            await this.calendarQueueService.add<CalendarEventListFetchJobData>(
+              CalendarEventListFetchJob.name,
+              {
+                calendarChannelId: calendarChannel.id,
+                workspaceId,
+              },
+            );
           }
         }
 

@@ -3,6 +3,7 @@ import { SettingsCard } from '@/settings/components/SettingsCard';
 import { SettingsPageContainer } from '@/settings/components/SettingsPageContainer';
 import { SetOrChangePassword } from '@/settings/profile/components/SetOrChangePassword';
 import { DeleteAccount } from '@/settings/profile/components/DeleteAccount';
+import { SettingsProfileDevicesSection } from '@/settings/profile/devices/components/SettingsProfileDevicesSection';
 import { EmailField } from '@/settings/profile/components/EmailField';
 import { NameFields } from '@/settings/profile/components/NameFields';
 import { WorkspaceMemberPictureUploader } from '@/settings/workspace-member/components/WorkspaceMemberPictureUploader';
@@ -14,7 +15,9 @@ import { Trans, useLingui } from '@lingui/react/macro';
 import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
 import { SettingsPath } from 'twenty-shared/types';
 import { getSettingsPath } from 'twenty-shared/utils';
-import { H2Title, IconShield, Status } from 'twenty-ui/display';
+import { Status } from 'twenty-ui/data-display';
+import { IconShield } from 'twenty-ui/icon';
+import { H2Title } from 'twenty-ui/typography';
 import { Section } from 'twenty-ui/layout';
 import { UndecoratedLink } from 'twenty-ui/navigation';
 import { PermissionFlagType } from '~/generated-metadata/graphql';
@@ -64,7 +67,7 @@ export const SettingsProfile = () => {
             title={t`Name`}
             description={t`Your name as it will be displayed`}
           />
-          <NameFields />
+          <NameFields key={currentWorkspaceMember.id} />
         </Section>
         <Section>
           <H2Title
@@ -102,11 +105,10 @@ export const SettingsProfile = () => {
             <SetOrChangePassword />
           </Section>
         )}
-        {canDeleteAccount && (
-          <Section>
-            <DeleteAccount />
-          </Section>
-        )}
+        <SettingsProfileDevicesSection />
+        <Section>
+          <DeleteAccount />
+        </Section>
       </SettingsPageContainer>
     </SettingsPageLayout>
   );

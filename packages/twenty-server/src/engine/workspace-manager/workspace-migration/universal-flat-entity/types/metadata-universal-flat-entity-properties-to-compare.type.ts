@@ -36,10 +36,12 @@ type Assertions = [
       | 'description'
       | 'isActive'
       | 'defaultValue'
-      | 'standardOverrides'
+      | 'overrides'
       | 'options'
       | 'isUnique'
       | 'isLabelSyncedWithName'
+      | 'isUIEditable'
+      | 'isNullable'
       | 'universalSettings'
     >
   >,
@@ -52,18 +54,21 @@ type Assertions = [
       | 'deletedAt'
       | 'type'
       | 'position'
-      | 'key'
       | 'isCompact'
       | 'openRecordIn'
       | 'kanbanAggregateOperation'
       | 'kanbanAggregateOperationFieldMetadataUniversalIdentifier'
       | 'calendarLayout'
       | 'calendarFieldMetadataUniversalIdentifier'
+      | 'calendarEndFieldMetadataUniversalIdentifier'
       | 'mainGroupByFieldMetadataUniversalIdentifier'
       | 'shouldHideEmptyGroups'
+      | 'kanbanColumnWidth'
       | 'anyFieldFilterValue'
       | 'visibility'
       | 'createdByUserWorkspaceId'
+      | 'isActive'
+      | 'universalOverrides'
     >
   >,
 ];

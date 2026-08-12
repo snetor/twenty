@@ -1,3 +1,4 @@
+import { useNumberFormat } from '@/localization/hooks/useNumberFormat';
 import { type WorkspaceInfo } from '@/settings/admin-panel/types/WorkspaceInfo';
 import { getUpgradeHealthStatusBadge } from '@/settings/admin-panel/utils/getUpgradeHealthStatusBadge';
 import { getWorkspaceSchemaName } from '@/settings/admin-panel/utils/getWorkspaceSchemaName';
@@ -12,27 +13,25 @@ import { useContext } from 'react';
 import { SettingsPath } from 'twenty-shared/types';
 import {
   formatUpgradeCommandName,
-  getImageAbsoluteURI,
   getSettingsPath,
   isDefined,
 } from 'twenty-shared/utils';
 import { type GetUpgradeStatusQuery } from '~/generated-admin/graphql';
-import { AvatarOrIcon, LinkChip } from 'twenty-ui/components';
+import { AvatarOrIcon, LinkChip, Status } from 'twenty-ui/data-display';
 import {
-  H2Title,
   IconCalendar,
   IconHome,
   IconId,
   IconLink,
   IconStatusChange,
   IconUser,
-  OverflowingTextWithTooltip,
-  Status,
-} from 'twenty-ui/display';
+} from 'twenty-ui/icon';
+import { OverflowingTextWithTooltip } from 'twenty-ui/surfaces';
+import { H2Title } from 'twenty-ui/typography';
 import { Section } from 'twenty-ui/layout';
 import { themeCssVariables } from 'twenty-ui/theme-constants';
-import { REACT_APP_SERVER_BASE_URL } from '~/config';
 import { dateLocaleState } from '~/localization/states/dateLocaleState';
+import { getAbsoluteImageUrl } from '~/utils/image/getAbsoluteImageUrl';
 import { formatDateTimeString } from '~/utils/string/formatDateTimeString';
 
 type SettingsAdminWorkspaceContentProps = {
@@ -52,6 +51,7 @@ export const SettingsAdminWorkspaceContent = ({
   workspaceUpgradeStatus,
 }: SettingsAdminWorkspaceContentProps) => {
   const { t } = useLingui();
+  const { formatNumber } = useNumberFormat();
   const { dateFormat, timeFormat, timeZone } = useContext(UserContext);
   const { localeCatalog } = useAtomStateValue(dateLocaleState);
 
@@ -84,14 +84,11 @@ export const SettingsAdminWorkspaceContent = ({
           })}
           leftComponent={
             <AvatarOrIcon
-              avatarUrl={
-                getImageAbsoluteURI({
-                  imageUrl: isNonEmptyString(activeWorkspace?.logo)
-                    ? activeWorkspace?.logo
-                    : DEFAULT_WORKSPACE_LOGO,
-                  baseUrl: REACT_APP_SERVER_BASE_URL,
-                }) ?? ''
-              }
+              avatarUrl={getAbsoluteImageUrl(
+                isNonEmptyString(activeWorkspace?.logo)
+                  ? activeWorkspace?.logo
+                  : DEFAULT_WORKSPACE_LOGO,
+              )}
             />
           }
         />
@@ -121,7 +118,9 @@ export const SettingsAdminWorkspaceContent = ({
     {
       Icon: IconUser,
       label: t`Members`,
-      value: activeWorkspace?.totalUsers,
+      value: isDefined(activeWorkspace?.totalUsers)
+        ? formatNumber(activeWorkspace.totalUsers)
+        : activeWorkspace?.totalUsers,
     },
     {
       Icon: IconStatusChange,

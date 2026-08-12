@@ -36,11 +36,13 @@ export const fromLogicFunctionManifestToUniversalFlatLogicFunction = ({
       logicFunctionManifest.databaseEventTriggerSettings ?? null,
     httpRouteTriggerSettings:
       logicFunctionManifest.httpRouteTriggerSettings ?? null,
+    serverRouteTriggerSettings:
+      logicFunctionManifest.serverRouteTriggerSettings ?? null,
     toolTriggerSettings: logicFunctionManifest.toolTriggerSettings ?? null,
     workflowActionTriggerSettings:
       logicFunctionManifest.workflowActionTriggerSettings ?? null,
     isBuildUpToDate: true,
-    executionMode: LogicFunctionExecutionMode.PREBUILT,
+    executionMode: LogicFunctionExecutionMode.LIVE,
     createdAt: now,
     updatedAt: now,
     deletedAt: null,

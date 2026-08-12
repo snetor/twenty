@@ -1,3 +1,5 @@
+import { dispatchBrowserEvent } from '@/browser-event/utils/dispatchBrowserEvent';
+import { SSE_CLIENT_RECONNECTED_EVENT_NAME } from '@/sse-db-event/constants/SseClientReconnectedEventName';
 import { ON_EVENT_SUBSCRIPTION } from '@/sse-db-event/graphql/subscriptions/OnEventSubscription';
 import { useDispatchMetadataEventsFromSseToBrowserEvents } from '@/sse-db-event/hooks/useDispatchMetadataEventsFromSseToBrowserEvents';
 import { useDispatchObjectRecordEventsFromSseToBrowserEvents } from '@/sse-db-event/hooks/useDispatchObjectRecordEventsFromSseToBrowserEvents';
@@ -67,7 +69,24 @@ export const useTriggerEventStreamCreation = () => {
     store.set(sseEventStreamIdState.atom, newSseEventStreamId);
     store.set(sseEventStreamReadyState.atom, false);
 
+    const isRecreatedEventStream = isDefined(
+      store.get(lastSseEventReceivedTimestampState.atom),
+    );
+
     let hasReceivedFirstEvent = false;
+
+    const handleFirstEventReceived = () => {
+      if (hasReceivedFirstEvent) {
+        return;
+      }
+
+      hasReceivedFirstEvent = true;
+      store.set(sseEventStreamReadyState.atom, true);
+
+      if (isRecreatedEventStream) {
+        dispatchBrowserEvent(SSE_CLIENT_RECONNECTED_EVENT_NAME);
+      }
+    };
 
     const dispose = sseClient.subscribe(
       {
@@ -107,10 +126,7 @@ export const useTriggerEventStreamCreation = () => {
             return;
           }
 
-          if (!hasReceivedFirstEvent) {
-            hasReceivedFirstEvent = true;
-            store.set(sseEventStreamReadyState.atom, true);
-          }
+          handleFirstEventReceived();
 
           const eventSubscription = value?.data?.onEventSubscription;
 
@@ -123,6 +139,8 @@ export const useTriggerEventStreamCreation = () => {
             (item) => item.objectRecordEvent,
           );
 
+          dispatchMetadataEventsFromSseToBrowserEvents(metadataEvents);
+
           triggerOptimisticEffectFromSseEvents({
             objectRecordEvents,
           });
@@ -130,8 +148,6 @@ export const useTriggerEventStreamCreation = () => {
           dispatchObjectRecordEventsFromSseToBrowserEvents(
             objectRecordEventsWithQueryIds,
           );
-
-          dispatchMetadataEventsFromSseToBrowserEvents(metadataEvents);
         },
         error: (error) => {
           captureException(error);
@@ -169,10 +185,7 @@ export const useTriggerEventStreamCreation = () => {
 
                 store.set(shouldDestroyEventStreamState.atom, true);
               } else {
-                if (!hasReceivedFirstEvent) {
-                  hasReceivedFirstEvent = true;
-                  store.set(sseEventStreamReadyState.atom, true);
-                }
+                handleFirstEventReceived();
 
                 const objectRecordEventsWithQueryIds =
                   result?.data?.onEventSubscription
@@ -184,6 +197,11 @@ export const useTriggerEventStreamCreation = () => {
                   },
                 );
 
+                const metadataEvents =
+                  result?.data?.onEventSubscription?.metadataEvents ?? [];
+
+                dispatchMetadataEventsFromSseToBrowserEvents(metadataEvents);
+
                 triggerOptimisticEffectFromSseEvents({
                   objectRecordEvents,
                 });
@@ -191,11 +209,6 @@ export const useTriggerEventStreamCreation = () => {
                 dispatchObjectRecordEventsFromSseToBrowserEvents(
                   objectRecordEventsWithQueryIds,
                 );
-
-                const metadataEvents =
-                  result?.data?.onEventSubscription?.metadataEvents ?? [];
-
-                dispatchMetadataEventsFromSseToBrowserEvents(metadataEvents);
               }
             }
           } catch (error) {

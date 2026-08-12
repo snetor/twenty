@@ -19,6 +19,7 @@ import { AggregateOperations } from 'twenty-shared/types';
 
 import { AxisNameDisplay } from 'src/engine/metadata-modules/page-layout-widget/enums/axis-name-display.enum';
 import { BarChartLayout } from 'src/engine/metadata-modules/page-layout-widget/enums/bar-chart-layout.enum';
+import { ChartNumberFormat } from 'src/engine/metadata-modules/page-layout-widget/enums/chart-number-format.enum';
 import { GraphOrderBy } from 'src/engine/metadata-modules/page-layout-widget/enums/graph-order-by.enum';
 import { WidgetConfigurationType } from 'src/engine/metadata-modules/page-layout-widget/enums/widget-configuration-type.type';
 import { WidgetType } from 'src/engine/metadata-modules/page-layout-widget/enums/widget-type.enum';
@@ -125,7 +126,7 @@ describe('Page layout widget creation should succeed', () => {
           aggregateOperation: AggregateOperations.COUNT,
           label: 'Total Records',
           description: 'Count of all records',
-          format: '0,0',
+          numberFormat: ChartNumberFormat.SHORT,
           displayDataLabel: true,
         }),
       },
@@ -156,6 +157,7 @@ describe('Page layout widget creation should succeed', () => {
           primaryAxisGroupByFieldMetadataId: testSetup.fieldMetadataId2,
           primaryAxisOrderBy: GraphOrderBy.FIELD_ASC,
           displayDataLabel: true,
+          numberFormat: ChartNumberFormat.SHORT,
           axisNameDisplay: AxisNameDisplay.NONE,
           color: 'red',
           description: 'Monthly revenue breakdown',
@@ -195,6 +197,7 @@ describe('Page layout widget creation should succeed', () => {
           primaryAxisGroupByFieldMetadataId: testSetup.fieldMetadataId2,
           primaryAxisOrderBy: GraphOrderBy.FIELD_ASC,
           displayDataLabel: true,
+          numberFormat: ChartNumberFormat.SHORT,
           axisNameDisplay: AxisNameDisplay.NONE,
           color: 'blue',
           description: 'Horizontal revenue breakdown',
@@ -233,6 +236,7 @@ describe('Page layout widget creation should succeed', () => {
           orderBy: GraphOrderBy.VALUE_DESC,
           displayDataLabel: true,
           displayLegend: true,
+          numberFormat: ChartNumberFormat.SHORT,
           showCenterMetric: true,
           color: 'yellow',
           description: 'Distribution by category',
@@ -268,6 +272,7 @@ describe('Page layout widget creation should succeed', () => {
             testSetup.fieldMetadataId3SubFieldName,
           secondaryAxisOrderBy: GraphOrderBy.FIELD_DESC,
           displayDataLabel: true,
+          numberFormat: ChartNumberFormat.SHORT,
           axisNameDisplay: AxisNameDisplay.NONE,
           color: 'cyan',
           description: 'Trend over time',

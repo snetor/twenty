@@ -3,13 +3,14 @@ import { Test, type TestingModule } from '@nestjs/testing';
 import { NodeEnvironment } from 'src/engine/core-modules/twenty-config/interfaces/node-environment.interface';
 import { SupportDriver } from 'src/engine/core-modules/twenty-config/interfaces/support.interface';
 
+import { MaintenanceModeService } from 'src/engine/core-modules/admin-panel/maintenance-mode.service';
 import { CaptchaDriverType } from 'src/engine/core-modules/captcha/interfaces';
 import { ClientConfigService } from 'src/engine/core-modules/client-config/services/client-config.service';
 import { DomainServerConfigService } from 'src/engine/core-modules/domain/domain-server-config/services/domain-server-config.service';
 import { PUBLIC_FEATURE_FLAGS } from 'src/engine/core-modules/feature-flag/constants/public-feature-flag.const';
 import { TwentyConfigService } from 'src/engine/core-modules/twenty-config/twenty-config.service';
 import { AiModelRegistryService } from 'src/engine/metadata-modules/ai/ai-models/services/ai-model-registry.service';
-import { MaintenanceModeService } from 'src/engine/core-modules/admin-panel/maintenance-mode.service';
+import { ENTERPRISE_INSTANCE_TYPE } from 'twenty-shared/constants';
 
 describe('ClientConfigService', () => {
   let service: ClientConfigService;
@@ -30,6 +31,7 @@ describe('ClientConfigService', () => {
           provide: DomainServerConfigService,
           useValue: {
             getFrontUrl: jest.fn(),
+            getPublicBaseHostnameOrUndefined: jest.fn(),
           },
         },
         {
@@ -74,6 +76,7 @@ describe('ClientConfigService', () => {
             BILLING_PLAN_REQUIRED_LINK: 'https://billing.example.com',
             BILLING_FREE_TRIAL_WITH_CREDIT_CARD_DURATION_IN_DAYS: 30,
             BILLING_FREE_TRIAL_WITHOUT_CREDIT_CARD_DURATION_IN_DAYS: 7,
+            BILLING_STRIPE_PUBLISHABLE_KEY: 'pk_test_123',
             AUTH_GOOGLE_ENABLED: true,
             AUTH_PASSWORD_ENABLED: true,
             AUTH_MICROSOFT_ENABLED: false,
@@ -90,6 +93,10 @@ describe('ClientConfigService', () => {
             CAPTCHA_DRIVER: CaptchaDriverType.GOOGLE_RECAPTCHA,
             CAPTCHA_SITE_KEY: 'site-key-123',
             MUTATION_MAXIMUM_AFFECTED_RECORDS: 1000,
+            ONBOARDING_IMPORT_CONTACTS_CREDITS_REWARD: 2_000_000,
+            ONBOARDING_INVITE_TEAM_CREDITS_REWARD_PER_USER: 3_000_000,
+            BILLING_FREE_WORKFLOW_CREDITS_FOR_TRIAL_PERIOD_WITH_CREDIT_CARD: 5_000_000,
+            ONBOARDING_INSTALL_APPS_CREDITS_REWARD_PER_APP: 1_000_000,
             IS_ATTACHMENT_PREVIEW_ENABLED: true,
             ANALYTICS_ENABLED: true,
             MESSAGING_PROVIDER_MICROSOFT_ENABLED: false,
@@ -99,10 +106,12 @@ describe('ClientConfigService', () => {
             IS_CONFIG_VARIABLES_IN_DB_ENABLED: false,
             IS_IMAP_SMTP_CALDAV_ENABLED: false,
             CALENDAR_BOOKING_PAGE_ID: 'team/twenty/talk-to-us',
+            ONBOARDING_BOOK_CALL_MIN_EMPLOYEE_COUNT: 50,
             CLOUDFLARE_API_KEY: undefined,
             CLOUDFLARE_ZONE_ID: undefined,
             ALLOW_REQUESTS_TO_TWENTY_ICONS: false,
             CLICKHOUSE_URL: undefined,
+            IS_ONBOARDING_AI_CHAT_ENABLED: false,
           };
 
           return mockValues[key];
@@ -121,6 +130,7 @@ describe('ClientConfigService', () => {
         billing: {
           isBillingEnabled: true,
           billingUrl: 'https://billing.example.com',
+          stripePublishableKey: 'pk_test_123',
           trialPeriods: [
             {
               duration: 30,
@@ -145,6 +155,7 @@ describe('ClientConfigService', () => {
         isEmailVerificationRequired: true,
         defaultSubdomain: 'app',
         frontDomain: 'app.twenty.com',
+        publicFunctionDomain: null,
         support: {
           supportDriver: 'FRONT',
           supportFrontChatId: 'chat-123',
@@ -161,6 +172,12 @@ describe('ClientConfigService', () => {
         api: {
           mutationMaximumAffectedRecords: 1000,
         },
+        onboarding: {
+          importContactsCreditsReward: 2,
+          inviteTeamCreditsRewardPerUser: 3,
+          upgradeCreditsReward: 5,
+          installAppsCreditsRewardPerApp: 1,
+        },
         isAttachmentPreviewEnabled: true,
         analyticsEnabled: true,
         canManageFeatureFlags: true,
@@ -171,12 +188,52 @@ describe('ClientConfigService', () => {
         isGoogleCalendarEnabled: true,
         isConfigVariablesInDbEnabled: false,
         isImapSmtpCaldavEnabled: false,
-        isEmailGroupEnabled: false,
+        isEmailingDomainInDemoMode: false,
         allowRequestsToTwentyIcons: false,
         calendarBookingPageId: 'team/twenty/talk-to-us',
+        isBookCallOnboardingStepEnabled: true,
+        isCompanyEnrichmentEnabled: false,
         isCloudflareIntegrationEnabled: false,
         isClickHouseConfigured: false,
+        isOnboardingAiChatEnabled: false,
+        enterpriseInstanceType: ENTERPRISE_INSTANCE_TYPE.PRODUCTION,
       });
+    });
+
+    it('should not return onboarding credits rewards when billing is disabled', async () => {
+      jest
+        .spyOn(twentyConfigService, 'get')
+        .mockImplementation((key: string) =>
+          key === 'IS_BILLING_ENABLED' ? false : undefined,
+        );
+
+      const result = await service.getClientConfig();
+
+      expect(result.onboarding).toBeNull();
+    });
+
+    it('should advertise cookie sessions when the flag is on', async () => {
+      jest
+        .spyOn(twentyConfigService, 'get')
+        .mockImplementation((key: string) =>
+          key === 'AUTH_COOKIE_SESSIONS_ENABLED' ? true : undefined,
+        );
+
+      const result = await service.getClientConfig();
+
+      expect(result.isCookieSessionEnabled).toBe(true);
+    });
+
+    it('should not advertise cookie sessions when the flag is off', async () => {
+      jest
+        .spyOn(twentyConfigService, 'get')
+        .mockImplementation((key: string) =>
+          key === 'AUTH_COOKIE_SESSIONS_ENABLED' ? false : undefined,
+        );
+
+      const result = await service.getClientConfig();
+
+      expect(result.isCookieSessionEnabled).toBe(false);
     });
 
     it('should handle production environment correctly', async () => {
@@ -185,6 +242,7 @@ describe('ClientConfigService', () => {
         .mockImplementation((key: string) => {
           if (key === 'NODE_ENV') return NodeEnvironment.PRODUCTION;
           if (key === 'IS_BILLING_ENABLED') return false;
+          if (key === 'IS_FEATURE_FLAG_MANAGEMENT_ENABLED') return false;
 
           return undefined;
         });
@@ -233,6 +291,22 @@ describe('ClientConfigService', () => {
         .mockImplementation((key: string) => {
           if (key === 'NODE_ENV') return NodeEnvironment.PRODUCTION;
           if (key === 'IS_BILLING_ENABLED') return true;
+
+          return undefined;
+        });
+
+      const result = await service.getClientConfig();
+
+      expect(result.canManageFeatureFlags).toBe(true);
+    });
+
+    it('should allow managing feature flags when IS_FEATURE_FLAG_MANAGEMENT_ENABLED is on', async () => {
+      jest
+        .spyOn(twentyConfigService, 'get')
+        .mockImplementation((key: string) => {
+          if (key === 'NODE_ENV') return NodeEnvironment.PRODUCTION;
+          if (key === 'IS_BILLING_ENABLED') return false;
+          if (key === 'IS_FEATURE_FLAG_MANAGEMENT_ENABLED') return true;
 
           return undefined;
         });

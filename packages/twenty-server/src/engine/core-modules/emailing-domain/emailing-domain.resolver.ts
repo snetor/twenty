@@ -1,14 +1,15 @@
-import { UseGuards, UsePipes } from '@nestjs/common';
+import { UseFilters, UseGuards, UsePipes } from '@nestjs/common';
 import { Args, Mutation, Query } from '@nestjs/graphql';
 
 import { PermissionFlagType } from 'twenty-shared/constants';
 import { FeatureFlagKey } from 'twenty-shared/types';
 
 import { MetadataResolver } from 'src/engine/api/graphql/graphql-config/decorators/metadata-resolver.decorator';
-import { EmailingDomainDriver } from 'src/engine/core-modules/emailing-domain/drivers/types/emailing-domain-driver.type';
+import { CreateEmailingDomainInput } from 'src/engine/core-modules/emailing-domain/dtos/create-emailing-domain.input';
 import { EmailingDomainDTO } from 'src/engine/core-modules/emailing-domain/dtos/emailing-domain.dto';
-import { SendEmailViaDomainOutputDTO } from 'src/engine/core-modules/emailing-domain/dtos/send-email-via-domain-output.dto';
-import { SendEmailViaDomainInput } from 'src/engine/core-modules/emailing-domain/dtos/send-email-via-domain.input';
+import { EmailGroupAccessGraphqlApiExceptionFilter } from 'src/engine/core-modules/emailing-domain/filters/email-group-access-graphql-api-exception.filter';
+import { EmailingDomainGraphqlApiExceptionFilter } from 'src/engine/core-modules/emailing-domain/filters/emailing-domain-graphql-api-exception.filter';
+import { EmailGroupAccessService } from 'src/engine/core-modules/emailing-domain/services/email-group-access.service';
 import { EmailingDomainService } from 'src/engine/core-modules/emailing-domain/services/emailing-domain.service';
 import { ResolverValidationPipe } from 'src/engine/core-modules/graphql/pipes/resolver-validation.pipe';
 import { WorkspaceEntity } from 'src/engine/core-modules/workspace/workspace.entity';
@@ -25,23 +26,30 @@ import { WorkspaceAuthGuard } from 'src/engine/guards/workspace-auth.guard';
   FeatureFlagGuard,
   SettingsPermissionGuard(PermissionFlagType.WORKSPACE),
 )
+@UseFilters(
+  EmailGroupAccessGraphqlApiExceptionFilter,
+  EmailingDomainGraphqlApiExceptionFilter,
+)
 @UsePipes(ResolverValidationPipe)
 @MetadataResolver(() => EmailingDomainDTO)
 export class EmailingDomainResolver {
-  constructor(private readonly emailingDomainService: EmailingDomainService) {}
+  constructor(
+    private readonly emailingDomainService: EmailingDomainService,
+    private readonly emailGroupAccessService: EmailGroupAccessService,
+  ) {}
 
   @Mutation(() => EmailingDomainDTO)
   @RequireFeatureFlag(FeatureFlagKey.IS_EMAIL_GROUP_ENABLED)
   async createEmailingDomain(
-    @Args('domain') domain: string,
-    @Args('driver') driver: EmailingDomainDriver,
+    @Args('input') input: CreateEmailingDomainInput,
     @AuthWorkspace() currentWorkspace: WorkspaceEntity,
   ): Promise<EmailingDomainDTO> {
+    this.emailGroupAccessService.validateEmailGroupAccessOrThrow();
+
     const emailingDomain =
       await this.emailingDomainService.createEmailingDomain(
-        domain,
-        driver,
-        currentWorkspace,
+        input.domain.trim().toLowerCase(),
+        currentWorkspace.id,
       );
 
     return emailingDomain;
@@ -53,6 +61,8 @@ export class EmailingDomainResolver {
     @Args('id') id: string,
     @AuthWorkspace() currentWorkspace: WorkspaceEntity,
   ): Promise<boolean> {
+    this.emailGroupAccessService.validateEmailGroupAccessOrThrow();
+
     await this.emailingDomainService.deleteEmailingDomain(currentWorkspace, id);
 
     return true;
@@ -64,6 +74,8 @@ export class EmailingDomainResolver {
     @Args('id') id: string,
     @AuthWorkspace() currentWorkspace: WorkspaceEntity,
   ): Promise<EmailingDomainDTO> {
+    this.emailGroupAccessService.validateEmailGroupAccessOrThrow();
+
     const emailingDomain =
       await this.emailingDomainService.verifyEmailingDomain(
         currentWorkspace,
@@ -73,27 +85,13 @@ export class EmailingDomainResolver {
     return emailingDomain;
   }
 
-  @Mutation(() => SendEmailViaDomainOutputDTO)
-  @RequireFeatureFlag(FeatureFlagKey.IS_EMAIL_GROUP_ENABLED)
-  async sendEmailViaEmailingDomain(
-    @Args('input') input: SendEmailViaDomainInput,
-    @AuthWorkspace() currentWorkspace: WorkspaceEntity,
-  ): Promise<SendEmailViaDomainOutputDTO> {
-    const { emailingDomainId, ...content } = input;
-    const result = await this.emailingDomainService.sendEmail(
-      currentWorkspace.id,
-      emailingDomainId,
-      content,
-    );
-
-    return { messageId: result.messageId };
-  }
-
   @Query(() => [EmailingDomainDTO])
   @RequireFeatureFlag(FeatureFlagKey.IS_EMAIL_GROUP_ENABLED)
   async getEmailingDomains(
     @AuthWorkspace() currentWorkspace: WorkspaceEntity,
   ): Promise<EmailingDomainDTO[]> {
+    this.emailGroupAccessService.validateEmailGroupAccessOrThrow();
+
     const emailingDomains =
       await this.emailingDomainService.getEmailingDomains(currentWorkspace);
 

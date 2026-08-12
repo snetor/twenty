@@ -1,10 +1,10 @@
 import { BubbleMenuIconButton } from '@/advanced-text-editor/components/BubbleMenuIconButton';
 import { EditLinkPopover } from '@/advanced-text-editor/components/EditLinkPopover';
-import { StyledBubbleMenuContainer } from '@/advanced-text-editor/components/TextBubbleMenu';
+import { StyledBubbleMenuContainer } from '@/advanced-text-editor/components/StyledBubbleMenuContainer';
 import { type Editor } from '@tiptap/core';
 import { useEditorState } from '@tiptap/react';
 import { BubbleMenu } from '@tiptap/react/menus';
-import { IconExternalLink, IconLinkOff } from 'twenty-ui/display';
+import { IconExternalLink, IconLinkOff } from 'twenty-ui/icon';
 import { getSafeUrl } from 'twenty-shared/utils';
 
 type LinkBubbleMenuProps = {

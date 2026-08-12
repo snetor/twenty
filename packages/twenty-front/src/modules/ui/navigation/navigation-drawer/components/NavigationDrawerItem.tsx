@@ -10,20 +10,18 @@ import { useSetAtomState } from '@/ui/utilities/state/jotai/hooks/useSetAtomStat
 import { styled } from '@linaria/react';
 import { t } from '@lingui/core/macro';
 import { isNonEmptyString } from '@sniptt/guards';
-import { type ReactNode, useContext } from 'react';
+import { type JSX, type ReactNode, useContext } from 'react';
 import { Link } from 'react-router-dom';
 import { isDefined } from 'twenty-shared/utils';
-import { Pill } from 'twenty-ui/components';
+import { Pill, TintedIconTile } from 'twenty-ui/data-display';
+import { type IconComponent, type TablerIconsProps } from 'twenty-ui/icon';
 import {
   AppTooltip,
-  type IconComponent,
-  Label,
   OverflowingTextWithTooltip,
-  type TablerIconsProps,
-  TintedIconTile,
   TooltipDelay,
   TooltipPosition,
-} from 'twenty-ui/display';
+} from 'twenty-ui/surfaces';
+import { Label } from 'twenty-ui/typography';
 import {
   MOBILE_VIEWPORT,
   ThemeContext,
@@ -90,7 +88,7 @@ const StyledItem = styled.button<StyledItemProps>`
     isSelectedInEditMode
       ? `1px solid ${themeCssVariables.color.blue}`
       : '1px solid transparent'};
-  border-radius: ${themeCssVariables.border.radius.sm};
+  border-radius: ${themeCssVariables.border.radius.md};
   box-sizing: border-box;
   color: ${({ active, isSoon, variant }) => {
     if (variant === 'tertiary') {
@@ -174,7 +172,7 @@ const StyledKeyBoardShortcut = styled.span`
   align-items: center;
   background: ${themeCssVariables.background.transparent.lighter};
   border: 1px solid ${themeCssVariables.border.color.strong};
-  border-radius: ${themeCssVariables.border.radius.sm};
+  border-radius: ${themeCssVariables.border.radius.md};
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
@@ -205,7 +203,7 @@ const StyledIcon = styled.div`
 
 const StyledIconBackgroundTile = styled.div`
   align-items: center;
-  background-color: ${themeCssVariables.background.tertiary};
+  background-color: ${themeCssVariables.grayScale.gray3};
   border-radius: ${themeCssVariables.border.radius.md};
   display: flex;
   flex-shrink: 0;
@@ -216,7 +214,7 @@ const StyledIconBackgroundTile = styled.div`
 
 const StyledRightOptionsContainer = styled.div`
   align-items: center;
-  border-radius: ${themeCssVariables.border.radius.sm};
+  border-radius: ${themeCssVariables.border.radius.md};
   display: flex;
   flex-grow: 0;
   flex-shrink: 0;
@@ -332,7 +330,7 @@ export const NavigationDrawerItem = ({
         onClick={handleMouseDownNavigationClickClick}
         onMouseDown={handleMouseDown}
         active={active}
-        aria-selected={active}
+        aria-current={isDefined(to) && active ? 'page' : undefined}
         isSoon={isSoon}
         variant={variant}
         indentationLevel={indentationLevel}

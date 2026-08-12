@@ -1,4 +1,4 @@
-import { FormFieldInputContainer } from '@/object-record/record-field/ui/form-types/components/FormFieldInputContainer';
+import { FormFieldInputContainer } from '@/ui/input/components/FormFieldInputContainer';
 import { FormNestedFieldInputContainer } from '@/object-record/record-field/ui/form-types/components/FormNestedFieldInputContainer';
 import { FormNumberFieldInput } from '@/object-record/record-field/ui/form-types/components/FormNumberFieldInput';
 import { FormSelectFieldInput } from '@/object-record/record-field/ui/form-types/components/FormSelectFieldInput';
@@ -9,7 +9,7 @@ import { InputLabel } from '@/ui/input/components/InputLabel';
 import { t } from '@lingui/core/macro';
 import { useMemo } from 'react';
 import { type CurrencyCode } from 'twenty-shared/constants';
-import { IconCircleOff } from 'twenty-ui/display';
+import { IconCircleOff } from 'twenty-ui/icon';
 
 type FormCurrencyFieldInputProps = {
   label?: string;

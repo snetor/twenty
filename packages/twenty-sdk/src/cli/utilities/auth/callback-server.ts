@@ -29,9 +29,6 @@ const pageHtml = ({
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>${title} — Twenty</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
     :root {
       --bg-body: #fafafa;
@@ -55,7 +52,7 @@ const pageHtml = ({
     }
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
       background: var(--bg-body);
       display: flex;
       align-items: center;
@@ -195,7 +192,7 @@ export const startCallbackServer = (options?: {
       const url = new URL(req.url ?? '/', `http://127.0.0.1`);
 
       if (url.pathname !== '/callback') {
-        res.writeHead(404);
+        res.writeHead(404, { Connection: 'close' });
         res.end('Not found');
 
         return;
@@ -205,23 +202,28 @@ export const startCallbackServer = (options?: {
       const error = url.searchParams.get('error');
       const isDarkMode = url.searchParams.get('theme') === 'dark';
 
-      const headers = {
+      const result: CallbackResult = code
+        ? { success: true, code }
+        : {
+            success: false,
+            error:
+              error ??
+              url.searchParams.get('error_description') ??
+              'Unknown error',
+          };
+
+      const body = result.success
+        ? successHtml(isDarkMode)
+        : errorHtml(result.error, isDarkMode);
+
+      res.writeHead(200, {
         'Content-Type': 'text/html',
+        'Content-Length': Buffer.byteLength(body),
         Connection: 'close',
-      };
+      });
 
-      if (code) {
-        res.writeHead(200, headers);
-        res.end(successHtml(isDarkMode));
-        callbackResolve({ success: true, code });
-      } else {
-        const errorMessage =
-          error ?? url.searchParams.get('error_description') ?? 'Unknown error';
-
-        res.writeHead(200, headers);
-        res.end(errorHtml(errorMessage, isDarkMode));
-        callbackResolve({ success: false, error: errorMessage });
-      }
+      res.on('close', () => callbackResolve(result));
+      res.end(body);
     });
 
     server.listen(0, '127.0.0.1', () => {
@@ -252,8 +254,8 @@ export const startCallbackServer = (options?: {
         },
         close: () => {
           clearTimeout(timeoutHandle);
-          server.closeAllConnections();
           server.close();
+          server.closeIdleConnections();
         },
       });
     });

@@ -8,6 +8,7 @@ import {
   WorkflowRunStepInfos,
 } from 'twenty-shared/workflow';
 
+import { NO_BILLING_SUBSCRIPTION } from 'src/engine/core-modules/billing/constants/no-billing-subscription.constant';
 import { BillingUsageService } from 'src/engine/core-modules/billing/services/billing-usage.service';
 import { BillingService } from 'src/engine/core-modules/billing/services/billing.service';
 import { ExceptionHandlerService } from 'src/engine/core-modules/exception-handler/exception-handler.service';
@@ -48,6 +49,7 @@ import { getNextStepIdsForIterator } from 'src/modules/workflow/workflow-executo
 import { WorkflowAction } from 'src/modules/workflow/workflow-executor/workflow-actions/types/workflow-action.type';
 import { RUN_WORKFLOW_JOB_NAME } from 'src/modules/workflow/workflow-runner/constants/run-workflow-job-name';
 import { type RunWorkflowJobData } from 'src/modules/workflow/workflow-runner/types/run-workflow-job-data.type';
+import { buildRunWorkflowJobOptions } from 'src/modules/workflow/workflow-runner/utils/build-run-workflow-job-options.util';
 import { WorkflowRunWorkspaceService } from 'src/modules/workflow/workflow-runner/workflow-run/workflow-run.workspace-service';
 
 const MAX_EXECUTED_STEPS_COUNT = 20;
@@ -327,18 +329,19 @@ export class WorkflowExecutorWorkspaceService {
   ) {
     let periodStart: Date | undefined;
     if (this.billingService.isBillingEnabled()) {
-      const {
-        billingSubscription: { currentPeriodStart },
-      } = await this.workspaceCacheService.getOrRecompute(workspaceId, [
-        'billingSubscription',
-      ]);
+      const { currentBillingSubscription } =
+        await this.workspaceCacheService.getOrRecompute(workspaceId, [
+          'currentBillingSubscription',
+        ]);
 
-      periodStart = currentPeriodStart;
+      if (currentBillingSubscription !== NO_BILLING_SUBSCRIPTION) {
+        periodStart = currentBillingSubscription.currentPeriodStart;
 
-      await this.billingUsageService.decrementAvailableCreditsInCache({
-        workspaceId,
-        usedCredits: 100,
-      });
+        await this.billingUsageService.decrementAvailableCreditsInCache({
+          workspaceId,
+          usedCredits: 100,
+        });
+      }
     }
 
     this.workspaceEventEmitter.emitCustomBatchEvent<UsageEvent>(
@@ -610,6 +613,7 @@ export class WorkflowExecutorWorkspaceService {
         workflowRunId,
         lastExecutedStepId,
       },
+      buildRunWorkflowJobOptions(workflowRunId),
     );
   }
 }

@@ -49,8 +49,10 @@ export class CreateCalendarChannelService {
           id: newCalendarChannelId,
           connectedAccountId,
           handle,
-          visibility:
-            calendarVisibility || CalendarChannelVisibility.SHARE_EVERYTHING,
+          // Snetor : même raison que `create-message-channel.service.ts` — le chemin de
+          // connexion depuis Settings → Accounts n'envoie aucune visibilité, et le défaut
+          // ne doit pas partager titre et description des rendez-vous de tout le workspace.
+          visibility: calendarVisibility || CalendarChannelVisibility.METADATA,
           syncStatus: skipMessageChannelConfiguration
             ? CalendarChannelSyncStatus.ONGOING
             : CalendarChannelSyncStatus.NOT_SYNCED,

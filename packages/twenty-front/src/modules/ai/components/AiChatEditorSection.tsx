@@ -1,8 +1,13 @@
 import { styled } from '@linaria/react';
 import { EditorContent } from '@tiptap/react';
+import { useLingui } from '@lingui/react/macro';
 import { themeCssVariables } from 'twenty-ui/theme-constants';
 
+import { isDefined } from 'twenty-shared/utils';
+
+import { AiChatBanner } from '@/ai/components/AiChatBanner';
 import { AiChatEmptyState } from '@/ai/components/AiChatEmptyState';
+import { AiChatQuestionCard } from '@/ai/components/AiChatQuestionCard';
 import { AIChatNoMoreBillingCreditsBanner } from '@/ai/components/AIChatNoMoreBillingCreditsBanner';
 import { AiChatStandaloneError } from '@/ai/components/AiChatStandaloneError';
 import { AgentChatContextPreview } from '@/ai/components/internal/AgentChatContextPreview';
@@ -14,9 +19,12 @@ import { SendMessageButton } from '@/ai/components/internal/SendMessageButton';
 import { useAgentChatModelId } from '@/ai/hooks/useAgentChatModelId';
 import { useAiChatEditor } from '@/ai/hooks/useAiChatEditor';
 import { useAiModelOptions } from '@/ai/hooks/useAiModelOptions';
+import { useWorkspaceAiModelAvailability } from '@/ai/hooks/useWorkspaceAiModelAvailability';
 import { agentChatUserSelectedModelState } from '@/ai/states/agentChatUserSelectedModelState';
+import { agentChatPendingQuestionComponentSelector } from '@/ai/states/selectors/agentChatPendingQuestionComponentSelector';
 import { Select } from '@/ui/input/components/Select';
 import { useIsMobile } from '@/ui/utilities/responsive/hooks/useIsMobile';
+import { useAtomComponentSelectorValue } from '@/ui/utilities/state/jotai/hooks/useAtomComponentSelectorValue';
 import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
 import { useSetAtomState } from '@/ui/utilities/state/jotai/hooks/useSetAtomState';
 import { hasReachedCurrentBillingPeriodCapSelector } from '@/workspace/states/hasReachedCurrentBillingPeriodCapSelector';
@@ -29,12 +37,13 @@ const StyledInputArea = styled.div<{ isMobile: boolean }>`
   flex-direction: column;
   flex-shrink: 0;
   gap: ${themeCssVariables.spacing[2]};
+  margin-top: auto;
   padding-block: ${({ isMobile }) =>
     isMobile ? '0' : themeCssVariables.spacing[3]};
   padding-inline: ${themeCssVariables.spacing[3]};
 `;
 
-const StyledInputBox = styled.div`
+const StyledInputBox = styled.div<{ isMobile: boolean }>`
   background-color: ${themeCssVariables.background.transparent.lighter};
   border: 1px solid ${themeCssVariables.border.color.medium};
   border-radius: ${themeCssVariables.border.radius.sm};
@@ -42,7 +51,7 @@ const StyledInputBox = styled.div`
   display: flex;
   flex-direction: column;
   gap: ${themeCssVariables.spacing[2]};
-  min-height: 140px;
+  min-height: ${({ isMobile }) => (isMobile ? '88px' : '140px')};
   padding: ${themeCssVariables.spacing[2]};
   width: 100%;
 
@@ -52,7 +61,7 @@ const StyledInputBox = styled.div`
   }
 `;
 
-const StyledEditorWrapper = styled.div`
+const StyledEditorWrapper = styled.div<{ isMobile: boolean }>`
   display: flex;
   flex: 1;
   flex-direction: column;
@@ -67,8 +76,8 @@ const StyledEditorWrapper = styled.div`
     font-size: ${themeCssVariables.font.size.md};
     font-weight: ${themeCssVariables.font.weight.regular};
     line-height: 16px;
-    max-height: 320px;
-    min-height: 48px;
+    max-height: ${({ isMobile }) => (isMobile ? '160px' : '320px')};
+    min-height: ${({ isMobile }) => (isMobile ? '36px' : '48px')};
     outline: none;
     overflow-y: auto;
     padding: 0;
@@ -108,10 +117,13 @@ const StyledRightButtonsContainer = styled.div`
 `;
 
 export const AiChatEditorSection = () => {
+  const { t } = useLingui();
   const isMobile = useIsMobile();
   const hasReachedCurrentBillingPeriodCap = useAtomStateValue(
     hasReachedCurrentBillingPeriodCapSelector,
   );
+  const { enabledModels } = useWorkspaceAiModelAvailability();
+  const hasNoEnabledModels = enabledModels.length === 0;
   const { options, pinnedOption } = useAiModelOptions({
     variant: 'pinned-default',
   });
@@ -131,6 +143,10 @@ export const AiChatEditorSection = () => {
 
   const { editor, handleSendAndClear } = useAiChatEditor();
 
+  const pendingQuestion = useAtomComponentSelectorValue(
+    agentChatPendingQuestionComponentSelector,
+  );
+
   return (
     <>
       <AiChatEditorFocusEffect editor={editor} />
@@ -140,34 +156,48 @@ export const AiChatEditorSection = () => {
 
       <StyledInputArea isMobile={isMobile}>
         <AgentChatContextPreview />
+        {hasNoEnabledModels && (
+          <AiChatBanner
+            message={t`No AI models are enabled in this workspace.`}
+            variant="warning"
+          />
+        )}
         {hasReachedCurrentBillingPeriodCap && (
           <AIChatNoMoreBillingCreditsBanner />
         )}
-        <StyledInputBox>
-          <StyledEditorWrapper>
-            <EditorContent editor={editor} />
-          </StyledEditorWrapper>
-          <StyledButtonsContainer>
-            <StyledLeftButtonsContainer>
-              <AgentChatFileUploadButton />
-              <AiChatContextUsageButton />
-            </StyledLeftButtonsContainer>
-            <StyledRightButtonsContainer>
-              <Select
-                dropdownId="ai-chat-smart-model-select"
-                value={selectedModelId}
-                onChange={setAgentChatUserSelectedModel}
-                options={smartModelOptions}
-                pinnedOption={defaultPinnedOption}
-                selectSizeVariant="small"
-                showContextualTextInControl={false}
-                withSearchInput
-                dropdownOffset={{ x: 0, y: 8 }}
-              />
-              <SendMessageButton onSend={handleSendAndClear} />
-            </StyledRightButtonsContainer>
-          </StyledButtonsContainer>
-        </StyledInputBox>
+        {isDefined(pendingQuestion) ? (
+          <AiChatQuestionCard pendingQuestion={pendingQuestion} />
+        ) : (
+          <StyledInputBox isMobile={isMobile}>
+            <StyledEditorWrapper isMobile={isMobile}>
+              <EditorContent editor={editor} />
+            </StyledEditorWrapper>
+            <StyledButtonsContainer>
+              <StyledLeftButtonsContainer>
+                <AgentChatFileUploadButton />
+                <AiChatContextUsageButton />
+              </StyledLeftButtonsContainer>
+              <StyledRightButtonsContainer>
+                <Select
+                  dropdownId="ai-chat-smart-model-select"
+                  value={selectedModelId}
+                  onChange={setAgentChatUserSelectedModel}
+                  options={smartModelOptions}
+                  pinnedOption={defaultPinnedOption}
+                  disabled={hasNoEnabledModels}
+                  selectSizeVariant="small"
+                  showContextualTextInControl={false}
+                  withSearchInput
+                  dropdownOffset={{ x: 0, y: 8 }}
+                />
+                <SendMessageButton
+                  onSend={handleSendAndClear}
+                  isDisabled={hasNoEnabledModels}
+                />
+              </StyledRightButtonsContainer>
+            </StyledButtonsContainer>
+          </StyledInputBox>
+        )}
       </StyledInputArea>
     </>
   );

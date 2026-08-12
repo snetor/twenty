@@ -1,11 +1,16 @@
 import type DataLoader from 'dataloader';
 
 import {
+  type ApplicationTranslationCatalogLoaderPayload,
   type FieldMetadataLoaderPayload,
+  type FieldMetadataConnectionLoaderPayload,
   type IndexFieldMetadataLoaderPayload,
   type IndexMetadataLoaderPayload,
+  type IndexMetadataConnectionLoaderPayload,
+  type SearchFieldMetadataLoaderPayload,
   type IsConfiguredLoaderPayload,
   type MorphRelationLoaderPayload,
+  type StandardApplicationIdLoaderPayload,
   type ObjectMetadataLoaderPayload,
   type RelationLoaderPayload,
   type ViewFieldGroupsByViewIdLoaderPayload,
@@ -21,6 +26,8 @@ import { type RelationDTO } from 'src/engine/metadata-modules/field-metadata/dto
 import { type IndexFieldMetadataDTO } from 'src/engine/metadata-modules/index-metadata/dtos/index-field-metadata.dto';
 import { type IndexMetadataDTO } from 'src/engine/metadata-modules/index-metadata/dtos/index-metadata.dto';
 import { type ObjectMetadataDTO } from 'src/engine/metadata-modules/object-metadata/dtos/object-metadata.dto';
+import { type SearchFieldMetadataDTO } from 'src/engine/metadata-modules/search-field-metadata/dtos/search-field-metadata.dto';
+import { type CursorConnection } from 'src/engine/metadata-modules/pagination/dtos/cursor-connection-type.factory';
 import { type ViewFieldGroupDTO } from 'src/engine/metadata-modules/view-field-group/dtos/view-field-group.dto';
 import { type ViewFieldDTO } from 'src/engine/metadata-modules/view-field/dtos/view-field.dto';
 import { type ViewFilterGroupDTO } from 'src/engine/metadata-modules/view-filter-group/dtos/view-filter-group.dto';
@@ -41,14 +48,29 @@ export interface IDataloaders {
     FieldMetadataDTO[]
   >;
 
+  fieldMetadataConnectionLoader: DataLoader<
+    FieldMetadataConnectionLoaderPayload,
+    CursorConnection<FieldMetadataDTO>
+  >;
+
   indexMetadataLoader: DataLoader<
     IndexMetadataLoaderPayload,
     IndexMetadataDTO[]
   >;
 
+  indexMetadataConnectionLoader: DataLoader<
+    IndexMetadataConnectionLoaderPayload,
+    CursorConnection<IndexMetadataDTO>
+  >;
+
   indexFieldMetadataLoader: DataLoader<
     IndexFieldMetadataLoaderPayload,
     IndexFieldMetadataDTO[]
+  >;
+
+  searchFieldMetadataLoader: DataLoader<
+    SearchFieldMetadataLoaderPayload,
+    SearchFieldMetadataDTO[]
   >;
 
   objectMetadataLoader: DataLoader<
@@ -92,4 +114,14 @@ export interface IDataloaders {
   >;
 
   isConfiguredLoader: DataLoader<IsConfiguredLoaderPayload, boolean>;
+
+  standardApplicationIdLoader: DataLoader<
+    StandardApplicationIdLoaderPayload,
+    string
+  >;
+
+  applicationTranslationCatalogLoader: DataLoader<
+    ApplicationTranslationCatalogLoaderPayload,
+    Record<string, string> | undefined
+  >;
 }

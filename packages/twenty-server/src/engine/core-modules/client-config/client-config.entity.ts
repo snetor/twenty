@@ -165,6 +165,9 @@ export class Billing {
   @Field(() => String, { nullable: true })
   billingUrl?: string;
 
+  @Field(() => String, { nullable: true })
+  stripePublishableKey?: string;
+
   @Field(() => [BillingTrialPeriodDTO])
   trialPeriods: BillingTrialPeriodDTO[];
 }
@@ -205,6 +208,16 @@ export class ApiConfig {
   mutationMaximumAffectedRecords: number;
 }
 
+export class OnboardingConfig {
+  importContactsCreditsReward: number;
+
+  inviteTeamCreditsRewardPerUser: number;
+
+  upgradeCreditsReward: number;
+
+  installAppsCreditsRewardPerApp: number;
+}
+
 @ObjectType()
 export class PublicFeatureFlagMetadata {
   @Field(() => String)
@@ -212,6 +225,9 @@ export class PublicFeatureFlagMetadata {
 
   @Field(() => String)
   description: string;
+
+  @Field(() => String)
+  icon: string;
 
   @Field(() => String, { nullable: true })
   imagePath?: string;
@@ -267,6 +283,9 @@ export class ClientConfig {
   @Field(() => String)
   frontDomain: string;
 
+  @Field(() => String, { nullable: true })
+  publicFunctionDomain: string | null;
+
   @Field(() => Boolean)
   analyticsEnabled: boolean;
 
@@ -285,11 +304,16 @@ export class ClientConfig {
   @Field(() => ApiConfig)
   api: ApiConfig;
 
+  onboarding: OnboardingConfig | null;
+
   @Field(() => Boolean)
   canManageFeatureFlags: boolean;
 
   @Field(() => [PublicFeatureFlag])
   publicFeatureFlags: PublicFeatureFlag[];
+
+  @Field(() => Boolean)
+  isCookieSessionEnabled: boolean;
 
   @Field(() => Boolean)
   isMicrosoftMessagingEnabled: boolean;
@@ -310,13 +334,19 @@ export class ClientConfig {
   isImapSmtpCaldavEnabled: boolean;
 
   @Field(() => Boolean)
-  isEmailGroupEnabled: boolean;
+  isEmailingDomainInDemoMode: boolean;
 
   @Field(() => Boolean)
   allowRequestsToTwentyIcons: boolean;
 
   @Field(() => String, { nullable: true })
   calendarBookingPageId?: string;
+
+  @Field(() => Boolean)
+  isBookCallOnboardingStepEnabled: boolean;
+
+  @Field(() => Boolean)
+  isCompanyEnrichmentEnabled: boolean;
 
   @Field(() => Boolean)
   isCloudflareIntegrationEnabled: boolean;
@@ -326,6 +356,12 @@ export class ClientConfig {
 
   @Field(() => Boolean)
   isWorkspaceSchemaDDLLocked: boolean;
+
+  @Field(() => Boolean)
+  isOnboardingAiChatEnabled: boolean;
+
+  @Field(() => String)
+  enterpriseInstanceType: string;
 
   @Field(() => ClientConfigMaintenanceMode, { nullable: true })
   maintenance?: ClientConfigMaintenanceMode;

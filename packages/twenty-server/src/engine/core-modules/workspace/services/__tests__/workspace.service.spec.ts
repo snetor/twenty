@@ -1,7 +1,8 @@
 import { Test, type TestingModule } from '@nestjs/testing';
 import { getDataSourceToken, getRepositoryToken } from '@nestjs/typeorm';
 
-import { type Repository } from 'typeorm';
+import { WorkspaceActivationStatus } from 'twenty-shared/workspace';
+import { IsNull, Not, type QueryRunner, type Repository } from 'typeorm';
 
 import { BillingSubscriptionService } from 'src/engine/core-modules/billing/services/billing-subscription.service';
 import { BillingService } from 'src/engine/core-modules/billing/services/billing.service';
@@ -46,8 +47,21 @@ describe('WorkspaceService', () => {
   let dnsManagerService: DnsManagerService;
   let billingSubscriptionService: BillingSubscriptionService;
   let userWorkspaceService: UserWorkspaceService;
+  let flatEntityMapsCacheService: WorkspaceManyOrAllFlatEntityMapsCacheService;
+  let queryRunner: QueryRunner;
 
   beforeEach(async () => {
+    queryRunner = {
+      connect: jest.fn(),
+      startTransaction: jest.fn(),
+      commitTransaction: jest.fn(),
+      rollbackTransaction: jest.fn(),
+      release: jest.fn(),
+      manager: {
+        delete: jest.fn().mockResolvedValue({ affected: 0 }),
+      },
+    } as unknown as QueryRunner;
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         WorkspaceService,
@@ -57,6 +71,11 @@ describe('WorkspaceService', () => {
             findOne: jest.fn(),
             softDelete: jest.fn(),
             delete: jest.fn(),
+            update: jest.fn(),
+            manager: {
+              connection: { driver: { options: { type: 'postgres' } } },
+            },
+            metadata: { columns: [] },
           },
         },
         {
@@ -150,16 +169,7 @@ describe('WorkspaceService', () => {
         {
           provide: getDataSourceToken(),
           useValue: {
-            createQueryRunner: jest.fn().mockReturnValue({
-              connect: jest.fn(),
-              startTransaction: jest.fn(),
-              commitTransaction: jest.fn(),
-              rollbackTransaction: jest.fn(),
-              release: jest.fn(),
-              manager: {
-                delete: jest.fn().mockResolvedValue({ affected: 0 }),
-              },
-            }),
+            createQueryRunner: jest.fn().mockReturnValue(queryRunner),
             getRepository: jest.fn().mockReturnValue({
               find: jest.fn().mockResolvedValue([]),
             }),
@@ -191,6 +201,10 @@ describe('WorkspaceService', () => {
     );
     userWorkspaceService =
       module.get<UserWorkspaceService>(UserWorkspaceService);
+    flatEntityMapsCacheService =
+      module.get<WorkspaceManyOrAllFlatEntityMapsCacheService>(
+        WorkspaceManyOrAllFlatEntityMapsCacheService,
+      );
   });
 
   afterEach(() => {
@@ -300,11 +314,33 @@ describe('WorkspaceService', () => {
       ).toHaveBeenCalledWith(mockWorkspace.id);
       expect(workspaceCacheStorageService.flush).toHaveBeenCalledWith(
         mockWorkspace.id,
-        mockWorkspace.metadataVersion,
       );
       expect(messageQueueService.add).toHaveBeenCalled();
       expect(workspaceRepository.delete).toHaveBeenCalledWith(mockWorkspace.id);
       expect(workspaceRepository.softDelete).not.toHaveBeenCalled();
+    });
+
+    it('should retrieve field metadata before starting the deletion transaction', async () => {
+      const mockWorkspace = {
+        id: 'workspace-id',
+        metadataVersion: 0,
+      } as WorkspaceEntity;
+
+      jest
+        .spyOn(workspaceRepository, 'findOne')
+        .mockResolvedValue(mockWorkspace);
+      jest.spyOn(userWorkspaceRepository, 'find').mockResolvedValue([]);
+
+      await service.deleteWorkspace(mockWorkspace.id, false);
+
+      const cacheRetrieval = jest.mocked(
+        flatEntityMapsCacheService.getOrRecomputeManyOrAllFlatEntityMaps,
+      );
+
+      expect(cacheRetrieval).toHaveBeenCalledTimes(1);
+      expect(cacheRetrieval.mock.invocationCallOrder[0]).toBeLessThan(
+        (queryRunner.startTransaction as jest.Mock).mock.invocationCallOrder[0],
+      );
     });
 
     it('should soft delete the workspace', async () => {
@@ -368,6 +404,38 @@ describe('WorkspaceService', () => {
       expect(workspaceRepository.softDelete).toHaveBeenCalledWith({
         id: mockWorkspace.id,
       });
+    });
+  });
+
+  describe('suspendWorkspace', () => {
+    it('should only suspend workspaces that are not already suspended and not soft-deleted', async () => {
+      jest
+        .spyOn(workspaceRepository, 'update')
+        .mockResolvedValue({ affected: 1 } as never);
+
+      const hasBeenSuspended = await service.suspendWorkspace('workspace-id');
+
+      expect(workspaceRepository.update).toHaveBeenCalledWith(
+        {
+          id: 'workspace-id',
+          activationStatus: Not(WorkspaceActivationStatus.SUSPENDED),
+          deletedAt: IsNull(),
+        },
+        expect.objectContaining({
+          activationStatus: WorkspaceActivationStatus.SUSPENDED,
+        }),
+      );
+      expect(hasBeenSuspended).toBe(true);
+    });
+
+    it('should report no suspension when the guarded update affects no rows', async () => {
+      jest
+        .spyOn(workspaceRepository, 'update')
+        .mockResolvedValue({ affected: 0 } as never);
+
+      const hasBeenSuspended = await service.suspendWorkspace('workspace-id');
+
+      expect(hasBeenSuspended).toBe(false);
     });
   });
 });

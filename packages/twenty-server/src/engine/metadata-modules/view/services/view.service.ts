@@ -17,12 +17,16 @@ import { fromCreateViewInputToFlatViewToCreate } from 'src/engine/metadata-modul
 import { fromDeleteViewInputToFlatViewOrThrow } from 'src/engine/metadata-modules/flat-view/utils/from-delete-view-input-to-flat-view-or-throw.util';
 import { fromDestroyViewInputToFlatViewOrThrow } from 'src/engine/metadata-modules/flat-view/utils/from-destroy-view-input-to-flat-view-or-throw.util';
 import { fromUpdateViewInputToFlatViewToUpdateOrThrow } from 'src/engine/metadata-modules/flat-view/utils/from-update-view-input-to-flat-view-to-update-or-throw.util';
+import { isCallerOverridingEntity } from 'src/engine/metadata-modules/utils/is-caller-overriding-entity.util';
 import { fromFlatViewFieldGroupToViewFieldGroupDto } from 'src/engine/metadata-modules/view-field-group/utils/from-flat-view-field-group-to-view-field-group-dto.util';
 import { fromFlatViewFieldToViewFieldDto } from 'src/engine/metadata-modules/view-field/utils/from-flat-view-field-to-view-field-dto.util';
 import { fromFlatViewFilterGroupToViewFilterGroupDto } from 'src/engine/metadata-modules/view-filter-group/utils/from-flat-view-filter-group-to-view-filter-group-dto.util';
 import { fromFlatViewFilterToViewFilterDto } from 'src/engine/metadata-modules/view-filter/utils/from-flat-view-filter-to-view-filter-dto.util';
 import { fromFlatViewGroupToViewGroupDto } from 'src/engine/metadata-modules/view-group/utils/from-flat-view-group-to-view-group-dto.util';
 import { fromFlatViewSortToViewSortDto } from 'src/engine/metadata-modules/view-sort/utils/from-flat-view-sort-to-view-sort-dto.util';
+import { type MetadataCursorPage } from 'src/engine/metadata-modules/pagination/types/metadata-cursor-page.type';
+import { type MetadataCursorPagination } from 'src/engine/metadata-modules/pagination/types/metadata-cursor-pagination.type';
+import { paginateMetadataOrderedItems } from 'src/engine/metadata-modules/pagination/utils/paginate-metadata-ordered-items.util';
 import { CreateViewInput } from 'src/engine/metadata-modules/view/dtos/inputs/create-view.input';
 import { DeleteViewInput } from 'src/engine/metadata-modules/view/dtos/inputs/delete-view.input';
 import { DestroyViewInput } from 'src/engine/metadata-modules/view/dtos/inputs/destroy-view.input';
@@ -166,6 +170,10 @@ export class ViewService {
         flatViewGroupMaps: existingFlatViewGroupMaps,
         flatFieldMetadataMaps: existingFlatFieldMetadataMaps,
         userWorkspaceId,
+        callerApplicationUniversalIdentifier:
+          workspaceCustomFlatApplication.universalIdentifier,
+        workspaceCustomApplicationUniversalIdentifier:
+          workspaceCustomFlatApplication.universalIdentifier,
       });
 
     const validateAndBuildResult =
@@ -239,6 +247,10 @@ export class ViewService {
       fromDeleteViewInputToFlatViewOrThrow({
         deleteViewInput,
         flatViewMaps: existingFlatViewMaps,
+        callerApplicationUniversalIdentifier:
+          workspaceCustomFlatApplication.universalIdentifier,
+        workspaceCustomApplicationUniversalIdentifier:
+          workspaceCustomFlatApplication.universalIdentifier,
       });
 
     const validateAndBuildResult =
@@ -313,14 +325,30 @@ export class ViewService {
       flatEntityMaps: existingFlatViewMaps,
     });
 
+    const shouldDeactivate = isCallerOverridingEntity({
+      callerApplicationUniversalIdentifier:
+        workspaceCustomFlatApplication.universalIdentifier,
+      entityApplicationUniversalIdentifier:
+        existingFlatView.applicationUniversalIdentifier,
+      workspaceCustomApplicationUniversalIdentifier:
+        workspaceCustomFlatApplication.universalIdentifier,
+      isSystemSideEffect: existingFlatView.isSystemSideEffect,
+    });
+
+    const now = new Date().toISOString();
+
     const validateAndBuildResult =
       await this.workspaceMigrationValidateBuildAndRunService.validateBuildAndRunWorkspaceMigration(
         {
           allFlatEntityOperationByMetadataName: {
             view: {
               flatEntityToCreate: [],
-              flatEntityToDelete: [flatViewFromDestroyInput],
-              flatEntityToUpdate: [],
+              flatEntityToDelete: shouldDeactivate
+                ? []
+                : [flatViewFromDestroyInput],
+              flatEntityToUpdate: shouldDeactivate
+                ? [{ ...existingFlatView, isActive: false, updatedAt: now }]
+                : [],
             },
           },
           workspaceId,
@@ -337,9 +365,17 @@ export class ViewService {
       );
     }
 
+    if (shouldDeactivate) {
+      return fromFlatViewToViewDto({
+        ...existingFlatView,
+        isActive: false,
+        updatedAt: now,
+      });
+    }
+
     return fromFlatViewToViewDto({
       ...existingFlatView,
-      deletedAt: new Date().toISOString(),
+      deletedAt: now,
     });
   }
 
@@ -433,7 +469,7 @@ export class ViewService {
           viewTypes.includes(flatView.type),
       )
       .filter((flatView) => this.isViewVisibleToUser(flatView, userWorkspaceId))
-      .sort((a, b) => a.position - b.position);
+      .sort((a, b) => a.position - b.position || a.id.localeCompare(b.id));
   }
 
   async findByWorkspaceId(
@@ -574,6 +610,34 @@ export class ViewService {
     });
 
     return this.findManyWithRelationsFromCache(flatViews, workspaceId);
+  }
+
+  async findManyWithRelationsPaginated({
+    workspaceId,
+    objectMetadataId,
+    userWorkspaceId,
+    pagination,
+  }: {
+    workspaceId: string;
+    objectMetadataId?: string;
+    userWorkspaceId?: string;
+    pagination: MetadataCursorPagination;
+  }): Promise<MetadataCursorPage<ViewDTO> & { totalCount: number }> {
+    const flatViews = await this.getFilteredFlatViews({
+      workspaceId,
+      objectMetadataId,
+      userWorkspaceId,
+    });
+    const page = paginateMetadataOrderedItems({
+      items: flatViews,
+      pagination,
+    });
+
+    return {
+      ...page,
+      items: await this.findManyWithRelationsFromCache(page.items, workspaceId),
+      totalCount: flatViews.length,
+    };
   }
 
   async findByObjectMetadataIdWithRelations(

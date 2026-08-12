@@ -13,7 +13,9 @@ export const SUPPORTED_FILE_FOLDERS = [
   FileFolder.Workflow,
   FileFolder.AgentChat,
   FileFolder.EmailAttachment,
+  FileFolder.EmailImage,
   FileFolder.AppTarball,
+  FileFolder.Dpa,
 ] as const;
 
 export type SupportedFileFolder = (typeof SUPPORTED_FILE_FOLDERS)[number];

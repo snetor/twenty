@@ -1,18 +1,19 @@
 import { availableWorkspacesState } from '@/auth/states/availableWorkspacesState';
 import { returnToPathState } from '@/auth/states/returnToPathState';
 import { useBuildWorkspaceUrl } from '@/domain-manager/hooks/useBuildWorkspaceUrl';
+import { useQuery } from '@apollo/client/react';
 import { styled } from '@linaria/react';
 import { Trans, useLingui } from '@lingui/react/macro';
 import { FormProvider } from 'react-hook-form';
 import { ClickToActionLink, UndecoratedLink } from 'twenty-ui/navigation';
 
 import { StyledOnboardingContentContainer } from '@/auth/components/StyledOnboardingContentContainer';
+import { OnboardingStepAnimatedItem } from '@/onboarding/components/OnboardingStepAnimatedItem';
 import { SignInUpWithCredentials } from '@/auth/sign-in-up/components/internal/SignInUpWithCredentials';
 import { SignInUpWithGoogle } from '@/auth/sign-in-up/components/internal/SignInUpWithGoogle';
 import { SignInUpWithMicrosoft } from '@/auth/sign-in-up/components/internal/SignInUpWithMicrosoft';
 import { useHandleResetPassword } from '@/auth/sign-in-up/hooks/useHandleResetPassword';
 import { useSignInUpForm } from '@/auth/sign-in-up/hooks/useSignInUpForm';
-import { useSignUpInNewWorkspace } from '@/auth/sign-in-up/hooks/useSignUpInNewWorkspace';
 import {
   SignInUpStep,
   signInUpStepState,
@@ -22,21 +23,23 @@ import { authProvidersState } from '@/client-config/states/authProvidersState';
 import { isDDLLockedState } from '@/client-config/states/isDDLLockedState';
 import { DEFAULT_WORKSPACE_LOGO } from '@/ui/navigation/navigation-drawer/constants/DefaultWorkspaceLogo';
 import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
+import { useSetAtomState } from '@/ui/utilities/state/jotai/hooks/useSetAtomState';
 import { isNonEmptyString } from '@sniptt/guards';
 import { useContext } from 'react';
-import {
-  Avatar,
-  HorizontalSeparator,
-  IconChevronRight,
-  IconPlus,
-} from 'twenty-ui/display';
+import { Avatar } from 'twenty-ui/data-display';
+import { IconChevronRight, IconPlus } from 'twenty-ui/icon';
+import { HorizontalSeparator } from 'twenty-ui/layout';
 import { ThemeContext, themeCssVariables } from 'twenty-ui/theme-constants';
-import { type AvailableWorkspace } from '~/generated-metadata/graphql';
+import {
+  type AvailableWorkspace,
+  GetWorkspaceCreationDefaultsDocument,
+} from '~/generated-metadata/graphql';
 import { getWorkspaceUrl } from '~/utils/getWorkspaceUrl';
+import { getAbsoluteImageUrl } from '~/utils/image/getAbsoluteImageUrl';
 
 const StyledWorkspaceContainer = styled.div`
-  background-color: ${themeCssVariables.background.secondary};
-  border: 1px solid ${themeCssVariables.border.color.light};
+  background-color: ${themeCssVariables.background.primary};
+  border: 1px solid ${themeCssVariables.border.color.medium};
   border-radius: ${themeCssVariables.border.radius.md};
   display: flex;
   flex-direction: column;
@@ -125,15 +128,18 @@ export const SignInUpGlobalScopeForm = () => {
   const authProviders = useAtomStateValue(authProvidersState);
   const isDDLLocked = useAtomStateValue(isDDLLockedState);
   const signInUpStep = useAtomStateValue(signInUpStepState);
+  const setSignInUpStep = useSetAtomState(signInUpStepState);
   const { buildWorkspaceUrl } = useBuildWorkspaceUrl();
-
-  const { createWorkspace } = useSignUpInNewWorkspace();
   const availableWorkspaces = useAtomStateValue(availableWorkspacesState);
   const { t } = useLingui();
 
   const { form } = useSignInUpForm();
   const { handleResetPassword } = useHandleResetPassword();
   const returnToPath = useAtomStateValue(returnToPathState);
+
+  useQuery(GetWorkspaceCreationDefaultsDocument, {
+    skip: signInUpStep !== SignInUpStep.WorkspaceSelection,
+  });
 
   const getAvailableWorkspaceUrl = (availableWorkspace: AvailableWorkspace) => {
     const { pathname, searchParams } = getAvailableWorkspacePathAndSearchParams(
@@ -151,62 +157,76 @@ export const SignInUpGlobalScopeForm = () => {
     );
   };
 
+  const availableWorkspacesList = [
+    ...availableWorkspaces.availableWorkspacesForSignIn,
+    ...availableWorkspaces.availableWorkspacesForSignUp,
+  ];
+
   return (
     <>
       {signInUpStep === SignInUpStep.WorkspaceSelection && (
         <StyledOnboardingContentContainer>
           <StyledWorkspaceContainer>
-            {[
-              ...availableWorkspaces.availableWorkspacesForSignIn,
-              ...availableWorkspaces.availableWorkspacesForSignUp,
-            ].map((availableWorkspace) => (
-              <UndecoratedLink
+            {availableWorkspacesList.map((availableWorkspace, index) => (
+              <OnboardingStepAnimatedItem
                 key={availableWorkspace.id}
-                to={getAvailableWorkspaceUrl(availableWorkspace)}
+                index={index}
               >
-                <StyledWorkspaceItem>
+                <UndecoratedLink
+                  to={getAvailableWorkspaceUrl(availableWorkspace)}
+                >
+                  <StyledWorkspaceItem>
+                    <StyledWorkspaceContent>
+                      <Avatar
+                        placeholder={availableWorkspace.displayName || ''}
+                        avatarUrl={getAbsoluteImageUrl(
+                          availableWorkspace.logo ?? DEFAULT_WORKSPACE_LOGO,
+                        )}
+                        size="lg"
+                      />
+                      <StyledWorkspaceTextContainer>
+                        <StyledWorkspaceName>
+                          {availableWorkspace.displayName ||
+                            availableWorkspace.id}
+                        </StyledWorkspaceName>
+                        <StyledWorkspaceUrl>
+                          {
+                            new URL(
+                              getWorkspaceUrl(availableWorkspace.workspaceUrls),
+                            ).hostname
+                          }
+                        </StyledWorkspaceUrl>
+                      </StyledWorkspaceTextContainer>
+                      <StyledChevronIcon>
+                        <IconChevronRight size={theme.icon.size.md} />
+                      </StyledChevronIcon>
+                    </StyledWorkspaceContent>
+                  </StyledWorkspaceItem>
+                </UndecoratedLink>
+              </OnboardingStepAnimatedItem>
+            ))}
+            {!isDDLLocked && (
+              <OnboardingStepAnimatedItem
+                index={availableWorkspacesList.length}
+              >
+                <StyledWorkspaceItem
+                  onClick={() =>
+                    setSignInUpStep(SignInUpStep.WorkspaceCreation)
+                  }
+                >
                   <StyledWorkspaceContent>
-                    <Avatar
-                      placeholder={availableWorkspace.displayName || ''}
-                      avatarUrl={
-                        availableWorkspace.logo ?? DEFAULT_WORKSPACE_LOGO
-                      }
-                      size="lg"
-                    />
+                    <StyledWorkspaceLogo>
+                      <IconPlus size={theme.icon.size.lg} />
+                    </StyledWorkspaceLogo>
                     <StyledWorkspaceTextContainer>
-                      <StyledWorkspaceName>
-                        {availableWorkspace.displayName ||
-                          availableWorkspace.id}
-                      </StyledWorkspaceName>
-                      <StyledWorkspaceUrl>
-                        {
-                          new URL(
-                            getWorkspaceUrl(availableWorkspace.workspaceUrls),
-                          ).hostname
-                        }
-                      </StyledWorkspaceUrl>
+                      <StyledWorkspaceName>{t`Create a workspace`}</StyledWorkspaceName>
                     </StyledWorkspaceTextContainer>
                     <StyledChevronIcon>
                       <IconChevronRight size={theme.icon.size.md} />
                     </StyledChevronIcon>
                   </StyledWorkspaceContent>
                 </StyledWorkspaceItem>
-              </UndecoratedLink>
-            ))}
-            {!isDDLLocked && (
-              <StyledWorkspaceItem onClick={() => createWorkspace()}>
-                <StyledWorkspaceContent>
-                  <StyledWorkspaceLogo>
-                    <IconPlus size={theme.icon.size.lg} />
-                  </StyledWorkspaceLogo>
-                  <StyledWorkspaceTextContainer>
-                    <StyledWorkspaceName>{t`Create a workspace`}</StyledWorkspaceName>
-                  </StyledWorkspaceTextContainer>
-                  <StyledChevronIcon>
-                    <IconChevronRight size={theme.icon.size.md} />
-                  </StyledChevronIcon>
-                </StyledWorkspaceContent>
-              </StyledWorkspaceItem>
+              </OnboardingStepAnimatedItem>
             )}
           </StyledWorkspaceContainer>
         </StyledOnboardingContentContainer>
@@ -226,7 +246,9 @@ export const SignInUpGlobalScopeForm = () => {
             />
           )}
           {(authProviders.google || authProviders.microsoft) && (
-            <HorizontalSeparator />
+            <HorizontalSeparator
+              color={themeCssVariables.background.transparent.light}
+            />
           )}
           {/* oxlint-disable-next-line react/jsx-props-no-spreading */}
           <FormProvider {...form}>

@@ -1,15 +1,8 @@
 import { Field, ObjectType, registerEnumType } from '@nestjs/graphql';
 
-import { IDField } from '@ptc-org/nestjs-query-graphql';
-
 import { UUIDScalarType } from 'src/engine/api/graphql/workspace-schema-builder/graphql-types/scalars';
-import { EmailingDomainDriver } from 'src/engine/core-modules/emailing-domain/drivers/types/emailing-domain-driver.type';
 import { EmailingDomainStatus } from 'src/engine/core-modules/emailing-domain/drivers/types/emailing-domain-status.type';
 import { VerificationRecordDTO } from 'src/engine/core-modules/emailing-domain/dtos/verification-record.dto';
-
-registerEnumType(EmailingDomainDriver, {
-  name: 'EmailingDomainDriver',
-});
 
 registerEnumType(EmailingDomainStatus, {
   name: 'EmailingDomainStatus',
@@ -17,7 +10,7 @@ registerEnumType(EmailingDomainStatus, {
 
 @ObjectType('EmailingDomain')
 export class EmailingDomainDTO {
-  @IDField(() => UUIDScalarType)
+  @Field(() => UUIDScalarType)
   id: string;
 
   @Field(() => Date)
@@ -28,9 +21,6 @@ export class EmailingDomainDTO {
 
   @Field(() => String)
   domain: string;
-
-  @Field(() => EmailingDomainDriver)
-  driver: EmailingDomainDriver;
 
   @Field(() => EmailingDomainStatus)
   status: EmailingDomainStatus;

@@ -1,5 +1,6 @@
 import { useAtomComponentStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomComponentStateValue';
 import { useSetAtomComponentState } from '@/ui/utilities/state/jotai/hooks/useSetAtomComponentState';
+import { flowComponentState } from '@/workflow/states/flowComponentState';
 import { useWorkflowWithCurrentVersion } from '@/workflow/hooks/useWorkflowWithCurrentVersion';
 import { workflowVisualizerWorkflowIdComponentState } from '@/workflow/states/workflowVisualizerWorkflowIdComponentState';
 import { WorkflowDiagramCanvasBase } from '@/workflow/workflow-diagram/components/WorkflowDiagramCanvasBase';
@@ -30,8 +31,9 @@ import {
   ReactFlowProvider,
   type Connection,
   type Edge,
+  type OnNodeDrag,
 } from '@xyflow/react';
-import React, { useCallback } from 'react';
+import { useCallback } from 'react';
 import { isDefined } from 'twenty-shared/utils';
 
 export const WorkflowDiagramCanvasEditable = () => {
@@ -61,8 +63,10 @@ export const WorkflowDiagramCanvasEditable = () => {
 
   const { startNodeCreation } = useStartNodeCreation();
 
+  const flow = useAtomComponentStateValue(flowComponentState);
+
   const onConnect = async (edgeConnect: WorkflowConnection) => {
-    const steps = workflowWithCurrentVersion?.currentVersion?.steps;
+    const steps = flow?.steps;
     const sourceStep = isDefined(steps)
       ? steps.find((step) => step.id === edgeConnect.source)
       : undefined;
@@ -133,14 +137,8 @@ export const WorkflowDiagramCanvasEditable = () => {
     });
   };
 
-  const onNodeDragStop = async (
-    _: React.MouseEvent<Element>,
-    node: WorkflowDiagramNode,
-  ) => {
-    const stepToUpdate =
-      workflowWithCurrentVersion?.currentVersion?.steps?.find(
-        (step) => step.id === node.id,
-      );
+  const onNodeDragStop: OnNodeDrag<WorkflowDiagramNode> = async (_, node) => {
+    const stepToUpdate = flow?.steps?.find((step) => step.id === node.id);
 
     if (isDefined(stepToUpdate)) {
       await updateStep({
@@ -151,7 +149,7 @@ export const WorkflowDiagramCanvasEditable = () => {
       return;
     }
 
-    const triggerToUpdate = workflowWithCurrentVersion?.currentVersion?.trigger;
+    const triggerToUpdate = flow?.trigger;
 
     if (isDefined(triggerToUpdate)) {
       await updateTrigger({

@@ -572,7 +572,7 @@ export class CreateAppCommand {
 
       console.log(
         chalk.yellow(
-          '  Authentication failed. Run `yarn twenty remote:add --local` manually.',
+          '  Authentication failed. Run `yarn twenty remote:add` manually.',
         ),
       );
 
@@ -580,7 +580,7 @@ export class CreateAppCommand {
     } catch {
       console.log(
         chalk.yellow(
-          '  Authentication failed. Run `yarn twenty remote:add --local` manually.',
+          '  Authentication failed. Run `yarn twenty remote:add` manually.',
         ),
       );
 
@@ -668,7 +668,7 @@ export class CreateAppCommand {
 
     console.log(
       chalk.gray(
-        '  Documentation: https://docs.twenty.com/developers/extend/capabilities/apps',
+        '  Documentation: https://docs.twenty.com/developers/extend/apps/getting-started/quick-start',
       ),
     );
   }

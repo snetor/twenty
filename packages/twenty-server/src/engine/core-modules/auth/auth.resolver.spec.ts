@@ -1,18 +1,31 @@
-import { type CanActivate } from '@nestjs/common';
+import { type CanActivate, Logger } from '@nestjs/common';
 import { Test, type TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 
 import { ApiKeyService } from 'src/engine/core-modules/api-key/services/api-key.service';
 import { AppTokenEntity } from 'src/engine/core-modules/app-token/app-token.entity';
-import { AuditService } from 'src/engine/core-modules/audit/services/audit.service';
+import { EventLogEmitterService } from 'src/engine/core-modules/event-logs/emit/event-log-emitter.service';
+import { ImpersonationAuthorizationService } from 'src/engine/core-modules/impersonation/services/impersonation-authorization.service';
 import { SignInUpService } from 'src/engine/core-modules/auth/services/sign-in-up.service';
 import { AccessTokenService } from 'src/engine/core-modules/auth/token/services/access-token.service';
 import { RefreshTokenService } from 'src/engine/core-modules/auth/token/services/refresh-token.service';
+import { SSOExchangeTokenService } from 'src/engine/core-modules/auth/token/services/sso-exchange-token.service';
 import { WorkspaceAgnosticTokenService } from 'src/engine/core-modules/auth/token/services/workspace-agnostic-token.service';
 import { CaptchaGuard } from 'src/engine/core-modules/captcha/captcha.guard';
+import { EmailPasswordResetLinkInput } from 'src/engine/core-modules/auth/dto/email-password-reset-link.input';
+import { type I18nContext } from 'src/engine/core-modules/i18n/types/i18n-context.type';
+import {
+  ThrottlerException,
+  ThrottlerExceptionCode,
+} from 'src/engine/core-modules/throttler/throttler.exception';
+import { ThrottlerService } from 'src/engine/core-modules/throttler/throttler.service';
+import { SubdomainManagerService } from 'src/engine/core-modules/domain/subdomain-manager/services/subdomain-manager.service';
 import { WorkspaceDomainsService } from 'src/engine/core-modules/domain/workspace-domains/services/workspace-domains.service';
 import { EmailVerificationService } from 'src/engine/core-modules/email-verification/services/email-verification.service';
 import { FeatureFlagService } from 'src/engine/core-modules/feature-flag/services/feature-flag.service';
+import { FileCorePictureService } from 'src/engine/core-modules/file/file-core-picture/services/file-core-picture.service';
+import { UserSessionCookieService } from 'src/engine/core-modules/user-session/services/user-session-cookie.service';
+import { UserSessionService } from 'src/engine/core-modules/user-session/services/user-session.service';
 import { SSOService } from 'src/engine/core-modules/sso/services/sso.service';
 import { TwentyConfigService } from 'src/engine/core-modules/twenty-config/twenty-config.service';
 import { TwoFactorAuthenticationService } from 'src/engine/core-modules/two-factor-authentication/two-factor-authentication.service';
@@ -33,6 +46,8 @@ import { TransientTokenService } from './token/services/transient-token.service'
 
 describe('AuthResolver', () => {
   let resolver: AuthResolver;
+  let resetPasswordService: ResetPasswordService;
+  let throttlerService: ThrottlerService;
   const mock_CaptchaGuard: CanActivate = { canActivate: jest.fn(() => true) };
 
   beforeEach(async () => {
@@ -72,6 +87,22 @@ describe('AuthResolver', () => {
           },
         },
         {
+          provide: SubdomainManagerService,
+          useValue: {},
+        },
+        {
+          provide: FileCorePictureService,
+          useValue: {},
+        },
+        {
+          provide: UserSessionService,
+          useValue: {},
+        },
+        {
+          provide: UserSessionCookieService,
+          useValue: {},
+        },
+        {
           provide: UserWorkspaceService,
           useValue: {},
         },
@@ -93,7 +124,17 @@ describe('AuthResolver', () => {
         },
         {
           provide: ResetPasswordService,
-          useValue: {},
+          useValue: {
+            generateAndSendPasswordResetLink: jest
+              .fn()
+              .mockResolvedValue(undefined),
+          },
+        },
+        {
+          provide: ThrottlerService,
+          useValue: {
+            tokenBucketThrottleOrThrow: jest.fn(),
+          },
         },
         {
           provide: LoginTokenService,
@@ -101,6 +142,10 @@ describe('AuthResolver', () => {
         },
         {
           provide: WorkspaceAgnosticTokenService,
+          useValue: {},
+        },
+        {
+          provide: SSOExchangeTokenService,
           useValue: {},
         },
         {
@@ -113,6 +158,10 @@ describe('AuthResolver', () => {
         },
         {
           provide: EmailVerificationTokenService,
+          useValue: {},
+        },
+        {
+          provide: ImpersonationAuthorizationService,
           useValue: {},
         },
         {
@@ -136,7 +185,7 @@ describe('AuthResolver', () => {
           useValue: {},
         },
         {
-          provide: AuditService,
+          provide: EventLogEmitterService,
           useValue: {
             createContext: jest.fn().mockReturnValue({
               insertWorkspaceEvent: jest.fn(),
@@ -150,9 +199,109 @@ describe('AuthResolver', () => {
       .compile();
 
     resolver = module.get<AuthResolver>(AuthResolver);
+    resetPasswordService =
+      module.get<ResetPasswordService>(ResetPasswordService);
+    throttlerService = module.get<ThrottlerService>(ThrottlerService);
   });
 
   it('should be defined', () => {
     expect(resolver).toBeDefined();
+  });
+
+  describe('emailPasswordResetLink', () => {
+    const emailPasswordResetInput = {
+      email: 'test@example.com',
+      workspaceId: 'workspace-id',
+    } as EmailPasswordResetLinkInput;
+    const context = { req: { locale: 'en' } } as I18nContext;
+
+    it('should send the password reset link and return success', async () => {
+      const result = await resolver.emailPasswordResetLink(
+        emailPasswordResetInput,
+        context,
+      );
+
+      expect(result).toEqual({ success: true });
+      expect(
+        resetPasswordService.generateAndSendPasswordResetLink,
+      ).toHaveBeenCalledWith({
+        email: 'test@example.com',
+        workspaceId: 'workspace-id',
+        locale: 'en',
+      });
+    });
+
+    it('should return success without waiting for the link to be sent', async () => {
+      const loggerErrorSpy = jest
+        .spyOn(Logger.prototype, 'error')
+        .mockImplementation();
+
+      (
+        resetPasswordService.generateAndSendPasswordResetLink as jest.Mock
+      ).mockRejectedValue(new Error('database down'));
+
+      const result = await resolver.emailPasswordResetLink(
+        emailPasswordResetInput,
+        context,
+      );
+
+      expect(result).toEqual({ success: true });
+      expect(loggerErrorSpy).toHaveBeenCalledWith(
+        'Failed to send the password reset link',
+        expect.any(Error),
+      );
+    });
+
+    it('should throttle and send with a normalized email address', async () => {
+      await resolver.emailPasswordResetLink(
+        {
+          email: 'TeSt@Example.com',
+        } as EmailPasswordResetLinkInput,
+        context,
+      );
+
+      expect(throttlerService.tokenBucketThrottleOrThrow).toHaveBeenCalledWith(
+        'password-reset-email:test@example.com',
+        1,
+        expect.any(Number),
+        expect.any(Number),
+      );
+      expect(
+        resetPasswordService.generateAndSendPasswordResetLink,
+      ).toHaveBeenCalledWith(
+        expect.objectContaining({ email: 'test@example.com' }),
+      );
+    });
+
+    it('should surface the throttling error without sending the link', async () => {
+      (
+        throttlerService.tokenBucketThrottleOrThrow as jest.Mock
+      ).mockRejectedValue(
+        new ThrottlerException(
+          'Limit reached',
+          ThrottlerExceptionCode.LIMIT_REACHED,
+        ),
+      );
+
+      await expect(
+        resolver.emailPasswordResetLink(emailPasswordResetInput, context),
+      ).rejects.toThrow(ThrottlerException);
+      expect(
+        resetPasswordService.generateAndSendPasswordResetLink,
+      ).not.toHaveBeenCalled();
+    });
+
+    it('should rethrow non throttling errors', async () => {
+      (
+        throttlerService.tokenBucketThrottleOrThrow as jest.Mock
+      ).mockRejectedValue(new Error('cache down'));
+
+      await expect(
+        resolver.emailPasswordResetLink(emailPasswordResetInput, context),
+      ).rejects.toThrow('cache down');
+      expect(
+        resetPasswordService.generateAndSendPasswordResetLink,
+      ).not.toHaveBeenCalled();
+    });
   });
 });

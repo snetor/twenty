@@ -10,7 +10,7 @@ import {
   IconHeartOff,
   IconPlus,
   useIcons,
-} from 'twenty-ui/display';
+} from 'twenty-ui/icon';
 import { LightIconButton } from 'twenty-ui/input';
 import { ThemeContext, themeCssVariables } from 'twenty-ui/theme-constants';
 import { useIsMobile } from 'twenty-ui/utilities';
@@ -378,12 +378,13 @@ export const NavigationMenuItemFolderDnd = ({
               droppableId={folderContentDroppableId}
               index={navigationMenuItems.length}
               disabled={dropDisabled}
+              collisionPriority={FOLDER_HEADER_SLOT_COLLISION_PRIORITY}
             >
               <NavigationItemDropTarget
                 folderId={folderId}
                 index={navigationMenuItems.length}
                 sectionId={sectionId}
-                compact={isCompact}
+                compact={isEditInPlace ? false : isCompact}
                 dropTargetIdOverride={getDndKitDropTargetId(
                   folderContentDroppableId,
                   navigationMenuItems.length,

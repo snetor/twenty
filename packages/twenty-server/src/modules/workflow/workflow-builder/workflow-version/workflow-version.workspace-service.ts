@@ -1,11 +1,18 @@
 import { Injectable } from '@nestjs/common';
 
 import { isDefined } from 'twenty-shared/utils';
-import { TRIGGER_STEP_ID } from 'twenty-shared/workflow';
+import {
+  buildWorkflowGraph,
+  computeWorkflowLayout,
+  TRIGGER_STEP_ID,
+  WORKFLOW_DIAGRAM_DEFAULT_NODE_DIMENSIONS,
+  WorkflowActionType,
+} from 'twenty-shared/workflow';
 
 import { WithLock } from 'src/engine/core-modules/cache-lock/with-lock.decorator';
 import { RecordPositionService } from 'src/engine/core-modules/record-position/services/record-position.service';
 import { type WorkflowStepPositionUpdateInput } from 'src/engine/core-modules/workflow/dtos/update-workflow-step-position-update.input';
+import { WorkflowVersionCoreSyncService } from 'src/engine/core-modules/workflow/services/workflow-version-core-sync.service';
 import { GlobalWorkspaceOrmManager } from 'src/engine/twenty-orm/global-workspace-datasource/global-workspace-orm.manager';
 import { buildSystemAuthContext } from 'src/engine/twenty-orm/utils/build-system-auth-context.util';
 import {
@@ -23,12 +30,10 @@ import {
 import { assertWorkflowVersionHasSteps } from 'src/modules/workflow/common/utils/assert-workflow-version-has-steps';
 import { assertWorkflowVersionIsDraft } from 'src/modules/workflow/common/utils/assert-workflow-version-is-draft.util';
 import { assertWorkflowVersionTriggerIsDefined } from 'src/modules/workflow/common/utils/assert-workflow-version-trigger-is-defined.util';
+import { WorkflowCommonWorkspaceService } from 'src/modules/workflow/common/workspace-services/workflow-common.workspace-service';
 import { WorkflowVersionStepOperationsWorkspaceService } from 'src/modules/workflow/workflow-builder/workflow-version-step/workflow-version-step-operations.workspace-service';
 import { WorkflowVersionStepWorkspaceService } from 'src/modules/workflow/workflow-builder/workflow-version-step/workflow-version-step.workspace-service';
-import {
-  WorkflowActionType,
-  type WorkflowAction,
-} from 'src/modules/workflow/workflow-executor/workflow-actions/types/workflow-action.type';
+import { type WorkflowAction } from 'src/modules/workflow/workflow-executor/workflow-actions/types/workflow-action.type';
 
 @Injectable()
 export class WorkflowVersionWorkspaceService {
@@ -37,6 +42,8 @@ export class WorkflowVersionWorkspaceService {
     private readonly workflowVersionStepWorkspaceService: WorkflowVersionStepWorkspaceService,
     private readonly workflowVersionStepOperationsWorkspaceService: WorkflowVersionStepOperationsWorkspaceService,
     private readonly recordPositionService: RecordPositionService,
+    private readonly workflowCommonWorkspaceService: WorkflowCommonWorkspaceService,
+    private readonly workflowVersionCoreSyncService: WorkflowVersionCoreSyncService,
   ) {}
 
   @WithLock('workflowId')
@@ -100,10 +107,22 @@ export class WorkflowVersionWorkspaceService {
         if (isDefined(existingDraftVersion)) {
           assertWorkflowVersionIsDraft(existingDraftVersion);
 
-          await workflowVersionRepository.update(existingDraftVersion.id, {
-            steps: newWorkflowVersionSteps,
-            trigger: newWorkflowVersionTrigger,
-          });
+          await this.workflowVersionCoreSyncService.writeWorkflowVersionAndMirror(
+            workspaceId,
+            async (scopedRepository, entityManager) => {
+              await scopedRepository.update(
+                existingDraftVersion.id,
+                {
+                  steps: newWorkflowVersionSteps,
+                  trigger: newWorkflowVersionTrigger,
+                },
+                undefined,
+                entityManager,
+              );
+
+              return existingDraftVersion.id;
+            },
+          );
 
           return {
             ...existingDraftVersion,
@@ -128,17 +147,36 @@ export class WorkflowVersionWorkspaceService {
           workspaceId,
         });
 
-        const insertResult = await workflowVersionRepository.insert({
-          workflowId,
-          name: `v${workflowVersionsCount + 1}`,
-          status: WorkflowVersionStatus.DRAFT,
-          steps: newWorkflowVersionSteps,
-          trigger: newWorkflowVersionTrigger,
-          position,
-        });
+        let draftWorkflowVersion: WorkflowVersionWorkspaceEntity | undefined;
 
-        const draftWorkflowVersion = insertResult
-          .generatedMaps[0] as WorkflowVersionWorkspaceEntity;
+        await this.workflowVersionCoreSyncService.writeWorkflowVersionAndMirror(
+          workspaceId,
+          async (scopedRepository, entityManager) => {
+            const insertResult = await scopedRepository.insert(
+              {
+                workflowId,
+                name: `v${workflowVersionsCount + 1}`,
+                status: WorkflowVersionStatus.DRAFT,
+                steps: newWorkflowVersionSteps,
+                trigger: newWorkflowVersionTrigger,
+                position,
+              },
+              entityManager,
+            );
+
+            draftWorkflowVersion = insertResult
+              .generatedMaps[0] as WorkflowVersionWorkspaceEntity;
+
+            return draftWorkflowVersion.id;
+          },
+        );
+
+        if (!isDefined(draftWorkflowVersion)) {
+          throw new WorkflowVersionStepException(
+            'Failed to create draft workflow version',
+            WorkflowVersionStepExceptionCode.NOT_FOUND,
+          );
+        }
 
         return {
           ...draftWorkflowVersion,
@@ -238,16 +276,6 @@ export class WorkflowVersionWorkspaceService {
             workspaceId,
           });
 
-        const insertVersionResult = await workflowVersionRepository.insert({
-          workflowId: newWorkflowId,
-          name: 'v1',
-          status: WorkflowVersionStatus.DRAFT,
-          position: versionPosition,
-        });
-
-        const newDraftVersion = insertVersionResult
-          .generatedMaps[0] as WorkflowVersionWorkspaceEntity;
-
         const newTrigger = sourceVersion.trigger;
         const sourceToClonedPairs: Array<{
           source: WorkflowAction;
@@ -307,10 +335,36 @@ export class WorkflowVersionWorkspaceService {
           },
         );
 
-        await workflowVersionRepository.update(newDraftVersion.id, {
-          steps: remappedSteps,
-          trigger: remappedTrigger,
-        });
+        let newDraftVersion: WorkflowVersionWorkspaceEntity | undefined;
+
+        await this.workflowVersionCoreSyncService.writeWorkflowVersionAndMirror(
+          workspaceId,
+          async (scopedRepository, entityManager) => {
+            const insertVersionResult = await scopedRepository.insert(
+              {
+                workflowId: newWorkflowId,
+                name: 'v1',
+                status: WorkflowVersionStatus.DRAFT,
+                position: versionPosition,
+                steps: remappedSteps,
+                trigger: remappedTrigger,
+              },
+              entityManager,
+            );
+
+            newDraftVersion = insertVersionResult
+              .generatedMaps[0] as WorkflowVersionWorkspaceEntity;
+
+            return newDraftVersion.id;
+          },
+        );
+
+        if (!isDefined(newDraftVersion)) {
+          throw new WorkflowVersionStepException(
+            'Failed to duplicate workflow version',
+            WorkflowVersionStepExceptionCode.NOT_FOUND,
+          );
+        }
 
         return {
           ...newDraftVersion,
@@ -382,7 +436,65 @@ export class WorkflowVersionWorkspaceService {
         ...(!isDefined(updatedSteps) ? {} : { steps: updatedSteps }),
       };
 
-      await workflowVersionRepository.update(workflowVersionId, updatePayload);
+      await this.workflowVersionCoreSyncService.writeWorkflowVersionAndMirror(
+        workspaceId,
+        async (scopedRepository, entityManager) => {
+          await scopedRepository.update(
+            workflowVersionId,
+            updatePayload,
+            undefined,
+            entityManager,
+          );
+
+          return workflowVersionId;
+        },
+      );
     }, authContext);
+  }
+
+  async autoLayoutWorkflowVersion({
+    workflowVersionId,
+    workspaceId,
+  }: {
+    workflowVersionId: string;
+    workspaceId: string;
+  }) {
+    const workflowVersion =
+      await this.workflowCommonWorkspaceService.getWorkflowVersionOrFail({
+        workspaceId,
+        workflowVersionId,
+      });
+
+    assertWorkflowVersionIsDraft(workflowVersion);
+
+    const steps = workflowVersion.steps ?? [];
+
+    const { childrenByStepId } = buildWorkflowGraph({
+      trigger: workflowVersion.trigger,
+      steps,
+    });
+
+    const nodes = [
+      {
+        id: TRIGGER_STEP_ID,
+        ...WORKFLOW_DIAGRAM_DEFAULT_NODE_DIMENSIONS,
+      },
+      ...steps.map((step) => ({
+        id: step.id,
+        ...WORKFLOW_DIAGRAM_DEFAULT_NODE_DIMENSIONS,
+      })),
+    ];
+
+    const edges = [...childrenByStepId.entries()].flatMap(([source, targets]) =>
+      targets.map((target) => ({ source, target })),
+    );
+
+    const positions = computeWorkflowLayout({ nodes, edges });
+
+    await this.updateWorkflowVersionPositions({
+      workflowVersionId,
+      positions,
+      workspaceId,
+    });
   }
 }

@@ -2,8 +2,7 @@ import { InputLabel } from '@/ui/input/components/InputLabel';
 import { useAtomComponentStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomComponentStateValue';
 import { useSetAtomComponentState } from '@/ui/utilities/state/jotai/hooks/useSetAtomComponentState';
 import { useGetUpdatableWorkflowVersionOrThrow } from '@/workflow/hooks/useGetUpdatableWorkflowVersionOrThrow';
-import { useWorkflowWithCurrentVersion } from '@/workflow/hooks/useWorkflowWithCurrentVersion';
-import { workflowVisualizerWorkflowIdComponentState } from '@/workflow/states/workflowVisualizerWorkflowIdComponentState';
+import { flowComponentState } from '@/workflow/states/flowComponentState';
 import {
   type WorkflowIfElseAction,
   type WorkflowStep,
@@ -27,7 +26,8 @@ import { t } from '@lingui/core/macro';
 import { Fragment } from 'react';
 import { isDefined } from 'twenty-shared/utils';
 import { type StepIfElseBranch } from 'twenty-shared/workflow';
-import { HorizontalSeparator, IconPlus } from 'twenty-ui/display';
+import { IconPlus } from 'twenty-ui/icon';
+import { HorizontalSeparator } from 'twenty-ui/layout';
 import { Button } from 'twenty-ui/input';
 import { themeCssVariables } from 'twenty-ui/theme-constants';
 
@@ -65,10 +65,7 @@ export const WorkflowEditActionIfElseBody = ({
   const { updateWorkflowVersionPosition } = useTidyUpWorkflowVersion();
   const { deleteWorkflowVersionStep } = useDeleteWorkflowVersionStep();
   const { deleteStepsOutputSchema } = useStepsOutputSchema();
-  const workflowVisualizerWorkflowId = useAtomComponentStateValue(
-    workflowVisualizerWorkflowIdComponentState,
-  );
-  const workflow = useWorkflowWithCurrentVersion(workflowVisualizerWorkflowId);
+  const flow = useAtomComponentStateValue(flowComponentState);
 
   const currentStepFilters = useAtomComponentStateValue(
     currentStepFiltersComponentState,
@@ -145,7 +142,7 @@ export const WorkflowEditActionIfElseBody = ({
 
     await cleanupEmptyChildStepsFromDeletedBranches({
       branchesToDelete,
-      allSteps: workflow?.currentVersion?.steps ?? undefined,
+      allSteps: flow?.steps ?? undefined,
     });
 
     setCurrentStepFilterGroups(updatedStepFilterGroups);

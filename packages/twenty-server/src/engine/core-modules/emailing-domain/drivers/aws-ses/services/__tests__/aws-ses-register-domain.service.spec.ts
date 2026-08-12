@@ -2,12 +2,12 @@ import {
   AlreadyExistsException,
   CreateConfigurationSetCommand,
   CreateConfigurationSetEventDestinationCommand,
-  CreateContactListCommand,
   CreateTenantResourceAssociationCommand,
   PutEmailIdentityMailFromAttributesCommand,
 } from '@aws-sdk/client-sesv2';
 
 import { type AwsSesClientProvider } from 'src/engine/core-modules/emailing-domain/drivers/aws-ses/providers/aws-ses-client.provider';
+import { type AwsSesObservabilityService } from 'src/engine/core-modules/emailing-domain/drivers/aws-ses/services/aws-ses-observability.service';
 import { AwsSesRegisterDomainService } from 'src/engine/core-modules/emailing-domain/drivers/aws-ses/services/aws-ses-register-domain.service';
 import { type AwsSesDriverConfig } from 'src/engine/core-modules/emailing-domain/drivers/interfaces/driver-config.interface';
 import { EmailingDomainDriver } from 'src/engine/core-modules/emailing-domain/drivers/types/emailing-domain-driver.type';
@@ -22,7 +22,6 @@ describe('AwsSesRegisterDomainService', () => {
   const provisionInput = {
     tenantName: 'twenty-workspace-ws1',
     configurationSetName: 'twenty-workspace-ws1',
-    contactListName: 'twenty-workspace-ws1',
   };
 
   const buildAlreadyExists = () =>
@@ -36,7 +35,13 @@ describe('AwsSesRegisterDomainService', () => {
     const clientProvider = {
       getSESClient: () => ({ send }),
     } as unknown as AwsSesClientProvider;
-    const service = new AwsSesRegisterDomainService(clientProvider);
+    const awsSesObservabilityService = {
+      addEventDestination: jest.fn().mockResolvedValue(undefined),
+    } as unknown as AwsSesObservabilityService;
+    const service = new AwsSesRegisterDomainService(
+      clientProvider,
+      awsSesObservabilityService,
+    );
 
     return { service, send };
   };
@@ -56,7 +61,6 @@ describe('AwsSesRegisterDomainService', () => {
       expect(commandTypes).toEqual([
         CreateConfigurationSetCommand.name,
         CreateConfigurationSetEventDestinationCommand.name,
-        CreateContactListCommand.name,
         CreateTenantResourceAssociationCommand.name,
       ]);
     });
@@ -75,7 +79,6 @@ describe('AwsSesRegisterDomainService', () => {
       expect(commandTypes).toEqual([
         CreateConfigurationSetCommand.name,
         CreateConfigurationSetEventDestinationCommand.name,
-        CreateContactListCommand.name,
         CreateTenantResourceAssociationCommand.name,
       ]);
     });

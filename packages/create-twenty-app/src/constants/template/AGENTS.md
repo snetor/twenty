@@ -43,7 +43,6 @@
 
 ## Common Pitfalls
 
-- Creating an object without an index view associated. Unless this is a technical object, user will need to visualize it.
 - Creating a view without a navigationMenuItem associated. This will make the view available on the left sidebar.
 - Creating a front-end component that has a scroll instead of being responsive to its fixed widget height and width, unless it is specifically meant to be used in a canvas tab.
 
@@ -63,5 +62,9 @@ It's highly recommended to create new app entities using `yarn twenty dev:add`. 
 | View                 | `yarn twenty dev:add view`               | `src/views/<name>.ts`                 |
 | Navigation menu item | `yarn twenty dev:add navigationMenuItem` | `src/navigation-menu-items/<name>.ts` |
 | Page layout          | `yarn twenty dev:add pageLayout`         | `src/page-layouts/<name>.ts`          |
+| Page layout tab      | `yarn twenty dev:add pageLayoutTab`      | `src/page-layout-tabs/<name>.ts`      |
+| Command menu item    | `yarn twenty dev:add commandMenuItem`    | `src/command-menu-items/<name>.ts`    |
+| View field           | `yarn twenty dev:add viewField`          | `src/view-fields/<name>.ts`           |
+| Connection provider  | `yarn twenty dev:add connectionProvider` | `src/connection-providers/<name>.ts`  |
 
 This helps automatically generate required IDs etc.

@@ -105,6 +105,29 @@ describe('ClickHouseService', () => {
         table: 'test_table',
         values: testData,
         format: 'JSONEachRow',
+        clickhouse_settings: {
+          async_insert: 1,
+          wait_for_async_insert: 1,
+        },
+      });
+    });
+
+    it('should allow overriding the asynchronous insert busy timeout', async () => {
+      const testData = [{ id: 1, name: 'test' }];
+      const result = await service.insert('test_table', testData, {
+        asyncInsertBusyTimeoutMaxMs: 100,
+      });
+
+      expect(result).toEqual({ success: true });
+      expect(mockClickHouseClient.insert).toHaveBeenCalledWith({
+        table: 'test_table',
+        values: testData,
+        format: 'JSONEachRow',
+        clickhouse_settings: {
+          async_insert: 1,
+          async_insert_busy_timeout_max_ms: 100,
+          wait_for_async_insert: 1,
+        },
       });
     });
 

@@ -16,8 +16,7 @@ import { useIsFeatureEnabled } from '@/workspace/hooks/useIsFeatureEnabled';
 import { t } from '@lingui/core/macro';
 import { isNonEmptyString } from '@sniptt/guards';
 import {
-  IconApi,
-  // IconApps, // TODO: Re-enable when integrations page is ready
+  IconApps,
   IconAt,
   IconCalendarEvent,
   IconColorSwatch,
@@ -29,13 +28,14 @@ import {
   IconLayout,
   IconMail,
   IconMessage,
+  IconMessageCircle,
   IconPlug,
   IconServer,
   IconSettings,
   IconSparkles,
   IconUserCircle,
   IconUsers,
-} from 'twenty-ui/display';
+} from 'twenty-ui/icon';
 import { PermissionFlagType } from '~/generated-metadata/graphql';
 
 export type SettingsNavigationSection = {
@@ -149,9 +149,9 @@ const useSettingsNavigationItems = (): SettingsNavigationSection[] => {
             !isBillingEnabled || !permissionMap[PermissionFlagType.WORKSPACE],
         },
         {
-          label: t`APIs & Webhooks`,
+          label: t`MCP & APIs`,
           path: SettingsPath.ApiWebhooks,
-          Icon: IconApi,
+          Icon: IconPlug,
           isHidden: !permissionMap[PermissionFlagType.API_KEYS_AND_WEBHOOKS],
         },
         // TODO: Re-enable when integrations page is ready
@@ -164,7 +164,7 @@ const useSettingsNavigationItems = (): SettingsNavigationSection[] => {
         {
           label: t`Apps`,
           path: SettingsPath.Applications,
-          Icon: IconPlug,
+          Icon: IconApps,
           isHidden: !permissionMap[PermissionFlagType.APPLICATIONS],
         },
         {
@@ -174,9 +174,9 @@ const useSettingsNavigationItems = (): SettingsNavigationSection[] => {
           isHidden: !permissionMap[PermissionFlagType.AI_SETTINGS],
         },
         {
-          label: t`Email`,
-          path: SettingsPath.WorkspaceEmail,
-          Icon: IconMail,
+          label: t`Communication`,
+          path: SettingsPath.WorkspaceCommunications,
+          Icon: IconMessageCircle,
           isHidden:
             !isEmailGroupFeatureEnabled ||
             !permissionMap[PermissionFlagType.WORKSPACE],

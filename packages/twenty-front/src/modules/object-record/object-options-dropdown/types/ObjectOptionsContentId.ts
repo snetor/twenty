@@ -1,12 +1,14 @@
 export type ObjectOptionsContentId =
   | 'layout'
-  | 'layoutOpenIn'
   | 'fields'
   | 'hiddenFields'
   | 'recordGroups'
   | 'hiddenRecordGroups'
   | 'recordGroupFields'
   | 'recordGroupSort'
+  | 'addRecordGroup'
+  | 'calendarDateFields'
   | 'calendarFields'
+  | 'calendarEndFields'
   | 'calendarView'
   | 'visibility';

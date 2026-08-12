@@ -2,7 +2,7 @@ import { SKELETON_LOADER_HEIGHT_SIZES } from '@/activities/components/SkeletonLo
 import { Logo } from '@/auth/components/Logo';
 import { Title } from '@/auth/components/Title';
 import { useAuth } from '@/auth/hooks/useAuth';
-import { useHasAccessTokenPair } from '@/auth/hooks/useHasAccessTokenPair';
+import { useIsLogged } from '@/auth/hooks/useIsLogged';
 import { StyledOnboardingContentContainer } from '@/auth/components/StyledOnboardingContentContainer';
 import { currentUserState } from '@/auth/states/currentUserState';
 import { workspacePublicDataState } from '@/auth/states/workspacePublicDataState';
@@ -13,7 +13,7 @@ import { useIsCurrentLocationOnAWorkspace } from '@/domain-manager/hooks/useIsCu
 import { useRedirect } from '@/domain-manager/hooks/useRedirect';
 import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import { TextInput } from '@/ui/input/components/TextInput';
-import { ModalContent } from 'twenty-ui/layout';
+import { ModalContent } from 'twenty-ui/surfaces';
 import { CombinedGraphQLErrors } from '@apollo/client/errors';
 import { styled } from '@linaria/react';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -31,7 +31,7 @@ import { useSetAtomState } from '@/ui/utilities/state/jotai/hooks/useSetAtomStat
 import { AppPath } from 'twenty-shared/types';
 import { MainButton } from 'twenty-ui/input';
 import { ThemeContext, themeCssVariables } from 'twenty-ui/theme-constants';
-import { AnimatedEaseIn } from 'twenty-ui/utilities';
+import { AnimatedEaseIn } from 'twenty-ui/layout';
 import { z } from 'zod';
 import { useMutation, useQuery } from '@apollo/client/react';
 import {
@@ -97,7 +97,7 @@ export const PasswordReset = () => {
   const [isTargetUserPasswordSet, setIsTargetUserPasswordSet] = useState(false);
   const passwordResetToken = useParams().passwordResetToken;
 
-  const hasAccessTokenPair = useHasAccessTokenPair();
+  const isLogged = useIsLogged();
 
   const { control, handleSubmit } = useForm<Form>({
     mode: 'onChange',
@@ -115,6 +115,7 @@ export const PasswordReset = () => {
         token: passwordResetToken ?? '',
       },
       skip: !passwordResetToken || isTokenValid,
+      context: { skipAuthToken: true },
     },
   );
 
@@ -142,6 +143,9 @@ export const PasswordReset = () => {
 
   const [updatePasswordViaToken, { loading: isUpdatingPassword }] = useMutation(
     UpdatePasswordViaResetTokenDocument,
+    {
+      context: { skipAuthToken: true },
+    },
   );
 
   const { signInWithCredentialsInWorkspace, signInWithCredentials } = useAuth();
@@ -174,7 +178,7 @@ export const PasswordReset = () => {
         currentUser ? { ...currentUser, hasPassword: true } : currentUser,
       );
 
-      if (hasAccessTokenPair) {
+      if (isLogged) {
         enqueueSuccessSnackBar({
           message: successMessage,
         });

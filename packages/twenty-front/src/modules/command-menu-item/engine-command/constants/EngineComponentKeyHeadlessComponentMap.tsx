@@ -1,7 +1,12 @@
 import { HeadlessFrontComponentRendererEngineCommand } from '@/command-menu-item/engine-command/components/HeadlessFrontComponentRendererEngineCommand';
 import { HeadlessNavigateEngineCommand } from '@/command-menu-item/engine-command/components/HeadlessNavigateEngineCommand';
+import { HeadlessOpenAiChatHistoryTabEngineCommand } from '@/command-menu-item/engine-command/components/HeadlessOpenAiChatHistoryTabEngineCommand';
 import { HeadlessOpenSidePanelPageEngineCommand } from '@/command-menu-item/engine-command/components/HeadlessOpenSidePanelPageEngineCommand';
 import { NavigationEngineCommand } from '@/command-menu-item/engine-command/components/NavigationEngineCommand';
+import { ComposeCampaignCommand } from '@/command-menu-item/engine-command/global/components/ComposeCampaignCommand';
+import { SendMessageCampaignSingleRecordCommand } from '@/command-menu-item/engine-command/record/single-record/message-campaign/components/SendMessageCampaignSingleRecordCommand';
+import { SendMessageCampaignTestSingleRecordCommand } from '@/command-menu-item/engine-command/record/single-record/message-campaign/components/SendMessageCampaignTestSingleRecordCommand';
+import { OpenEmailBlockSettingsSingleRecordCommand } from '@/command-menu-item/engine-command/record/components/OpenEmailBlockSettingsSingleRecordCommand';
 import { ComposeEmailCommand } from '@/command-menu-item/engine-command/global/components/ComposeEmailCommand';
 import { DeleteRecordsCommand } from '@/command-menu-item/engine-command/record/components/DeleteRecordsCommand';
 import { DestroyRecordsCommand } from '@/command-menu-item/engine-command/record/components/DestroyRecordsCommand';
@@ -28,6 +33,7 @@ import { ReplyToEmailThreadCommand } from '@/command-menu-item/engine-command/re
 import { EditRecordPageLayoutSingleRecordCommand } from '@/command-menu-item/engine-command/record/single-record/record-page-layout/components/EditRecordPageLayoutSingleRecordCommand';
 import { SeeVersionWorkflowRunSingleRecordCommand } from '@/command-menu-item/engine-command/record/single-record/workflow-runs/components/SeeVersionWorkflowRunSingleRecordCommand';
 import { SeeWorkflowWorkflowRunSingleRecordCommand } from '@/command-menu-item/engine-command/record/single-record/workflow-runs/components/SeeWorkflowWorkflowRunSingleRecordCommand';
+import { RetryWorkflowRunSingleRecordCommand } from '@/command-menu-item/engine-command/record/single-record/workflow-runs/components/RetryWorkflowRunSingleRecordCommand';
 import { StopWorkflowRunSingleRecordCommand } from '@/command-menu-item/engine-command/record/single-record/workflow-runs/components/StopWorkflowRunSingleRecordCommand';
 import { SeeRunsWorkflowVersionSingleRecordCommand } from '@/command-menu-item/engine-command/record/single-record/workflow-versions/components/SeeRunsWorkflowVersionSingleRecordCommand';
 import { SeeVersionsWorkflowVersionSingleRecordCommand } from '@/command-menu-item/engine-command/record/single-record/workflow-versions/components/SeeVersionsWorkflowVersionSingleRecordCommand';
@@ -46,7 +52,7 @@ import { TidyUpWorkflowSingleRecordCommand } from '@/command-menu-item/engine-co
 import { CoreObjectNamePlural } from '@/object-metadata/types/CoreObjectNamePlural';
 import { msg } from '@lingui/core/macro';
 import { AppPath, SettingsPath, SidePanelPages } from 'twenty-shared/types';
-import { IconHistory, IconSearch, IconSparkles } from 'twenty-ui/display';
+import { IconSearch, IconSparkles } from 'twenty-ui/icon';
 import { EngineComponentKey } from '~/generated-metadata/graphql';
 
 export const ENGINE_COMPONENT_KEY_COMPONENT_MAP: Record<
@@ -82,6 +88,9 @@ export const ENGINE_COMPONENT_KEY_COMPONENT_MAP: Record<
   [EngineComponentKey.TEST_WORKFLOW]: <TestWorkflowSingleRecordCommand />,
   [EngineComponentKey.STOP_WORKFLOW_RUN]: (
     <StopWorkflowRunSingleRecordCommand />
+  ),
+  [EngineComponentKey.RETRY_WORKFLOW_RUN]: (
+    <RetryWorkflowRunSingleRecordCommand />
   ),
   [EngineComponentKey.USE_AS_DRAFT_WORKFLOW_VERSION]: (
     <UseAsDraftWorkflowVersionSingleRecordCommand />
@@ -207,11 +216,7 @@ export const ENGINE_COMPONENT_KEY_COMPONENT_MAP: Record<
     />
   ),
   [EngineComponentKey.VIEW_PREVIOUS_AI_CHATS]: (
-    <HeadlessOpenSidePanelPageEngineCommand
-      page={SidePanelPages.ViewPreviousAiChats}
-      pageTitle={msg`View Previous AI Chats`}
-      pageIcon={IconHistory}
-    />
+    <HeadlessOpenAiChatHistoryTabEngineCommand />
   ),
   [EngineComponentKey.SEE_ACTIVE_VERSION_WORKFLOW]: (
     <SeeActiveVersionWorkflowSingleRecordCommand />
@@ -248,6 +253,16 @@ export const ENGINE_COMPONENT_KEY_COMPONENT_MAP: Record<
   ),
   [EngineComponentKey.REPLY_TO_EMAIL_THREAD]: <ReplyToEmailThreadCommand />,
   [EngineComponentKey.COMPOSE_EMAIL]: <ComposeEmailCommand />,
+  [EngineComponentKey.COMPOSE_CAMPAIGN]: <ComposeCampaignCommand />,
+  [EngineComponentKey.SEND_MESSAGE_CAMPAIGN]: (
+    <SendMessageCampaignSingleRecordCommand />
+  ),
+  [EngineComponentKey.SEND_MESSAGE_CAMPAIGN_TEST]: (
+    <SendMessageCampaignTestSingleRecordCommand />
+  ),
+  [EngineComponentKey.EMAIL_BLOCK_SETTINGS]: (
+    <OpenEmailBlockSettingsSingleRecordCommand />
+  ),
 
   // Deprecated keys kept for backward compatibility until migration runs
   [EngineComponentKey.DELETE_SINGLE_RECORD]: <DeleteRecordsCommand />,
