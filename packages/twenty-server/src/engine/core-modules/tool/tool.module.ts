@@ -12,6 +12,7 @@ import { DraftEmailTool } from 'src/engine/core-modules/tool/tools/email-tool/dr
 import { EmailComposerService } from 'src/engine/core-modules/tool/tools/email-tool/email-composer.service';
 import { SendEmailTool } from 'src/engine/core-modules/tool/tools/email-tool/send-email-tool';
 import { HttpTool } from 'src/engine/core-modules/tool/tools/http-tool/http-tool';
+import { CountryScopeModule } from 'src/engine/core-modules/country-scope/country-scope.module';
 import { NavigateAppTool } from 'src/engine/core-modules/tool/tools/navigate-tool/navigate-app-tool';
 import { SearchHelpCenterTool } from 'src/engine/core-modules/tool/tools/search-help-center-tool/search-help-center-tool';
 import { WorkspaceManyOrAllFlatEntityMapsCacheModule } from 'src/engine/metadata-modules/flat-entity/services/workspace-many-or-all-flat-entity-maps-cache.module';
@@ -37,6 +38,7 @@ import { provideWorkspaceScopedRepository } from 'src/engine/twenty-orm/workspac
     ViewModule,
     NavigationMenuItemModule,
     WorkspaceManyOrAllFlatEntityMapsCacheModule,
+    CountryScopeModule,
   ],
   providers: [
     HttpTool,
