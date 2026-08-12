@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
+import { CountryScopeModule } from 'src/engine/core-modules/country-scope/country-scope.module';
 import { FileUrlModule } from 'src/engine/core-modules/file/file-url/file-url.module';
 import { TimelineCalendarEventResolver } from 'src/engine/core-modules/calendar/timeline-calendar-event.resolver';
 import { TimelineCalendarEventService } from 'src/engine/core-modules/calendar/timeline-calendar-event.service';
@@ -15,6 +16,7 @@ import { UserModule } from 'src/engine/core-modules/user/user.module';
     FileUrlModule,
     UserModule,
     RelatedPersonIdsModule,
+    CountryScopeModule,
     TypeOrmModule.forFeature([
       CalendarChannelEntity,
       ConnectedAccountEntity,

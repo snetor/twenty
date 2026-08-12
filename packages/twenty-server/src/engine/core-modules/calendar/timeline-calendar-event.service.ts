@@ -9,6 +9,7 @@ import { Any, In, type Repository } from 'typeorm';
 import { CalendarChannelVisibility } from 'twenty-shared/types';
 import { TIMELINE_CALENDAR_EVENTS_DEFAULT_PAGE_SIZE } from 'src/engine/core-modules/calendar/constants/calendar.constants';
 import { type TimelineCalendarEventsWithTotalDTO } from 'src/engine/core-modules/calendar/dtos/timeline-calendar-events-with-total.dto';
+import { CountryScopeService } from 'src/engine/core-modules/country-scope/services/country-scope.service';
 import { FileUrlService } from 'src/engine/core-modules/file/file-url/file-url.service';
 import { RelatedPersonIdsService } from 'src/engine/core-modules/related-person-ids/services/related-person-ids.service';
 import { CalendarChannelEntity } from 'src/engine/metadata-modules/calendar-channel/entities/calendar-channel.entity';
@@ -33,6 +34,7 @@ export class TimelineCalendarEventService {
     private readonly userWorkspaceRepository: Repository<UserWorkspaceEntity>,
     private readonly relatedPersonIdsService: RelatedPersonIdsService,
     private readonly fileUrlService: FileUrlService,
+    private readonly countryScopeService: CountryScopeService,
   ) {}
 
   async getCalendarEventsFromPersonIds({
@@ -48,6 +50,24 @@ export class TimelineCalendarEventService {
     page: number;
     pageSize: number;
   }): Promise<TimelineCalendarEventsWithTotalDTO> {
+    // Snetor — cloisonnement par pays. Même trou que côté messagerie : les trois entrées
+    // de l'onglet Calendar se rejoignent ici, et tout ce chemin s'exécute en contexte
+    // système, que le filtre du choke-point ORM laisse passer.
+    const personIdsInScope =
+      await this.countryScopeService.keepPersonIdsInScope({
+        personIds,
+        workspaceMemberId: currentWorkspaceMemberId,
+        workspaceId,
+      });
+
+    if (personIdsInScope.length === 0) {
+      return {
+        totalNumberOfCalendarEvents: 0,
+        timelineCalendarEvents: [],
+        relatedPersonIds: [],
+      };
+    }
+
     const authContext = buildSystemAuthContext(workspaceId);
 
     return this.globalWorkspaceOrmManager.executeInWorkspaceContext(
@@ -64,7 +84,7 @@ export class TimelineCalendarEventService {
           {
             where: {
               calendarEventParticipants: {
-                personId: Any(personIds),
+                personId: Any(personIdsInScope),
               },
             },
           },
@@ -73,7 +93,7 @@ export class TimelineCalendarEventService {
         const calendarEventIds = await calendarEventRepository.find({
           where: {
             calendarEventParticipants: {
-              personId: Any(personIds),
+              personId: Any(personIdsInScope),
             },
           },
           select: {
@@ -93,7 +113,7 @@ export class TimelineCalendarEventService {
           return {
             totalNumberOfCalendarEvents,
             timelineCalendarEvents: [],
-            relatedPersonIds: personIds,
+            relatedPersonIds: personIdsInScope,
           };
         }
 
@@ -322,7 +342,7 @@ export class TimelineCalendarEventService {
         return {
           totalNumberOfCalendarEvents,
           timelineCalendarEvents,
-          relatedPersonIds: personIds,
+          relatedPersonIds: personIdsInScope,
         };
       },
       authContext,

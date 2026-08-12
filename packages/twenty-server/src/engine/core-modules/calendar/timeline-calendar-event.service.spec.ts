@@ -4,6 +4,7 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { FIELD_RESTRICTED_ADDITIONAL_PERMISSIONS_REQUIRED } from 'twenty-shared/constants';
 
 import { CalendarChannelVisibility } from 'twenty-shared/types';
+import { CountryScopeService } from 'src/engine/core-modules/country-scope/services/country-scope.service';
 import { FileUrlService } from 'src/engine/core-modules/file/file-url/file-url.service';
 import { UserWorkspaceEntity } from 'src/engine/core-modules/user-workspace/user-workspace.entity';
 import { RelatedPersonIdsService } from 'src/engine/core-modules/related-person-ids/services/related-person-ids.service';
@@ -32,6 +33,7 @@ describe('TimelineCalendarEventService', () => {
   let mockWorkspaceMemberRepository: { findOne: jest.Mock };
   let mockFileUrlService: { signFirstFilesFieldFileUrl: jest.Mock };
   let mockCallRecordingRepository: { find: jest.Mock };
+  let mockCountryScopeService: { keepPersonIdsInScope: jest.Mock };
 
   const mockCalendarEvent: Partial<CalendarEventWorkspaceEntity> = {
     id: '1',
@@ -68,6 +70,16 @@ describe('TimelineCalendarEventService', () => {
 
     mockFileUrlService = {
       signFirstFilesFieldFileUrl: jest.fn().mockResolvedValue(null),
+    };
+
+    // Workspace non cloisonné : le périmètre rend la liste inchangée. Le cloisonnement
+    // lui-même est testé dans `country-scope.service.spec.ts`.
+    mockCountryScopeService = {
+      keepPersonIdsInScope: jest
+        .fn()
+        .mockImplementation(({ personIds }: { personIds: string[] }) =>
+          Promise.resolve(personIds),
+        ),
     };
 
     mockCallRecordingRepository = {
@@ -115,6 +127,10 @@ describe('TimelineCalendarEventService', () => {
         {
           provide: RelatedPersonIdsService,
           useValue: { getRelatedPersonIds: jest.fn().mockResolvedValue([]) },
+        },
+        {
+          provide: CountryScopeService,
+          useValue: mockCountryScopeService,
         },
         {
           provide: FileUrlService,

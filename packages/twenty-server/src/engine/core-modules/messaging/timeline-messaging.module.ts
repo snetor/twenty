@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
+import { CountryScopeModule } from 'src/engine/core-modules/country-scope/country-scope.module';
 import { FileUrlModule } from 'src/engine/core-modules/file/file-url/file-url.module';
 import { GetMessagesService } from 'src/engine/core-modules/messaging/services/get-messages.service';
 import { TimelineMessagingService } from 'src/engine/core-modules/messaging/services/timeline-messaging.service';
@@ -20,6 +21,7 @@ import { FeatureFlagModule } from 'src/engine/core-modules/feature-flag/feature-
     WorkspaceDataSourceModule,
     FileUrlModule,
     UserModule,
+    CountryScopeModule,
     ConnectedAccountModule,
     FeatureFlagModule,
     PermissionsModule,
