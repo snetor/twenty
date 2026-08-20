@@ -8,17 +8,18 @@ import { ViewService } from 'src/engine/metadata-modules/view/services/view.serv
 import { GlobalWorkspaceOrmManager } from 'src/engine/twenty-orm/global-workspace-datasource/global-workspace-orm.manager';
 
 // `navigateToRecord` lit TOUS les enregistrements de l'objet en bypass de permissions et en
-// contexte système : ni les permissions object-level ni le filtre pays ne s'y appliquent, et
-// l'outil est exposé sans flag de permission. Le périmètre pays y est donc posé à la main, et
+// contexte système : ni les permissions object-level ni le filtre de portée ne s'y appliquent,
+// et l'outil est exposé sans flag de permission. Le périmètre y est donc posé à la main, et
 // c'est ce que vérifie ce test — un enregistrement hors périmètre ne doit pas être trouvable.
-describe('NavigateAppTool — périmètre pays sur navigateToRecord', () => {
+describe('NavigateAppTool — périmètre sur navigateToRecord', () => {
   let tool: NavigateAppTool;
 
   const find = jest.fn();
   const resolveScopeForUser = jest.fn();
 
-  // Objet `company` portant un libellé `name` et un `countryCode`. Forme canonique des
-  // flat maps : fieldIds -> universalIdentifierById -> byUniversalIdentifier.
+  // Objet `company` portant un libellé `name`, un `scopePath` et un `countryCode` — la
+  // forme du workspace réel. Forme canonique des flat maps :
+  // fieldIds -> universalIdentifierById -> byUniversalIdentifier.
   const flatMaps = {
     flatObjectMetadataMaps: {
       byUniversalIdentifier: {
@@ -26,17 +27,19 @@ describe('NavigateAppTool — périmètre pays sur navigateToRecord', () => {
           nameSingular: 'company',
           isActive: true,
           labelIdentifierFieldMetadataId: 'name-field-id',
-          fieldIds: ['name-field-id', 'cc-field-id'],
+          fieldIds: ['name-field-id', 'sp-field-id', 'cc-field-id'],
         },
       },
     },
     flatFieldMetadataMaps: {
       universalIdentifierById: {
         'name-field-id': 'name-uid',
+        'sp-field-id': 'sp-uid',
         'cc-field-id': 'cc-uid',
       },
       byUniversalIdentifier: {
         'name-uid': { id: 'name-field-id', name: 'name', type: 'TEXT' },
+        'sp-uid': { id: 'sp-field-id', name: 'scopePath', type: 'TEXT' },
         'cc-uid': { id: 'cc-field-id', name: 'countryCode', type: 'TEXT' },
       },
     },
@@ -89,8 +92,8 @@ describe('NavigateAppTool — périmètre pays sur navigateToRecord', () => {
 
   it('ne trouve pas une société hors du périmètre du membre', async () => {
     resolveScopeForUser.mockResolvedValue({
-      kind: 'countries',
-      allowed: ['CI'],
+      kind: 'tokens',
+      allowed: ['c:CI'],
     });
     find.mockResolvedValue([
       { id: 'company-co', name: 'Polimeros Andinos', countryCode: 'CO' },
@@ -106,8 +109,8 @@ describe('NavigateAppTool — périmètre pays sur navigateToRecord', () => {
 
   it('trouve une société du périmètre et rend son id', async () => {
     resolveScopeForUser.mockResolvedValue({
-      kind: 'countries',
-      allowed: ['CI'],
+      kind: 'tokens',
+      allowed: ['c:CI'],
     });
     find.mockResolvedValue([
       { id: 'company-ci', name: 'Abidjan Plastiques', countryCode: 'CI' },
@@ -124,21 +127,22 @@ describe('NavigateAppTool — périmètre pays sur navigateToRecord', () => {
     });
   });
 
-  it('sélectionne countryCode pour pouvoir filtrer quand le membre est cloisonné', async () => {
+  it('sélectionne les champs de portée pour pouvoir filtrer quand le membre est cloisonné', async () => {
     resolveScopeForUser.mockResolvedValue({
-      kind: 'countries',
-      allowed: ['CI'],
+      kind: 'tokens',
+      allowed: ['c:CI'],
     });
     find.mockResolvedValue([]);
 
     await navigateToRecord('peu importe');
 
+    // ⚠️ Sans ces colonnes, le filtre les lit `undefined` et laisse tout passer.
     expect(find).toHaveBeenCalledWith({
-      select: ['id', 'name', 'countryCode'],
+      select: ['id', 'name', 'scopePath', 'countryCode'],
     });
   });
 
-  it('ne filtre rien et ne lit pas countryCode pour un membre non cloisonné', async () => {
+  it('ne filtre rien et ne lit aucun champ de portée pour un membre non cloisonné', async () => {
     resolveScopeForUser.mockResolvedValue({ kind: 'unscoped' });
     find.mockResolvedValue([
       { id: 'company-co', name: 'Polimeros Andinos', countryCode: 'CO' },
@@ -147,6 +151,75 @@ describe('NavigateAppTool — périmètre pays sur navigateToRecord', () => {
     const result = await navigateToRecord('Polimeros Andinos');
 
     expect(find).toHaveBeenCalledWith({ select: ['id', 'name'] });
+    expect(result.success).toBe(true);
+  });
+  // --- Portefeuille (lot B2). Le périmètre du membre est une liste de jetons ; le pays
+  // n'est plus qu'un jeton parmi d'autres, et le repli quand l'enregistrement n'a pas de
+  // portée écrite.
+
+  it('ne trouve pas une société d un autre groupe du MÊME pays', async () => {
+    // La régression que le lot B2 corrige : sous le filtre pays, `company-autre` était
+    // visible parce que le pays suffisait.
+    resolveScopeForUser.mockResolvedValue({
+      kind: 'tokens',
+      allowed: ['g:217', 'c:CI'],
+    });
+    find.mockResolvedValue([
+      {
+        id: 'company-autre',
+        name: 'Abidjan Polymers',
+        scopePath: '|g:260|',
+        countryCode: 'CI',
+      },
+    ]);
+
+    const result = await navigateToRecord('Abidjan Polymers');
+
+    expect(result.success).toBe(false);
+    expect(find).toHaveBeenCalled();
+  });
+
+  it('trouve une société portée par plusieurs groupes dont un des miens', async () => {
+    resolveScopeForUser.mockResolvedValue({
+      kind: 'tokens',
+      allowed: ['g:217'],
+    });
+    find.mockResolvedValue([
+      {
+        id: 'company-partagee',
+        name: 'Abidjan Plastiques',
+        scopePath: '|g:217|g:260|',
+        countryCode: 'CI',
+      },
+    ]);
+
+    const result = await navigateToRecord('Abidjan Plastiques');
+
+    expect(result.success).toBe(true);
+    expect(result.result).toEqual({
+      action: 'navigateToRecord',
+      objectNameSingular: 'company',
+      recordId: 'company-partagee',
+    });
+  });
+
+  it('retombe sur le pays quand la société n a pas encore de scopePath', async () => {
+    // 4112 enregistrements du workspace sont dans ce cas au 2026-08-19.
+    resolveScopeForUser.mockResolvedValue({
+      kind: 'tokens',
+      allowed: ['g:217', 'c:CI'],
+    });
+    find.mockResolvedValue([
+      {
+        id: 'company-sans-portee',
+        name: 'Abidjan Chimie',
+        scopePath: '',
+        countryCode: 'CI',
+      },
+    ]);
+
+    const result = await navigateToRecord('Abidjan Chimie');
+
     expect(result.success).toBe(true);
   });
 });

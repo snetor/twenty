@@ -6,16 +6,18 @@ import { isDefined } from 'twenty-shared/utils';
 import { GlobalWorkspaceOrmManager } from 'src/engine/twenty-orm/global-workspace-datasource/global-workspace-orm.manager';
 import { buildSystemAuthContext } from 'src/engine/twenty-orm/utils/build-system-auth-context.util';
 import {
-  type CountryScope,
-  isCountryInScope,
+  isScopeInScope,
   readMemberCountryScopeField,
+  readMemberScopesField,
   readRecordCountryCodeField,
-  resolveCountryScope,
+  readRecordScopePathField,
+  resolveScope,
+  type Scope,
 } from 'src/engine/twenty-orm/utils/resolve-country-scope.util';
 import { type PersonWorkspaceEntity } from 'src/modules/person/standard-objects/person.workspace-entity';
 import { type WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-member/standard-objects/workspace-member.workspace-entity';
 
-// Cloisonnement par pays des chemins qui s'exécutent en contexte SYSTÈME.
+// Cloisonnement des chemins qui s'exécutent en contexte SYSTÈME.
 //
 // Le filtre du choke-point ORM (`apply-country-permission-filter.util.ts`) ne s'applique
 // qu'à un contexte utilisateur : il sort immédiatement sur un contexte système. Les
@@ -40,7 +42,7 @@ export class CountryScopeService {
    *
    * `userId` absent = exécution sans utilisateur (workflow, job) : rendu `unscoped`, comme
    * le fait le filtre ORM pour tout contexte non-utilisateur. Un membre introuvable est en
-   * revanche un cas anormal, et il est rendu `{ countries: [] }` — default-deny.
+   * revanche un cas anormal, et il est rendu `{ tokens: [] }` — default-deny.
    */
   async resolveScopeForUser({
     userId,
@@ -48,7 +50,7 @@ export class CountryScopeService {
   }: {
     userId: string | undefined;
     workspaceId: string;
-  }): Promise<CountryScope> {
+  }): Promise<Scope> {
     if (!isDefined(userId)) {
       return { kind: 'unscoped' };
     }
@@ -69,10 +71,11 @@ export class CountryScopeService {
         });
 
         if (!isDefined(workspaceMember)) {
-          return { kind: 'countries', allowed: [] };
+          return { kind: 'tokens', allowed: [] };
         }
 
-        return resolveCountryScope(
+        return resolveScope(
+          readMemberScopesField(workspaceMember),
           readMemberCountryScopeField(workspaceMember),
         );
       },
@@ -81,14 +84,15 @@ export class CountryScopeService {
   }
 
   /**
-   * Restreint une liste de personnes au périmètre pays du membre courant.
+   * Restreint une liste de personnes au périmètre du membre courant — portefeuille
+   * (`scopePath`) d'abord, repli pays comme le fait le choke-point ORM.
    *
-   * Rend la liste inchangée si le workspace n'est pas cloisonné (champ `allowedCountries`
-   * absent) ou si le membre est « tous pays ». Rend une liste vide si le membre est
-   * introuvable ou si aucune des personnes n'est dans son périmètre — l'appelant doit
+   * Rend la liste inchangée si le workspace n'est pas cloisonné (les deux champs de
+   * périmètre absents) ou si le membre est « tous pays ». Rend une liste vide si le membre
+   * est introuvable ou si aucune des personnes n'est dans son périmètre — l'appelant doit
    * alors renvoyer un résultat vide, pas tout le workspace.
    *
-   * Une personne sans `countryCode` est écartée, comme le fait le SQL du choke-point ORM.
+   * Une personne sans portée ET sans `countryCode` est écartée, comme le fait le SQL.
    */
   async keepPersonIdsInScope({
     personIds,
@@ -122,7 +126,8 @@ export class CountryScopeService {
           return [];
         }
 
-        const scope = resolveCountryScope(
+        const scope = resolveScope(
+          readMemberScopesField(workspaceMember),
           readMemberCountryScopeField(workspaceMember),
         );
 
@@ -143,7 +148,11 @@ export class CountryScopeService {
 
         return persons
           .filter((person) =>
-            isCountryInScope(scope, readRecordCountryCodeField(person)),
+            isScopeInScope(
+              scope,
+              readRecordScopePathField(person),
+              readRecordCountryCodeField(person),
+            ),
           )
           .map((person) => person.id);
       },
