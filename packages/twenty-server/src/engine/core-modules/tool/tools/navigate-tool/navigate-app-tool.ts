@@ -26,8 +26,10 @@ import { GlobalWorkspaceOrmManager } from 'src/engine/twenty-orm/global-workspac
 import { buildSystemAuthContext } from 'src/engine/twenty-orm/utils/build-system-auth-context.util';
 import {
   COUNTRY_FIELD,
-  isCountryInScope,
+  isScopeInScope,
   readRecordCountryCodeField,
+  readRecordScopePathField,
+  SCOPE_PATH_FIELD,
 } from 'src/engine/twenty-orm/utils/resolve-country-scope.util';
 
 @Injectable()
@@ -341,7 +343,8 @@ export class NavigateAppTool implements Tool {
         ]
       : ['id', labelIdentifierField.name];
 
-    // Snetor — cloisonnement par pays. Cette recherche lit TOUS les enregistrements de
+    // Snetor — cloisonnement par portefeuille, repli pays. Cette recherche lit TOUS les
+    // enregistrements de
     // l'objet en bypass de permissions et en contexte système : ni les permissions
     // object-level ni le filtre pays ne s'y appliquent. Sans le périmètre posé ici, l'outil
     // rend le libellé et l'id de clients d'un autre pays — et il est exposé sans aucun flag
@@ -355,11 +358,20 @@ export class NavigateAppTool implements Tool {
       flatFieldMetadataMaps,
       flatObjectMetadata,
     );
-    const shouldFilterByCountry =
-      scope.kind === 'countries' && isDefined(fieldIdByName[COUNTRY_FIELD]);
+    // ⚠️ La recherche impose une liste de colonnes : les champs de portée doivent y être
+    // ajoutés explicitement, sinon `isScopeInScope` les lit `undefined` et laisse tout
+    // passer. C'est le mode de panne le plus discret de cette surface.
+    const hasScopePath = isDefined(fieldIdByName[SCOPE_PATH_FIELD]);
+    const hasCountry = isDefined(fieldIdByName[COUNTRY_FIELD]);
+    const shouldFilterByScope =
+      scope.kind === 'tokens' && (hasScopePath || hasCountry);
 
-    const selectColumns = shouldFilterByCountry
-      ? [...baseSelectColumns, COUNTRY_FIELD]
+    const selectColumns = shouldFilterByScope
+      ? [
+          ...baseSelectColumns,
+          ...(hasScopePath ? [SCOPE_PATH_FIELD] : []),
+          ...(hasCountry ? [COUNTRY_FIELD] : []),
+        ]
       : baseSelectColumns;
 
     const authContext = buildSystemAuthContext(workspaceId);
@@ -381,9 +393,13 @@ export class NavigateAppTool implements Tool {
         authContext,
       );
 
-    const records = shouldFilterByCountry
+    const records = shouldFilterByScope
       ? allRecords.filter((record) =>
-          isCountryInScope(scope, readRecordCountryCodeField(record)),
+          isScopeInScope(
+            scope,
+            hasScopePath ? readRecordScopePathField(record) : undefined,
+            hasCountry ? readRecordCountryCodeField(record) : undefined,
+          ),
         )
       : allRecords;
 

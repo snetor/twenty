@@ -125,9 +125,11 @@ describe('CountryScopeService', () => {
         allowedCountries: 'CI;SN',
       });
 
+      // Le périmètre pays est désormais rendu en JETONS : `allowedCountries` est le
+      // repli de `allowedScopes`, converti par `resolveScope`.
       await expect(resolveScopeForUser('user-id')).resolves.toEqual({
-        kind: 'countries',
-        allowed: ['CI', 'SN'],
+        kind: 'tokens',
+        allowed: ['c:CI', 'c:SN'],
       });
     });
 
@@ -146,9 +148,114 @@ describe('CountryScopeService', () => {
       workspaceMemberRepository.findOne.mockResolvedValue(null);
 
       await expect(resolveScopeForUser('user-id')).resolves.toEqual({
-        kind: 'countries',
+        kind: 'tokens',
         allowed: [],
       });
     });
+  });
+  // --- Portefeuille (lot B2). Ce service est le SECOND point d'application : l'onglet
+  // Emails et l'agenda s'exécutent en contexte système et échappent au choke-point ORM.
+  // Une divergence entre les deux est un trou de sécurité silencieux.
+
+  it('cloisonne par scopePath quand le membre porte un allowedScopes', async () => {
+    workspaceMemberRepository.findOne.mockResolvedValue({
+      id: 'workspace-member-id',
+      allowedScopes: 'g:217',
+      allowedCountries: 'EC',
+    });
+    personRepository.find.mockResolvedValue([
+      { id: 'p-mien', scopePath: '|g:217|', countryCode: 'CO' },
+      { id: 'p-autre', scopePath: '|g:260|', countryCode: 'EC' },
+    ]);
+
+    // Le pays ne sauve pas `p-autre` : c'est bien le portefeuille qui décide dès que
+    // l'enregistrement porte une portée.
+    await expect(keepPersonIdsInScope(['p-mien', 'p-autre'])).resolves.toEqual([
+      'p-mien',
+    ]);
+  });
+
+  it('garde une personne portée par plusieurs groupes dont un des miens', async () => {
+    workspaceMemberRepository.findOne.mockResolvedValue({
+      id: 'workspace-member-id',
+      allowedScopes: 'g:217',
+    });
+    personRepository.find.mockResolvedValue([
+      { id: 'p1', scopePath: '|g:217|g:260|', countryCode: 'CO' },
+    ]);
+
+    await expect(keepPersonIdsInScope(['p1'])).resolves.toEqual(['p1']);
+  });
+
+  it('retombe sur le pays quand le membre n a pas encore d allowedScopes', async () => {
+    workspaceMemberRepository.findOne.mockResolvedValue({
+      id: 'workspace-member-id',
+      allowedCountries: 'EC',
+    });
+    personRepository.find.mockResolvedValue([
+      { id: 'p-ec', countryCode: 'EC' },
+      { id: 'p-co', countryCode: 'CO' },
+    ]);
+
+    await expect(keepPersonIdsInScope(['p-ec', 'p-co'])).resolves.toEqual([
+      'p-ec',
+    ]);
+  });
+
+  // ⚠️ Contrainte liante du 2026-08-19. `scopePath` n'est écrit que sur `company` : les
+  // 999 personnes du workspace ont la colonne présente et VIDE. La refuser ferait voir à
+  // un commercial ses sociétés et aucun contact.
+  it('traite un scopePath vide comme absent, et retombe sur le pays', async () => {
+    workspaceMemberRepository.findOne.mockResolvedValue({
+      id: 'workspace-member-id',
+      allowedScopes: 'g:217,c:EC',
+    });
+    personRepository.find.mockResolvedValue([
+      { id: 'p-vide-ec', scopePath: '', countryCode: 'EC' },
+      { id: 'p-vide-co', scopePath: null, countryCode: 'CO' },
+    ]);
+
+    await expect(
+      keepPersonIdsInScope(['p-vide-ec', 'p-vide-co']),
+    ).resolves.toEqual(['p-vide-ec']);
+  });
+
+  it('rend la liste inchangée pour un membre non cloisonné par allowedScopes', async () => {
+    workspaceMemberRepository.findOne.mockResolvedValue({
+      id: 'workspace-member-id',
+      allowedScopes: '*',
+    });
+
+    await expect(keepPersonIdsInScope(['p1'])).resolves.toEqual(['p1']);
+    expect(personRepository.find).not.toHaveBeenCalled();
+  });
+
+  it('default-deny : périmètre présent mais vide, aucune personne', async () => {
+    workspaceMemberRepository.findOne.mockResolvedValue({
+      id: 'workspace-member-id',
+      allowedScopes: '',
+      allowedCountries: '',
+    });
+    personRepository.find.mockResolvedValue([
+      { id: 'p1', scopePath: '|g:217|', countryCode: 'EC' },
+    ]);
+
+    await expect(keepPersonIdsInScope(['p1'])).resolves.toEqual([]);
+  });
+
+  it('resolveScopeForUser rend des jetons, pas des ISO pays', async () => {
+    // Son consommateur `navigate-app-tool.ts` appelle `isScopeInScope` : rendre un
+    // `{ kind: "countries" }` y ferait échouer toute comparaison, en silence.
+    workspaceMemberRepository.findOne.mockResolvedValue({
+      id: 'workspace-member-id',
+      allowedScopes: 'g:217,c:EC',
+    });
+
+    await expect(
+      service.resolveScopeForUser({
+        userId: 'user-id',
+        workspaceId: 'workspace-id',
+      }),
+    ).resolves.toEqual({ kind: 'tokens', allowed: ['g:217', 'c:EC'] });
   });
 });

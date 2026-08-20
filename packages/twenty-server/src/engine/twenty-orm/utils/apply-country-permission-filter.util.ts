@@ -9,8 +9,12 @@ import { type FlatObjectMetadata } from 'src/engine/metadata-modules/flat-object
 import { type WorkspaceInternalContext } from 'src/engine/twenty-orm/interfaces/workspace-internal-context.interface';
 import { type WorkspaceSelectQueryBuilder } from 'src/engine/twenty-orm/repository/workspace-select-query-builder';
 import {
+  countryIsosOfScope,
   readMemberCountryScopeField,
-  resolveCountryScope,
+  readMemberScopesField,
+  resolveScope,
+  SCOPE_PATH_FIELD,
+  scopeTokenPattern,
 } from 'src/engine/twenty-orm/utils/resolve-country-scope.util';
 
 // Cloisonnement par pays (AGPL, autonome). Branché au choke-point ORM unique
@@ -142,11 +146,14 @@ export const applyCountryPermissionFilter = <T extends ObjectLiteral>({
     return;
   }
 
-  // 2. Scope de l'utilisateur courant, lu sur le champ custom hydraté du workspaceMember.
-  //    Champ absent (workspace non provisionné) ou « tous pays » → no-op total. Champ
-  //    présent mais vide ≠ absent : c'est un default-deny (un membre Snetor sans pays ne
-  //    voit rien). Cf. `resolve-country-scope.util.ts`.
-  const scope = resolveCountryScope(
+  // 2. Périmètre du membre courant : `allowedScopes` (jetons de portefeuille) d'abord,
+  //    repli sur `allowedCountries` converti en jetons pays. Cf. `resolveScope` — c'est
+  //    ce repli qui rend le déploiement sûr avant que la donnée de portée existe.
+  //    Champs absents (workspace non provisionné) ou « tous pays » → no-op total. Champ
+  //    présent mais vide ≠ absent : c'est un default-deny (un membre Snetor sans
+  //    périmètre ne voit rien).
+  const scope = resolveScope(
+    readMemberScopesField(authContext.workspaceMember),
     readMemberCountryScopeField(authContext.workspaceMember),
   );
 
@@ -156,19 +163,40 @@ export const applyCountryPermissionFilter = <T extends ObjectLiteral>({
 
   const { allowed } = scope;
 
-  // 3. Objet porteur d'un `countryCode` ? → cloisonnement direct.
   const { fieldIdByName } = buildFieldMapsFromFlatObjectMetadata(
     internalContext.flatFieldMetadataMaps,
     objectMetadata,
   );
 
-  if (isDefined(fieldIdByName[COUNTRY_FIELD])) {
+  const hasCountryField = isDefined(fieldIdByName[COUNTRY_FIELD]);
+
+  // 3. Objet porteur d'un `scopePath` ? → cloisonnement par portefeuille.
+  if (isDefined(fieldIdByName[SCOPE_PATH_FIELD])) {
     if (allowed.length === 0) {
-      denyAll(queryBuilder); // sales sans pays : ne voit rien
+      denyAll(queryBuilder); // membre sans périmètre : ne voit rien
+    } else {
+      injectScopeFilter(
+        queryBuilder,
+        objectMetadata,
+        internalContext,
+        allowed,
+        hasCountryField,
+      );
+    }
+    return;
+  }
+
+  // 3b. Objet qui ne porte encore que `countryCode` → ancien filtre, avec les seuls
+  //     jetons pays du périmètre.
+  if (hasCountryField) {
+    const isos = countryIsosOfScope(allowed);
+
+    if (isos.length === 0) {
+      denyAll(queryBuilder); // membre sans pays : ne voit rien
     } else {
       injectFieldFilter(queryBuilder, objectMetadata, internalContext, {
         field: COUNTRY_FIELD,
-        filter: { in: allowed },
+        filter: { in: isos },
       });
     }
     return;
@@ -196,6 +224,87 @@ export const applyCountryPermissionFilter = <T extends ObjectLiteral>({
   // 4c. Tout le reste (salesperson, mission, attachment, companyGroup,
   //     calendar/message…) → default-deny. Secure-by-default.
   denyAll(queryBuilder);
+};
+
+// Injecte le cloisonnement par portefeuille :
+//
+//   WHERE (   scopePath ILIKE '%|t1|%'
+//          OR scopePath ILIKE '%|t2|%' …
+//          OR ((scopePath IS NULL OR scopePath = '') AND countryCode IN (…)) )
+//
+// Un OU de `ILIKE` plutôt qu'un `IN` : c'est ce qui permet à un enregistrement de porter
+// PLUSIEURS périmètres, mesuré nécessaire — un client sur trois est servi par plus d'un
+// groupe de vendeurs (SAP, 2026-08-19). Le `IN` du filtre pays ne pouvait exprimer qu'un
+// périmètre unique par enregistrement.
+//
+// ⚠️ La dernière branche est la contrainte liante du 2026-08-19 : une colonne `scopePath`
+// PRÉSENTE ET VIDE se traite comme une colonne ABSENTE. `scopePath` n'est écrit que sur
+// `company` ; sans ce repli, 3943 enregistrements basculeraient du repli au refus le jour
+// du déploiement. `{ is: 'NULL' }` sur un champ TEXT produit `IS NULL OR = ''` — les deux
+// cas d'un coup, cf. `findPostgresDefaultNullEquivalentValue`.
+//
+// ⚠️ Chaque appel au field parser est enveloppé dans SON PROPRE `Brackets`. Le parser
+// pose du SQL brut sans parenthèses, et `A IS NULL OR A = '' AND cc IN (…)` n'a pas la
+// précédence voulue.
+//
+// ponytail: ILIKE '%…%' n'utilise pas d'index. Sans effet à 2099 sociétés ; si la base
+// dépasse ~100 000 enregistrements cloisonnés, passer à une table de jonction
+// (jeton -> enregistrement) indexée, ou à un index GIN trigramme sur la colonne.
+const injectScopeFilter = <T extends ObjectLiteral>(
+  queryBuilder: WorkspaceSelectQueryBuilder<T>,
+  objectMetadata: FlatObjectMetadata,
+  internalContext: WorkspaceInternalContext,
+  tokens: string[],
+  hasCountryField: boolean,
+): void => {
+  const outerQueryBuilder =
+    queryBuilder as WorkspaceSelectQueryBuilder<ObjectLiteral>;
+
+  const parsedClause = (field: string, filter: object): Brackets =>
+    new Brackets((inner) => {
+      const fieldParser = new GraphqlQueryFilterFieldParser(
+        objectMetadata,
+        internalContext.flatFieldMetadataMaps,
+      );
+
+      fieldParser.parse(
+        inner,
+        outerQueryBuilder,
+        objectMetadata.nameSingular,
+        field,
+        filter,
+        true,
+        false,
+      );
+    });
+
+  const isos = countryIsosOfScope(tokens);
+
+  const condition = new Brackets((qb) => {
+    tokens.forEach((token, index) => {
+      const clause = parsedClause(SCOPE_PATH_FIELD, {
+        ilike: scopeTokenPattern(token),
+      });
+
+      if (index === 0) {
+        qb.where(clause);
+      } else {
+        qb.orWhere(clause);
+      }
+    });
+
+    if (hasCountryField && isos.length > 0) {
+      qb.orWhere(
+        new Brackets((fallback) => {
+          fallback
+            .where(parsedClause(SCOPE_PATH_FIELD, { is: 'NULL' }))
+            .andWhere(parsedClause(COUNTRY_FIELD, { in: isos }));
+        }),
+      );
+    }
+  });
+
+  appendCondition(queryBuilder, condition);
 };
 
 // Injecte `WHERE <field> <filter>` via le field parser GraphQL (gère l'alias, les
