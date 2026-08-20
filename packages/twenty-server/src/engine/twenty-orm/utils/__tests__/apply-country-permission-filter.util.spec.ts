@@ -394,3 +394,248 @@ describe('applyCountryPermissionFilter', () => {
     expect(inner.where).toHaveBeenCalledWith('1 = 0');
   });
 });
+
+// --- Cloisonnement par portefeuille (lot B2).
+//
+// Ces tests rendent le SQL réellement produit plutôt que de compter des appels : la
+// propriété de sécurité est dans le prédicat, pas dans la forme. `renderSql` déroule
+// récursivement les `Brackets` posés et parenthèse chaque niveau, exactement comme
+// TypeORM le fait à l'exécution.
+
+// oxlint-disable-next-line typescript/no-unsafe-function-type
+const isBrackets = (value: unknown): value is { whereFactory: Function } =>
+  typeof (value as { whereFactory?: unknown })?.whereFactory === 'function';
+
+const renderSql = (condition: unknown): string => {
+  if (!isBrackets(condition)) {
+    return String(condition);
+  }
+
+  const parts: string[] = [];
+  const recorder = {
+    where: (arg: unknown) => {
+      parts.push(renderSql(arg));
+
+      return recorder;
+    },
+    andWhere: (arg: unknown) => {
+      parts.push(`AND ${renderSql(arg)}`);
+
+      return recorder;
+    },
+    orWhere: (arg: unknown) => {
+      parts.push(`OR ${renderSql(arg)}`);
+
+      return recorder;
+    },
+  };
+
+  condition.whereFactory(recorder);
+
+  return `(${parts.join(' ')})`;
+};
+
+// Rejoue les Brackets posés pour collecter les paramètres liés au SQL.
+const collectParams = (condition: unknown): object[] => {
+  const params: object[] = [];
+  const walk = (node: unknown): void => {
+    if (!isBrackets(node)) {
+      return;
+    }
+
+    const rec = {
+      // oxlint-disable-next-line typescript/no-explicit-any
+      where: (arg: any, bound: any) => {
+        isBrackets(arg) ? walk(arg) : bound && params.push(bound);
+
+        return rec;
+      },
+      // oxlint-disable-next-line typescript/no-explicit-any
+      andWhere: (arg: any, bound: any) => {
+        isBrackets(arg) ? walk(arg) : bound && params.push(bound);
+
+        return rec;
+      },
+      // oxlint-disable-next-line typescript/no-explicit-any
+      orWhere: (arg: any, bound: any) => {
+        isBrackets(arg) ? walk(arg) : bound && params.push(bound);
+
+        return rec;
+      },
+    };
+
+    node.whereFactory(rec);
+  };
+
+  walk(condition);
+
+  return params;
+};
+
+// Objet portant `scopePath` ET `countryCode` : c'est le cas de `company` sur le
+// workspace réel.
+const portfolioObject = (nameSingular = 'company') => ({
+  objectMetadata: {
+    id: 'company-object-id',
+    nameSingular,
+    fieldIds: ['sp-field-id', 'cc-field-id'],
+    // oxlint-disable-next-line typescript/no-explicit-any
+  } as any,
+  internalContext: {
+    flatFieldMetadataMaps: {
+      universalIdentifierById: {
+        'sp-field-id': 'sp-uid',
+        'cc-field-id': 'cc-uid',
+      },
+      byUniversalIdentifier: {
+        'sp-uid': { id: 'sp-field-id', name: 'scopePath', type: 'TEXT' },
+        'cc-uid': { id: 'cc-field-id', name: 'countryCode', type: 'TEXT' },
+      },
+    },
+    // oxlint-disable-next-line typescript/no-explicit-any
+  } as any,
+});
+
+// oxlint-disable-next-line typescript/no-explicit-any
+const userWith = (workspaceMember: object): any => ({
+  type: 'user',
+  workspaceMember,
+});
+
+describe('cloisonnement par scopePath', () => {
+  // oxlint-disable-next-line typescript/no-explicit-any
+  const runFilter = (authContext: any, object = portfolioObject()) => {
+    // oxlint-disable-next-line typescript/no-explicit-any
+    const qb: any = makeQb();
+
+    qb.objectRecordsPermissions = {};
+
+    applyCountryPermissionFilter({
+      queryBuilder: qb,
+      objectMetadata: object.objectMetadata,
+      internalContext: object.internalContext,
+      authContext,
+    });
+
+    const posted = qb.where.mock.calls[0]?.[0] ?? qb.andWhere.mock.calls[0]?.[0];
+
+    return { qb, posted, sql: posted === undefined ? '' : renderSql(posted) };
+  };
+
+  it('filtre sur scopePath par un OU de ILIKE, une clause par jeton', () => {
+    const { sql } = runFilter(userWith({ allowedScopes: 'g:217,g:260' }));
+
+    expect(sql).toContain('"company"."scopePath"::text ILIKE');
+    // Deux jetons, deux clauses reliées par OU. C'est ce qui rend le multi-porteur
+    // possible : un client sur trois est servi par plus d'un groupe de vendeurs.
+    expect(sql.match(/ILIKE/g)).toHaveLength(2);
+    expect(sql).toContain('OR (');
+  });
+
+  it('lie le motif encadré de barres, jamais le jeton nu', () => {
+    const { posted } = runFilter(userWith({ allowedScopes: 'g:217' }));
+    const params = JSON.stringify(collectParams(posted));
+
+    expect(params).toContain('%|g:217|%');
+    // L'encadrement est ce qui empêche `g:21` de matcher `g:217`.
+    expect(params).not.toContain('"g:217"');
+  });
+
+  // ⚠️ Contrainte liante du 2026-08-19 : une colonne PRÉSENTE ET VIDE vaut une colonne
+  // ABSENTE. Sans cette branche, 3943 enregistrements du workspace basculent du repli au
+  // refus le jour du déploiement, et un commercial voit ses sociétés et zéro contact.
+  it('ajoute le repli pays pour un scopePath vide ou NULL', () => {
+    const { sql } = runFilter(
+      userWith({ allowedScopes: 'g:217,c:EC', allowedCountries: 'EC' }),
+    );
+
+    expect(sql).toContain('"company"."scopePath" IS NULL');
+    expect(sql).toContain('"company"."scopePath" = :scopePath');
+    expect(sql).toContain('"company"."countryCode" IN');
+    // La précédence, et c'est tout l'enjeu : le repli entier est en OU des jetons, et
+    // à l'intérieur la nullité est en ET du pays. Sans les parenthèses posées par chaque
+    // Brackets, `A IS NULL OR A = '' AND cc IN (…)` se lirait à l'envers et exposerait
+    // tous les enregistrements NULL, quel que soit leur pays.
+    expect(sql).toContain('OR (("company"."scopePath" IS NULL');
+    expect(sql).toContain('AND ("company"."countryCode" IN');
+  });
+
+  it("n'ajoute aucun repli quand le périmètre ne porte aucun jeton pays", () => {
+    const { sql } = runFilter(userWith({ allowedScopes: 'g:217' }));
+
+    expect(sql).not.toContain('IS NULL');
+    expect(sql).not.toContain('countryCode');
+  });
+
+  it('reproduit le filtre pays quand le membre n a pas encore d allowedScopes', () => {
+    // Déployer avant que la donnée de portée existe doit reproduire le comportement
+    // actuel : jetons pays uniquement, donc aucune fuite et aucun CRM vide.
+    const { sql } = runFilter(userWith({ allowedCountries: 'EC;CO' }));
+
+    expect(sql).toContain('"company"."scopePath" IS NULL');
+    expect(sql).toContain('"company"."countryCode" IN');
+    expect(sql.match(/ILIKE/g)).toHaveLength(2); // c:EC et c:CO
+  });
+
+  it('reste sur countryCode pour un objet qui ne porte pas encore scopePath', () => {
+    const { objectMetadata, internalContext } = scopedObject();
+    // oxlint-disable-next-line typescript/no-explicit-any
+    const qb: any = makeQb();
+
+    qb.objectRecordsPermissions = {};
+
+    applyCountryPermissionFilter({
+      queryBuilder: qb,
+      objectMetadata,
+      internalContext,
+      authContext: userWith({ allowedScopes: 'g:217,c:EC' }),
+    });
+
+    const sql = renderSql(qb.where.mock.calls[0][0]);
+
+    expect(sql).not.toContain('ILIKE');
+    expect(sql).toContain('"company"."countryCode" IN');
+  });
+
+  it('refuse tout sur un objet countryCode quand le périmètre n a que des groupes', () => {
+    // Aucun jeton pays : rien ne peut rattraper un objet qui ne porte pas de scopePath.
+    const { objectMetadata, internalContext } = scopedObject();
+    // oxlint-disable-next-line typescript/no-explicit-any
+    const qb: any = makeQb();
+
+    qb.objectRecordsPermissions = {};
+
+    applyCountryPermissionFilter({
+      queryBuilder: qb,
+      objectMetadata,
+      internalContext,
+      authContext: userWith({ allowedScopes: 'g:217' }),
+    });
+
+    expect(renderSql(qb.where.mock.calls[0][0])).toBe('(1 = 0)');
+  });
+
+  it('default-deny : périmètre vide sur les deux champs, objet invisible', () => {
+    const { sql } = runFilter(
+      userWith({ allowedScopes: '', allowedCountries: '' }),
+    );
+
+    expect(sql).toBe('(1 = 0)');
+  });
+
+  it('ne filtre jamais une clé API, même sur un objet porteur de scopePath', () => {
+    // L'ingestion écrit hors périmètre : ce bypass est une condition de service.
+    // oxlint-disable-next-line typescript/no-explicit-any
+    const { qb } = runFilter({ type: 'apiKey' } as any);
+
+    expect(qb.where).not.toHaveBeenCalled();
+    expect(qb.andWhere).not.toHaveBeenCalled();
+  });
+
+  it('ne filtre pas un membre non cloisonné (sentinelle sur allowedScopes)', () => {
+    const { qb } = runFilter(userWith({ allowedScopes: '*' }));
+
+    expect(qb.where).not.toHaveBeenCalled();
+    expect(qb.andWhere).not.toHaveBeenCalled();
+  });
+});
