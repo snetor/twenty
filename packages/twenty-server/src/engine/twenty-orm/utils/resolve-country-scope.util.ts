@@ -107,6 +107,7 @@ export const isCountryInScope = (
 
 export const MEMBER_SCOPES_FIELD = 'allowedScopes';
 export const SCOPE_PATH_FIELD = 'scopePath';
+export const SALESPERSON_SCOPE_TOKENS_FIELD = 'scopeTokens';
 export const COUNTRY_TOKEN_PREFIX = 'c:';
 const TOKEN_FRAME = '|';
 const MEMBER_TOKEN_SEP = ',';
