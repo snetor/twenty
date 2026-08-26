@@ -44,6 +44,29 @@ export class ScopeAssignmentListener {
   ): Promise<void> {
     const { workspaceId } = payload;
 
+    try {
+      await this.assignScopes(payload, workspaceId);
+    } catch (error) {
+      // ⚠️ NE JAMAIS laisser une exception sortir d'ici. Le membre naît au PREMIER LOGIN :
+      // une exception qui remonte casse la connexion elle-même, et pas seulement la pose du
+      // périmètre. Mesuré — un workspace sans l'objet custom `salesperson` (workspace neuf,
+      // workspace de test) fait lever `getRepository`, ce qui a fait tomber les 5 tests de
+      // `secure-deployment` sur la PR #19 : ils échouaient dans leur mise en place, avant
+      // d'exercer quoi que ce soit, et rien dans les logs ne pointait vers ce listener.
+      this.logger.warn(
+        `périmètre non posé sur le workspace ${workspaceId} — ` +
+          `le referentiel salesperson est-il provisionné ? ` +
+          (error instanceof Error ? error.message : String(error)),
+      );
+    }
+  }
+
+  private async assignScopes(
+    payload: WorkspaceEventBatch<
+      ObjectRecordCreateEvent<WorkspaceMemberWorkspaceEntity>
+    >,
+    workspaceId: string,
+  ): Promise<void> {
     await this.globalWorkspaceOrmManager.executeInWorkspaceContext(async () => {
       // `ObjectLiteral` et non les entités typées : `allowedScopes` et `scopeTokens` sont
       // des champs custom Snetor, absents des types d'entité upstream.

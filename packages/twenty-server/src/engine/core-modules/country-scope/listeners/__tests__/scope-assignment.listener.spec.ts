@@ -12,20 +12,22 @@ describe('ScopeAssignmentListener', () => {
 
   const workspaceMemberRepository = { update: jest.fn() };
   const salespersonRepository = { findOne: jest.fn() };
+  const getRepository = jest.fn();
 
   beforeEach(async () => {
     jest.clearAllMocks();
 
-    const mockGlobalWorkspaceOrmManager = {
-      getRepository: jest
-        .fn()
-        .mockImplementation((_workspaceId: string, entityName: string) =>
-          Promise.resolve(
-            entityName === 'workspaceMember'
-              ? workspaceMemberRepository
-              : salespersonRepository,
-          ),
+    getRepository.mockImplementation(
+      (_workspaceId: string, entityName: string) =>
+        Promise.resolve(
+          entityName === 'workspaceMember'
+            ? workspaceMemberRepository
+            : salespersonRepository,
         ),
+    );
+
+    const mockGlobalWorkspaceOrmManager = {
+      getRepository,
       executeInWorkspaceContext: jest
         .fn()
         .mockImplementation((callback: () => unknown) => callback()),
@@ -116,6 +118,29 @@ describe('ScopeAssignmentListener', () => {
 
     expect(salespersonRepository.findOne).not.toHaveBeenCalled();
     expect(workspaceMemberRepository.update).not.toHaveBeenCalled();
+  });
+
+  it("ne casse JAMAIS la connexion : un workspace sans l'objet salesperson est un non-événement", async () => {
+    // Un workspace neuf, ou un workspace de test, ne porte pas les objets custom Snetor.
+    // `getRepository('salesperson')` y lève. Comme le membre naît au premier login, laisser
+    // cette exception remonter casse la connexion elle-même.
+    const warn = jest.spyOn(Logger.prototype, 'warn').mockImplementation();
+
+    getRepository.mockImplementation(
+      (_workspaceId: string, entityName: string) =>
+        entityName === 'salesperson'
+          ? Promise.reject(new Error('object metadata not found: salesperson'))
+          : Promise.resolve(workspaceMemberRepository),
+    );
+
+    await expect(
+      listener.handleCreate(
+        batchOf([{ id: 'wm-1', userEmail: 'c.ribeiro@snetor.com' }]),
+      ),
+    ).resolves.toBeUndefined();
+
+    expect(workspaceMemberRepository.update).not.toHaveBeenCalled();
+    expect(warn).toHaveBeenCalled();
   });
 
   it("traite tout le lot : l'échec d'un membre ne prive pas les autres de leur périmètre", async () => {
