@@ -173,6 +173,41 @@ export const countryIsosOfScope = (allowed: string[]): string[] =>
     .filter((token) => token.startsWith(COUNTRY_TOKEN_PREFIX))
     .map((token) => token.slice(COUNTRY_TOKEN_PREFIX.length));
 
+/**
+ * `scopePath` d'un ENREGISTREMENT, construit depuis le périmètre d'un membre.
+ *
+ * ⚠️ Cette fonction est le pendant exact de `build_scope_path` dans
+ * `client-matrix/ingestion/src/scope_tokens.py`, et les trois invariants sont ceux
+ * qu'affirme ce fichier-là. Les enfreindre ne casse aucun test des deux côtés :
+ *
+ * 1. **encadrement** — tout jeton est entouré de `|`, sinon `g:21` matcherait `g:217`
+ *    dans le `ILIKE` du filtre, et un commercial verrait le portefeuille d'un autre ;
+ * 2. **tri et déduplication** — le recalcul par lot est rejoué ; sans ordre stable il
+ *    réécrirait tous les enregistrements et son compteur de mutations ne dirait plus rien ;
+ * 3. **le pays est un REPLI, jamais un cumul** — un membre qui porte des groupes ET des
+ *    pays (un manager de zone) doit poser ses seuls GROUPES sur ce qu'il crée. Écrire les
+ *    deux rendrait l'enregistrement visible à quiconque partage juste le pays, ce qui est
+ *    précisément la fuite que l'amendement du 2026-08-17 a fermée.
+ *
+ * Rend `''` pour un périmètre vide ou non cloisonné : dans les deux cas ce n'est pas au
+ * créateur de décider de la portée, et une chaîne vide laisse le recalcul par lot trancher.
+ */
+export const buildRecordScopePath = (allowed: string[]): string => {
+  const nettoyes = allowed
+    .map((token) => token.trim())
+    .filter((t) => t.length > 0);
+  const groupes = [
+    ...new Set(nettoyes.filter((t) => !t.startsWith(COUNTRY_TOKEN_PREFIX))),
+  ];
+  const retenus = groupes.length > 0 ? groupes : [...new Set(nettoyes)];
+
+  if (retenus.length === 0) {
+    return '';
+  }
+
+  return TOKEN_FRAME + retenus.sort().join(TOKEN_FRAME) + TOKEN_FRAME;
+};
+
 /** Lit `allowedScopes` sur un workspaceMember hydraté, champ custom compris. */
 export const readMemberScopesField = (
   workspaceMember: object,
