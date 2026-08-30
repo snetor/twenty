@@ -439,7 +439,12 @@ export class WorkspaceSelectQueryBuilder<
 
   // Snetor : cloisonnement par pays (AGPL, autonome). Ne réutilise pas le code
   // Enterprise voisin, qui n'est qu'un patron de forme.
-  private applyCountryPermissionFilterPredicate(): void {
+  //
+  // ⚠️ Publique, comme son homologue row-level juste au-dessus, et pour la même raison :
+  // `getQuery()` n'est PAS surchargée, donc tout appelant qui sérialise ce builder en
+  // sous-requête SQL brute contourne `validatePermissions()` et doit rappeler les deux
+  // prédicats lui-même (cf. `group-by-with-records.service.ts`).
+  applyCountryPermissionFilterPredicate(): void {
     if (this.shouldBypassPermissionChecks) {
       return;
     }

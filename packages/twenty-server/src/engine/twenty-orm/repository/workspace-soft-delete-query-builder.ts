@@ -22,6 +22,7 @@ import { validateQueryIsPermittedOrThrow } from 'src/engine/twenty-orm/repositor
 import { type WorkspaceDeleteQueryBuilder } from 'src/engine/twenty-orm/repository/workspace-delete-query-builder';
 import { type WorkspaceSelectQueryBuilder } from 'src/engine/twenty-orm/repository/workspace-select-query-builder';
 import { type WorkspaceUpdateQueryBuilder } from 'src/engine/twenty-orm/repository/workspace-update-query-builder';
+import { applyCountryPermissionFilter } from 'src/engine/twenty-orm/utils/apply-country-permission-filter.util';
 import { applyRowLevelPermissionPredicates } from 'src/engine/twenty-orm/utils/apply-row-level-permission-predicates.util';
 import { applyTableAliasOnWhereCondition } from 'src/engine/twenty-orm/utils/apply-table-alias-on-where-condition';
 import { computeEventSelectQueryBuilder } from 'src/engine/twenty-orm/utils/compute-event-select-query-builder.util';
@@ -73,6 +74,7 @@ export class WorkspaceSoftDeleteQueryBuilder<
   override async execute(): Promise<UpdateResult> {
     try {
       this.applyRowLevelPermissionPredicates();
+      this.applyCountryPermissionFilterPredicate();
       validateQueryIsPermittedOrThrow({
         expressionMap: this.expressionMap,
         objectsPermissions: this.objectRecordsPermissions,
@@ -214,6 +216,39 @@ export class WorkspaceSoftDeleteQueryBuilder<
       internalContext: this.internalContext,
       authContext: this.authContext,
       featureFlagMap: this.featureFlagMap,
+    });
+  }
+
+  // Snetor : cloisonnement par portefeuille en ÉCRITURE.
+  //
+  // 🔴 Exactement le prédicat de la lecture, rappelé ici parce que RIEN en aval ne
+  // rattrapait le coup : le chemin de mutation ne fait aucune relecture filtrée
+  // (`common-update-many-query-runner.service.ts` enchaîne sur un `UPDATE … RETURNING`
+  // sans SELECT préalable). Un utilisateur qui connaît un `id` hors de son périmètre
+  // écrivait donc dessus, alors qu'il ne pouvait pas le lire.
+  //
+  // ⚠️ La sémantique doit rester celle de la lecture, sans exception : clé API et contexte
+  // système jamais filtrés (l'ingestion, le rapport de visite et les passes SAP en
+  // dépendent), sentinelle `'*'` non cloisonnée, périmètre vide = refus. Une divergence
+  // entre lecture et écriture serait un trou silencieux — ne rien réimplémenter ici,
+  // appeler `applyCountryPermissionFilter`.
+  private applyCountryPermissionFilterPredicate(): void {
+    if (this.shouldBypassPermissionChecks) {
+      return;
+    }
+
+    const mainAliasTarget = this.getMainAliasTarget();
+
+    const objectMetadata = getObjectMetadataFromEntityTarget(
+      mainAliasTarget,
+      this.internalContext,
+    );
+
+    applyCountryPermissionFilter({
+      queryBuilder: this as unknown as WorkspaceSelectQueryBuilder<T>,
+      objectMetadata,
+      internalContext: this.internalContext,
+      authContext: this.authContext,
     });
   }
 }
