@@ -17,10 +17,16 @@ import {
   scopeTokenPattern,
 } from 'src/engine/twenty-orm/utils/resolve-country-scope.util';
 
-// Cloisonnement par pays (AGPL, autonome). Branché au choke-point ORM unique
-// `WorkspaceSelectQueryBuilder.validatePermissions()`, après les checks object-level.
+// Cloisonnement par pays (AGPL, autonome). Branché en LECTURE au choke-point ORM
+// `WorkspaceSelectQueryBuilder.validatePermissions()`, après les checks object-level, et en
+// ÉCRITURE dans les trois constructeurs de mutation (update / delete / soft-delete).
 // N'importe ni ne réutilise le code Enterprise (`apply-row-level-permission-predicates.util.ts`),
 // qui n'est qu'un patron de forme.
+//
+// 🔴 L'écriture n'était PAS couverte jusqu'au 2026-08-30, et rien ne rattrapait le coup en
+// aval : `common-update-many-query-runner.service.ts` fait un `UPDATE … RETURNING` sans
+// SELECT préalable. Un utilisateur qui connaissait un `id` hors de son périmètre écrivait
+// dessus. Ne jamais ajouter un constructeur de mutation sans y rappeler ce prédicat.
 //
 // La sémantique de `allowedCountries` elle-même vit dans `resolve-country-scope.util.ts`,
 // parce qu'elle doit aussi servir aux chemins en contexte système que ce filtre laisse
@@ -226,6 +232,26 @@ export const applyCountryPermissionFilter = <T extends ObjectLiteral>({
   denyAll(queryBuilder);
 };
 
+// ⚠️ Un UPDATE/DELETE Postgres n'a pas d'alias de table : le field parser produit par
+// défaut `"company"."scopePath"`, que la cible d'un UPDATE ne résout pas forcément — le
+// nom physique de la table (`computeObjectTargetTable`) diffère du `nameSingular` sur les
+// objets custom, et `applyTableAliasOnWhereCondition` ne descend PAS dans un `Brackets`,
+// donc la réécriture d'alias qui suit ne rattrape rien de ce que ce fichier pose. Le
+// parser sait poser la colonne nue : c'est `useDirectTableReference`, la même bascule que
+// le prédicat row-level upstream (`apply-row-level-permission-predicates.util.ts`, L41).
+//
+// 🔴 Déduite du `queryType` et non passée en paramètre, pour qu'un quatrième constructeur
+// de mutation soit couvert sans qu'on y pense. Et `'restore'` est dans la liste alors que
+// l'upstream l'oublie : un restore EST un UPDATE, l'oublier produirait du SQL aliasé dans
+// une requête sans alias.
+const usesDirectTableReference = (
+  queryBuilder: WorkspaceSelectQueryBuilder<ObjectLiteral>,
+): boolean =>
+  queryBuilder.expressionMap.queryType === 'update' ||
+  queryBuilder.expressionMap.queryType === 'soft-delete' ||
+  queryBuilder.expressionMap.queryType === 'delete' ||
+  queryBuilder.expressionMap.queryType === 'restore';
+
 // Injecte le cloisonnement par portefeuille :
 //
 //   WHERE (   scopePath ILIKE '%|t1|%'
@@ -274,7 +300,7 @@ const injectScopeFilter = <T extends ObjectLiteral>(
         field,
         filter,
         true,
-        false,
+        usesDirectTableReference(outerQueryBuilder),
       );
     });
 
@@ -335,7 +361,7 @@ const injectFieldFilter = <T extends ObjectLiteral>(
       field,
       filter,
       true,
-      false,
+      usesDirectTableReference(outerQueryBuilder),
     );
   });
 

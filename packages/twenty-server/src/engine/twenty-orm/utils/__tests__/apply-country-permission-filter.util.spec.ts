@@ -517,7 +517,8 @@ describe('cloisonnement par scopePath', () => {
       authContext,
     });
 
-    const posted = qb.where.mock.calls[0]?.[0] ?? qb.andWhere.mock.calls[0]?.[0];
+    const posted =
+      qb.where.mock.calls[0]?.[0] ?? qb.andWhere.mock.calls[0]?.[0];
 
     return { qb, posted, sql: posted === undefined ? '' : renderSql(posted) };
   };
@@ -637,5 +638,88 @@ describe('cloisonnement par scopePath', () => {
 
     expect(qb.where).not.toHaveBeenCalled();
     expect(qb.andWhere).not.toHaveBeenCalled();
+  });
+});
+
+// --- Cloisonnement en ÉCRITURE.
+//
+// 🔴 Le prédicat est le même qu'en lecture, mais le SQL ne peut PAS l'être : une cible
+// d'UPDATE/DELETE Postgres n'a pas d'alias, et `applyTableAliasOnWhereCondition` ne
+// descend pas dans un `Brackets` — donc rien ne rattraperait `"company"."scopePath"` en
+// aval. Ces tests rendent le SQL réellement produit pour chaque `queryType` de mutation :
+// une régression ici n'est pas une fuite, c'est une erreur de syntaxe en production.
+describe('cloisonnement sur un constructeur de mutation', () => {
+  // oxlint-disable-next-line typescript/no-explicit-any
+  const runFilter = (queryType: string, authContext: any) => {
+    // oxlint-disable-next-line typescript/no-explicit-any
+    const qb: any = makeQb();
+
+    qb.objectRecordsPermissions = {};
+    qb.expressionMap.queryType = queryType;
+
+    const object = portfolioObject();
+
+    applyCountryPermissionFilter({
+      queryBuilder: qb,
+      objectMetadata: object.objectMetadata,
+      internalContext: object.internalContext,
+      authContext,
+    });
+
+    const posted =
+      qb.where.mock.calls[0]?.[0] ?? qb.andWhere.mock.calls[0]?.[0];
+
+    return { qb, sql: posted === undefined ? '' : renderSql(posted) };
+  };
+
+  // `'restore'` est dans la liste alors que l'upstream l'oublie : un restore EST un
+  // UPDATE, l'oublier produirait du SQL aliasé dans une requête sans alias.
+  it.each(['update', 'delete', 'soft-delete', 'restore'])(
+    'pose la colonne nue, jamais l alias, sur un %s',
+    (queryType) => {
+      const { sql } = runFilter(
+        queryType,
+        userWith({ allowedScopes: 'g:217,c:EC', allowedCountries: 'EC' }),
+      );
+
+      expect(sql).toContain('"scopePath"::text ILIKE');
+      expect(sql).toContain('"countryCode" IN');
+      expect(sql).not.toContain('"company".');
+    },
+  );
+
+  it('garde l alias sur une lecture (aucun queryType de mutation)', () => {
+    const { sql } = runFilter(
+      'select',
+      userWith({ allowedScopes: 'g:217,c:EC', allowedCountries: 'EC' }),
+    );
+
+    expect(sql).toContain('"company"."scopePath"::text ILIKE');
+  });
+
+  // ⚠️ Le bypass et le default-deny doivent se comporter EXACTEMENT comme en lecture :
+  // une divergence entre les deux surfaces est un trou silencieux.
+  it('ne filtre jamais une clé API en écriture (ingestion, passes SAP)', () => {
+    // oxlint-disable-next-line typescript/no-explicit-any
+    const { qb } = runFilter('update', { type: 'apiKey' } as any);
+
+    expect(qb.where).not.toHaveBeenCalled();
+    expect(qb.andWhere).not.toHaveBeenCalled();
+  });
+
+  it('ne filtre pas un membre non cloisonné en écriture (sentinelle)', () => {
+    const { qb } = runFilter('update', userWith({ allowedScopes: '*' }));
+
+    expect(qb.where).not.toHaveBeenCalled();
+    expect(qb.andWhere).not.toHaveBeenCalled();
+  });
+
+  it('default-deny en écriture : périmètre vide, aucune ligne touchée', () => {
+    const { sql } = runFilter(
+      'update',
+      userWith({ allowedScopes: '', allowedCountries: '' }),
+    );
+
+    expect(sql).toBe('(1 = 0)');
   });
 });

@@ -201,6 +201,14 @@ export class GroupByWithRecordsService {
     });
 
     subQuery.applyRowLevelPermissionPredicatesToMainAliasAndJoinedRelations();
+    // Snetor : 🔴 le cloisonnement par portefeuille fuyait ici. `getQuery()` n'est pas
+    // surchargée dans `WorkspaceSelectQueryBuilder`, donc sérialiser `subQuery` en SQL brut
+    // (juste en dessous, via le `.from(...)` sur `subQuery.getQuery()`) contourne
+    // `validatePermissions()` : l'appel row-level ci-dessus était le seul prédicat posé, et
+    // Kanban comme Calendrier remontaient des enregistrements hors périmètre. La requête
+    // externe ne peut pas rattraper le coup — son alias principal est une sous-requête, et
+    // les deux prédicats s'abstiennent dans ce cas.
+    subQuery.applyCountryPermissionFilterPredicate();
 
     let mainQueryQueryBuilder = repository.createQueryBuilder();
 
