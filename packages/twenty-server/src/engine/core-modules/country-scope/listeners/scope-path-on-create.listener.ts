@@ -20,6 +20,16 @@ import {
 } from 'src/engine/twenty-orm/utils/resolve-country-scope.util';
 import { type WorkspaceEventBatch } from 'src/engine/workspace-event-emitter/types/workspace-event-batch.type';
 
+// Une jonction d'activité (`noteTarget` / `taskTarget`) porte DEUX portées à écrire : la
+// sienne, et celle de la note ou de la tâche qu'elle rattache — laquelle n'a aucun autre
+// moyen d'apprendre de quelle société elle parle.
+type ActivityLink = {
+  /** Colonne de la jonction qui porte l'id de l'activité (`noteId`, `taskId`). */
+  idField: string;
+  /** Objet de l'activité à mettre à jour (`note`, `task`). */
+  objectName: string;
+};
+
 // Poser `scopePath` à la NAISSANCE de l'enregistrement.
 //
 // **Le problème.** Le cloisonnement est un filtre de LECTURE, branché sur
@@ -95,14 +105,52 @@ export class ScopePathOnCreateListener {
     await this.handle(payload, 'clientId');
   }
 
+  // 🔴 Une note et une tâche n'ont pas de société à elles : le rattachement passe par une
+  // table de jonction (`noteTarget` / `taskTarget`). D'où deux écritures par événement —
+  // la jonction ET l'activité qu'elle porte — et surtout l'écoute de l'événement de la
+  // JONCTION et non celui de la note.
+  //
+  // Ce n'est pas une préférence, c'est l'ordre imposé par la clé étrangère :
+  // `noteTarget.noteId` exige que la note existe déjà, donc la jonction ne peut PAS être
+  // créée avant. Le front fait exactement ça (`useCreateActivityInDB.ts` : d'abord
+  // `createOneActivity`, puis `createManyActivityTargets`), et aucun chemin ne peut faire
+  // autrement. À `note CREATED`, la société rattachée est donc toujours inconnue :
+  // accrocher cet événement-là aurait produit une portée systématiquement fausse.
+  //
+  // ⚠️ Conséquence assumée : une note créée sans aucune cible ne reçoit pas de portée et
+  // reste invisible (default-deny). C'est le bon sens de l'erreur — poser le périmètre du
+  // créateur sur une note dont on ignore le client la montrerait à des collègues qui ne
+  // voient pas ce client, et c'est exactement la fuite fermée le 2026-08-17.
+
+  @OnDatabaseBatchEvent('noteTarget', DatabaseEventAction.CREATED)
+  async handleNoteTargetCreate(
+    payload: WorkspaceEventBatch<ObjectRecordCreateEvent>,
+  ): Promise<void> {
+    await this.handle(payload, 'targetCompanyId', {
+      idField: 'noteId',
+      objectName: 'note',
+    });
+  }
+
+  @OnDatabaseBatchEvent('taskTarget', DatabaseEventAction.CREATED)
+  async handleTaskTargetCreate(
+    payload: WorkspaceEventBatch<ObjectRecordCreateEvent>,
+  ): Promise<void> {
+    await this.handle(payload, 'targetCompanyId', {
+      idField: 'taskId',
+      objectName: 'task',
+    });
+  }
+
   private async handle(
     payload: WorkspaceEventBatch<ObjectRecordCreateEvent>,
     parentIdField: string | undefined,
+    activityLink?: ActivityLink,
   ): Promise<void> {
     const { workspaceId } = payload;
 
     try {
-      await this.assignScopePaths(payload, parentIdField);
+      await this.assignScopePaths(payload, parentIdField, activityLink);
     } catch (error) {
       // ⚠️ NE JAMAIS laisser une exception sortir d'ici — [[L97]]. Un listener de création
       // qui lève fait échouer la création elle-même : le commercial verrait une erreur au
@@ -118,6 +166,7 @@ export class ScopePathOnCreateListener {
   private async assignScopePaths(
     payload: WorkspaceEventBatch<ObjectRecordCreateEvent>,
     parentIdField: string | undefined,
+    activityLink: ActivityLink | undefined,
   ): Promise<void> {
     const { workspaceId, objectMetadata } = payload;
     const objectName = objectMetadata.nameSingular;
@@ -144,6 +193,13 @@ export class ScopePathOnCreateListener {
             { shouldBypassPermissionChecks: true },
           )
         : undefined;
+      const activityRepository = isDefined(activityLink)
+        ? await this.globalWorkspaceOrmManager.getRepository<ObjectLiteral>(
+            workspaceId,
+            activityLink.objectName,
+            { shouldBypassPermissionChecks: true },
+          )
+        : undefined;
 
       // Un lot partage son créateur en pratique, mais rien ne le garantit : le cache est
       // indexé par membre plutôt que calculé une fois.
@@ -157,6 +213,8 @@ export class ScopePathOnCreateListener {
             recordRepository,
             memberRepository,
             companyRepository,
+            activityRepository,
+            activityLink,
             cacheMembre,
           });
         } catch (error) {
@@ -176,6 +234,8 @@ export class ScopePathOnCreateListener {
     recordRepository,
     memberRepository,
     companyRepository,
+    activityRepository,
+    activityLink,
     cacheMembre,
   }: {
     event: ObjectRecordCreateEvent;
@@ -183,6 +243,8 @@ export class ScopePathOnCreateListener {
     recordRepository: WorkspaceRepository<ObjectLiteral>;
     memberRepository: WorkspaceRepository<ObjectLiteral>;
     companyRepository: WorkspaceRepository<ObjectLiteral> | undefined;
+    activityRepository: WorkspaceRepository<ObjectLiteral> | undefined;
+    activityLink: ActivityLink | undefined;
     cacheMembre: Map<string, string>;
   }): Promise<void> {
     const { workspaceMemberId, recordId } = event;
@@ -225,6 +287,55 @@ export class ScopePathOnCreateListener {
     }
 
     await recordRepository.update(recordId, { [SCOPE_PATH_FIELD]: scopePath });
+
+    if (isDefined(activityRepository) && isDefined(activityLink)) {
+      await this.poseSurActivite({
+        activityRepository,
+        activityId: cree[activityLink.idField],
+        scopePath,
+      });
+    }
+  }
+
+  // Recopier la portée de la jonction sur la note (ou la tâche) qu'elle rattache.
+  //
+  // 🔴 C'est CE write qui répare la fiche client, pas celui sur la jonction. Le filtre de
+  // cloisonnement ne sait pas joindre : il lit une colonne sur la ligne qu'il s'apprête à
+  // retourner. Sans portée sur la note elle-même, une requête `notes` reste vide même si
+  // toutes les jonctions sont visibles.
+  //
+  // ⚠️ Même invariant qu'ailleurs, et il a une conséquence ici : on n'écrase JAMAIS une
+  // portée déjà posée. Une tâche peut porter plusieurs cibles (mesuré sur le workspace :
+  // certaines en ont deux), donc la première jonction servie gagne. C'est le recalcul par
+  // lot qui tranchera l'union des sociétés — c'est lui le propriétaire de la valeur, ce
+  // listener ne fait que servir l'enregistrement à son auteur dans la seconde qui suit.
+  private async poseSurActivite({
+    activityRepository,
+    activityId,
+    scopePath,
+  }: {
+    activityRepository: WorkspaceRepository<ObjectLiteral>;
+    activityId: unknown;
+    scopePath: string;
+  }): Promise<void> {
+    if (typeof activityId !== 'string' || activityId === '') {
+      return;
+    }
+
+    const activite = await activityRepository.findOne({
+      where: { id: activityId },
+    });
+    const dejaPose = isDefined(activite)
+      ? (activite as Record<string, unknown>)[SCOPE_PATH_FIELD]
+      : undefined;
+
+    if (typeof dejaPose === 'string' && dejaPose.trim() !== '') {
+      return;
+    }
+
+    await activityRepository.update(activityId, {
+      [SCOPE_PATH_FIELD]: scopePath,
+    });
   }
 
   /** Portée du parent si elle existe, sinon celle du créateur. */
