@@ -42,7 +42,7 @@ const allowlistedObject = (nameSingular = 'workspaceMember') => ({
 });
 
 // Objet sans champ countryCode (paramétrable). Hors allowlist + hors self-owned
-// (ex. mission, attachment) => default-deny ; pour task/note/blocklist avec id =>
+// (ex. mission, attachment) => default-deny ; seul `blocklist` avec un id reste
 // self-owned. NB : `salesperson` est passé dans l'allowlist (annuaire interne).
 const objectWithoutCountryCode = (nameSingular = 'mission') => ({
   objectMetadata: {
@@ -273,30 +273,10 @@ describe('applyCountryPermissionFilter', () => {
     expect(qb.andWhere).not.toHaveBeenCalled();
   });
 
-  it('self-owned : task avec workspaceMember.id => filtre par appartenance pose (pas un deny)', () => {
+  it('self-owned : blocklist SANS workspaceMember.id => default-deny', () => {
     const qb: any = makeQb();
     const { objectMetadata, internalContext } =
-      objectWithoutCountryCode('task');
-
-    applyCountryPermissionFilter({
-      queryBuilder: qb,
-      objectMetadata,
-      internalContext,
-      authContext: {
-        type: 'user',
-        workspaceMember: { id: 'me-123', allowedCountries: 'ES' },
-      } as any,
-    });
-
-    // une condition est posée (le filtre assignee=moi), pas un no-op
-    expect(qb.where).toHaveBeenCalledTimes(1);
-    expect(qb.andWhere).not.toHaveBeenCalled();
-  });
-
-  it('self-owned : task SANS workspaceMember.id => default-deny', () => {
-    const qb: any = makeQb();
-    const { objectMetadata, internalContext } =
-      objectWithoutCountryCode('task');
+      objectWithoutCountryCode('blocklist');
 
     applyCountryPermissionFilter({
       queryBuilder: qb,
@@ -314,6 +294,63 @@ describe('applyCountryPermissionFilter', () => {
     brackets.whereFactory(inner);
     expect(inner.where).toHaveBeenCalledWith('1 = 0');
   });
+
+  // 🔴 LE test de non-régression de la fiche client.
+  //
+  // `note` et `task` ont été retirés de SELF_OWNED_FILTERS le 2026-09-11. Les y remettre
+  // paraît inoffensif — « au moins l'utilisateur voit les siennes » — et c'est faux : 191
+  // des 196 notes sont créées par la clé API, qui n'a pas de propriétaire, et 166 des 168
+  // tâches n'ont pas d'assigné. Le filtre d'appartenance ne restreint alors pas la portée,
+  // il refuse tout, en silence et sans que le default-deny se voie.
+  //
+  // Ce test rend le SQL plutôt que de compter des appels : un filtre par auteur produirait
+  // `("note"."createdByWorkspaceMemberId" = :…)`, pas `(1 = 0)`. Il échoue donc
+  // exactement au moment où l'un des deux revient dans la table.
+  it.each(['note', 'task'])(
+    '🔴 %s sans scopePath => default-deny, PAS un filtre par auteur ou assigne',
+    (name) => {
+      const qb: any = makeQb();
+      const { objectMetadata, internalContext } =
+        objectWithoutCountryCode(name);
+
+      applyCountryPermissionFilter({
+        queryBuilder: qb,
+        objectMetadata,
+        internalContext,
+        authContext: {
+          type: 'user',
+          workspaceMember: { id: 'me-123', allowedCountries: 'ES' },
+        } as any,
+      });
+
+      expect(renderSql(qb.where.mock.calls[0][0])).toBe('(1 = 0)');
+    },
+  );
+
+  // La jonction d'activité reste refusée TANT QU'ELLE NE PORTE PAS `scopePath`. C'est la
+  // séquence de déploiement en un test : créer le champ custom sur le workspace d'abord,
+  // déployer l'image ensuite. Dans l'autre ordre, l'onglet Notes d'une fiche client reste
+  // vide, et ce n'est pas ce code qui aura tort.
+  it.each(['noteTarget', 'taskTarget'])(
+    '%s sans le champ scopePath reste en default-deny',
+    (name) => {
+      const qb: any = makeQb();
+      const { objectMetadata, internalContext } =
+        objectWithoutCountryCode(name);
+
+      applyCountryPermissionFilter({
+        queryBuilder: qb,
+        objectMetadata,
+        internalContext,
+        authContext: {
+          type: 'user',
+          workspaceMember: { id: 'me-123', allowedCountries: 'ES' },
+        } as any,
+      });
+
+      expect(renderSql(qb.where.mock.calls[0][0])).toBe('(1 = 0)');
+    },
+  );
 
   it('injecte un filtre countryCode pour un user scopé', () => {
     const qb: any = makeQb();
@@ -638,6 +675,58 @@ describe('cloisonnement par scopePath', () => {
 
     expect(qb.where).not.toHaveBeenCalled();
     expect(qb.andWhere).not.toHaveBeenCalled();
+  });
+
+  // Objet porteur de `scopePath` SANS `countryCode` : c'est le cas de `note`, `task` et de
+  // leurs deux jonctions. Aucun repli pays n'est possible sur eux, la portée est la seule
+  // chose qui les rend visibles — d'où le backfill, sans lequel ce code ne sert à rien.
+  const scopeOnlyObject = (nameSingular: string) => ({
+    objectMetadata: {
+      id: `${nameSingular}-object-id`,
+      nameSingular,
+      fieldIds: ['sp-field-id'],
+      // oxlint-disable-next-line typescript/no-explicit-any
+    } as any,
+    internalContext: {
+      flatFieldMetadataMaps: {
+        universalIdentifierById: { 'sp-field-id': 'sp-uid' },
+        byUniversalIdentifier: {
+          'sp-uid': { id: 'sp-field-id', name: 'scopePath', type: 'TEXT' },
+        },
+      },
+      // oxlint-disable-next-line typescript/no-explicit-any
+    } as any,
+  });
+
+  // 🔴 La fiche client réparée, vue du filtre : dès que l'objet porte `scopePath`, la
+  // branche portefeuille le prend en charge et RETOURNE. Ni le filtre par auteur (qui
+  // cachait 191 notes sur 196) ni le default-deny (qui cachait les jonctions) ne sont plus
+  // atteignables pour ces quatre objets — c'est la présence du champ qui décide, pas une
+  // liste de noms à tenir à jour.
+  it.each(['note', 'task', 'noteTarget', 'taskTarget'])(
+    '🔴 %s portant scopePath passe par le cloisonnement, pas par un refus',
+    (name) => {
+      const { sql } = runFilter(
+        userWith({ allowedScopes: 'g:217,g:260' }),
+        scopeOnlyObject(name),
+      );
+
+      expect(sql).not.toBe('(1 = 0)');
+      expect(sql).toContain(`"${name}"."scopePath"::text ILIKE`);
+      expect(sql.match(/ILIKE/g)).toHaveLength(2);
+      // Pas de countryCode sur ces objets : aucun repli ne peut rattraper une portée
+      // absente, et c'est voulu.
+      expect(sql).not.toContain('countryCode');
+    },
+  );
+
+  it('un membre sans périmètre ne voit aucune note, même avec le champ scopePath', () => {
+    const { sql } = runFilter(
+      userWith({ allowedScopes: '', allowedCountries: '' }),
+      scopeOnlyObject('note'),
+    );
+
+    expect(sql).toBe('(1 = 0)');
   });
 });
 

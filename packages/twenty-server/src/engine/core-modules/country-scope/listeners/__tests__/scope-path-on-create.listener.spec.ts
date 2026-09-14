@@ -12,6 +12,10 @@ describe('ScopePathOnCreateListener', () => {
   const companyRepository = { update: jest.fn(), findOne: jest.fn() };
   const personRepository = { update: jest.fn(), findOne: jest.fn() };
   const memberRepository = { findOne: jest.fn() };
+  // Une jonction d'activité écrit sur DEUX objets : elle-même et la note/tâche qu'elle
+  // rattache. Les confondre dans le mock ferait passer un test qui ne prouve rien.
+  const noteRepository = { update: jest.fn(), findOne: jest.fn() };
+  const taskRepository = { update: jest.fn(), findOne: jest.fn() };
   const getRepository = jest.fn();
 
   beforeEach(async () => {
@@ -24,7 +28,11 @@ describe('ScopePathOnCreateListener', () => {
             ? memberRepository
             : entityName === 'company'
               ? companyRepository
-              : personRepository,
+              : entityName === 'note'
+                ? noteRepository
+                : entityName === 'task'
+                  ? taskRepository
+                  : personRepository,
         ),
     );
 
@@ -311,6 +319,210 @@ describe('ScopePathOnCreateListener', () => {
     expect(companyRepository.update).toHaveBeenLastCalledWith('co-2', {
       scopePath: '|g:131|',
     });
+  });
+
+  // --- Notes et tâches : la portée passe par la jonction.
+  //
+  // 🔴 Pourquoi `noteTarget CREATED` et pas `note CREATED` : `noteTarget.noteId` est une
+  // clé étrangère vers la note, donc la jonction NE PEUT PAS exister avant elle. Le front
+  // crée bien dans cet ordre (`useCreateActivityInDB.ts`). À `note CREATED`, la société
+  // rattachée est toujours inconnue — accrocher cet événement aurait posé une portée
+  // systématiquement fausse (celle du créateur, plus large que celle du client).
+  //
+  // Dans ces tests, `personRepository` est le dépôt générique rendu par le mock : c'est
+  // celui de la JONCTION. `noteRepository` / `taskRepository` sont ceux de l'activité.
+
+  it('🔴 pose la portee de la societe sur la note ET sur sa jonction', async () => {
+    membreAvecJetons('g:131,g:229');
+    companyRepository.findOne.mockResolvedValue({
+      id: 'co-1',
+      scopePath: '|g:131|',
+    });
+    noteRepository.findOne.mockResolvedValue({ id: 'no-1', scopePath: null });
+
+    await listener.handleNoteTargetCreate(
+      batch('noteTarget', [
+        {
+          recordId: 'nt-1',
+          workspaceMemberId: 'wm-1',
+          after: { id: 'nt-1', noteId: 'no-1', targetCompanyId: 'co-1' },
+        },
+      ]),
+    );
+
+    // La jonction, pour qu'elle sorte du default-deny et que l'onglet Notes de la fiche
+    // client la retourne.
+    expect(personRepository.update).toHaveBeenCalledWith('nt-1', {
+      scopePath: '|g:131|',
+    });
+    // La note elle-même — c'est CE write qui la rend visible : le filtre ne joint pas, il
+    // lit une colonne sur la ligne qu'il retourne.
+    expect(noteRepository.update).toHaveBeenCalledWith('no-1', {
+      scopePath: '|g:131|',
+    });
+  });
+
+  it('🔴 la note herite de SA SOCIETE, pas du perimetre de son auteur', async () => {
+    // L'auteur porte deux groupes, le client un seul. Poser les deux montrerait la note à
+    // un collègue qui ne voit pas le client — une note est souvent plus bavarde que la
+    // fiche société elle-même.
+    membreAvecJetons('g:131,g:229');
+    companyRepository.findOne.mockResolvedValue({
+      id: 'co-1',
+      scopePath: '|g:131|',
+    });
+    noteRepository.findOne.mockResolvedValue({ id: 'no-1', scopePath: null });
+
+    await listener.handleNoteTargetCreate(
+      batch('noteTarget', [
+        {
+          recordId: 'nt-1',
+          workspaceMemberId: 'wm-1',
+          after: { id: 'nt-1', noteId: 'no-1', targetCompanyId: 'co-1' },
+        },
+      ]),
+    );
+
+    expect(noteRepository.update).toHaveBeenCalledWith('no-1', {
+      scopePath: '|g:131|',
+    });
+  });
+
+  it('fait la meme chose pour une tache via taskTarget', async () => {
+    membreAvecJetons('g:229');
+    companyRepository.findOne.mockResolvedValue({
+      id: 'co-1',
+      scopePath: '|g:229|',
+    });
+    taskRepository.findOne.mockResolvedValue({ id: 'ta-1', scopePath: null });
+
+    await listener.handleTaskTargetCreate(
+      batch('taskTarget', [
+        {
+          recordId: 'tt-1',
+          workspaceMemberId: 'wm-1',
+          after: { id: 'tt-1', taskId: 'ta-1', targetCompanyId: 'co-1' },
+        },
+      ]),
+    );
+
+    expect(personRepository.update).toHaveBeenCalledWith('tt-1', {
+      scopePath: '|g:229|',
+    });
+    expect(taskRepository.update).toHaveBeenCalledWith('ta-1', {
+      scopePath: '|g:229|',
+    });
+  });
+
+  it("🔴 n'ecrase pas la portee d'une tache deja servie par une premiere cible", async () => {
+    // Mesuré sur le workspace : certaines tâches portent deux cibles. La première servie
+    // gagne ; l'union des sociétés est l'affaire du recalcul par lot, qui est propriétaire
+    // de la valeur. Écraser ici ferait perdre la portée posée par l'autre jonction.
+    membreAvecJetons('g:131');
+    companyRepository.findOne.mockResolvedValue({
+      id: 'co-2',
+      scopePath: '|g:131|',
+    });
+    taskRepository.findOne.mockResolvedValue({
+      id: 'ta-1',
+      scopePath: '|g:229|',
+    });
+
+    await listener.handleTaskTargetCreate(
+      batch('taskTarget', [
+        {
+          recordId: 'tt-2',
+          workspaceMemberId: 'wm-1',
+          after: { id: 'tt-2', taskId: 'ta-1', targetCompanyId: 'co-2' },
+        },
+      ]),
+    );
+
+    // La jonction, elle, reçoit bien sa portée.
+    expect(personRepository.update).toHaveBeenCalledWith('tt-2', {
+      scopePath: '|g:131|',
+    });
+    expect(taskRepository.update).not.toHaveBeenCalled();
+  });
+
+  it("retombe sur l'auteur quand la jonction ne cible aucune societe", async () => {
+    // Une note attachée à un contact ou à une opportunité, pas à une société : le parent
+    // n'est pas résoluble par ce chemin, on aligne sur l'auteur comme pour tout
+    // enregistrement orphelin. Le recalcul par lot corrigera.
+    membreAvecJetons('g:131');
+    noteRepository.findOne.mockResolvedValue({ id: 'no-2', scopePath: null });
+
+    await listener.handleNoteTargetCreate(
+      batch('noteTarget', [
+        {
+          recordId: 'nt-2',
+          workspaceMemberId: 'wm-1',
+          after: { id: 'nt-2', noteId: 'no-2' },
+        },
+      ]),
+    );
+
+    expect(companyRepository.findOne).not.toHaveBeenCalled();
+    expect(noteRepository.update).toHaveBeenCalledWith('no-2', {
+      scopePath: '|g:131|',
+    });
+  });
+
+  it("🔴 n'ecrit RIEN sur une jonction creee par la cle API", async () => {
+    // 191 des 196 notes du workspace sont dans ce cas. Leur portée est l'affaire du
+    // backfill, pas de ce listener : inventer ici le périmètre d'un membre inexistant
+    // serait exactement l'erreur que le filtre par auteur commettait.
+    await listener.handleNoteTargetCreate(
+      batch('noteTarget', [
+        {
+          recordId: 'nt-3',
+          after: { id: 'nt-3', noteId: 'no-3', targetCompanyId: 'co-1' },
+        },
+      ]),
+    );
+
+    expect(personRepository.update).not.toHaveBeenCalled();
+    expect(noteRepository.update).not.toHaveBeenCalled();
+  });
+
+  it('ne touche pas la note quand la jonction ne porte pas son id', async () => {
+    membreAvecJetons('g:131');
+
+    await listener.handleNoteTargetCreate(
+      batch('noteTarget', [
+        {
+          recordId: 'nt-4',
+          workspaceMemberId: 'wm-1',
+          after: { id: 'nt-4' },
+        },
+      ]),
+    );
+
+    expect(personRepository.update).toHaveBeenCalledWith('nt-4', {
+      scopePath: '|g:131|',
+    });
+    expect(noteRepository.findOne).not.toHaveBeenCalled();
+    expect(noteRepository.update).not.toHaveBeenCalled();
+  });
+
+  it("ne laisse pas sortir une exception venue de l'ecriture sur la note", async () => {
+    // [[L97]] : lever ici ferait échouer la création de la jonction, donc l'ajout de la
+    // note depuis la fiche client. Un enregistrement sans portée reste moins grave qu'une
+    // erreur à l'écran.
+    membreAvecJetons('g:131');
+    noteRepository.findOne.mockRejectedValue(new Error('champ custom absent'));
+
+    await expect(
+      listener.handleNoteTargetCreate(
+        batch('noteTarget', [
+          {
+            recordId: 'nt-5',
+            workspaceMemberId: 'wm-1',
+            after: { id: 'nt-5', noteId: 'no-5' },
+          },
+        ]),
+      ),
+    ).resolves.toBeUndefined();
   });
 
   it("ne relit le membre qu'une fois par lot", async () => {

@@ -54,22 +54,35 @@ const COUNTRY_AGNOSTIC_OBJECTS = new Set<string>([
   'dashboard',
 ]);
 
-// Objets « personnels » sans countryCode : un utilisateur scoppé voit SES propres
-// enregistrements (ceux où il est impliqué), via un filtre d'appartenance par
-// identité du membre courant. Le reste (notes/tâches d'autrui ou rattachées à des
-// comptes hors scope) reste default-deny ; le transitif via les comptes in-scope
-// du rep viendra en itération ultérieure (cf. audit).
+// Objets « personnels » sans countryCode NI scopePath : un utilisateur scoppé voit SES
+// propres enregistrements (ceux où il est impliqué), via un filtre d'appartenance par
+// identité du membre courant.
+//
+// 🔴 `note` (`createdBy`) et `task` (`assigneeId`) ont été RETIRÉS de cette table le
+// 2026-09-11. Ne pas les y remettre. Mesuré sur le workspace ce jour-là :
+//   - 191 des 196 notes portent `createdBy.workspaceMemberId = null` — elles sont créées
+//     par la clé API d'ingestion, qui n'a aucun propriétaire ;
+//   - 166 des 168 tâches portent `assigneeId = null` — personne n'assigne, elles sont
+//     générées par l'ingestion (108 ACTION_PLAN, 56 ENTITY_RESOLUTION).
+// Un filtre d'appartenance sur une colonne vide à 98 % n'est pas une portée restreinte,
+// c'est un refus déguisé : aucun utilisateur ne voyait aucune note, et la fiche client
+// n'avait donc ni onglet Notes ni bouton pour en ajouter une (remonté par la manager de
+// la beta, qui l'a pris pour un problème de droits — c'en était un).
+//
+// Ces deux objets portent désormais un vrai `scopePath`, recopié depuis la société cible
+// par `ScopePathOnCreateListener` au moment où la jonction naît, et sont donc traités par
+// la branche 3 comme les cinq autres objets métier.
+//
+// ⚠️ Les y laisser n'aurait pas été neutre. La branche 3 rend cette table INATTEIGNABLE
+// dès que l'objet porte `scopePath` : le filtre par auteur serait devenu un repli
+// silencieux le jour où le champ disparaîtrait du workspace, là où le default-deny, lui,
+// se voit tout de suite.
 const SELF_OWNED_FILTERS: Record<
   string,
   (workspaceMemberId: string) => { field: string; filter: object }
 > = {
-  task: (id) => ({ field: 'assigneeId', filter: { eq: id } }),
-  note: (id) => ({
-    field: 'createdBy',
-    filter: { workspaceMemberId: { eq: id } },
-  }),
   // Liste d'exclusion de synchronisation : donnée strictement personnelle, portée
-  // par une FK directe vers le membre.
+  // par une FK directe vers le membre, et sans aucune société derrière.
   blocklist: (id) => ({ field: 'workspaceMemberId', filter: { eq: id } }),
 };
 
@@ -99,8 +112,17 @@ const SELF_OWNED_FILTERS: Record<
 //   dénormalisée, comme `scopePath` du lot B. À traiter là, pas par une rustine ici.
 //
 // - objets rattachés à un enregistrement client (`attachment`, `timelineActivity`,
-//   `noteTarget`, `taskTarget`, `visitContact`, `mission`, `companyGroup`) : leur
-//   portée est celle de leur parent. Même conclusion, même lot.
+//   `visitContact`, `mission`, `companyGroup`) : leur portée est celle de leur parent.
+//   Même conclusion, même lot.
+//
+//   `noteTarget` et `taskTarget` en sont SORTIS le 2026-09-11 : ils portent maintenant
+//   `scopePath`, recopié de leur société cible par `ScopePathOnCreateListener`, donc la
+//   branche 3 les prend en charge et retourne avant d'arriver jusqu'ici. Il n'y a aucun
+//   nom à ajouter nulle part pour ça — c'est la seule présence du champ qui décide, et
+//   c'est ce qui fait que la règle reste vraie pour l'objet suivant qu'on scoppera.
+//   ⚠️ Sortir la jonction du refus est indispensable et pas suffisant : l'onglet Notes
+//   d'une fiche client interroge `noteTarget` filtré sur `targetCompanyId`. Une note
+//   visible derrière une jonction refusée reste introuvable depuis la société.
 //
 // Conséquence à connaître tant que ce n'est pas fait : un commercial scoppé n'a ni pièces
 // jointes, ni historique, ni missions, et ne peut lire ni message ni événement d'agenda par
