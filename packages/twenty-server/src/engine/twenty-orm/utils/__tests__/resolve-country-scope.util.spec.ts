@@ -102,7 +102,10 @@ describe('resolveScope', () => {
   });
 
   it('retombe sur allowedCountries quand allowedScopes est une chaîne vide', () => {
-    expect(resolveScope('', 'EC')).toEqual({ kind: 'tokens', allowed: ['c:EC'] });
+    expect(resolveScope('', 'EC')).toEqual({
+      kind: 'tokens',
+      allowed: ['c:EC'],
+    });
   });
 
   it('rend unscoped sur la sentinelle, dans les deux champs', () => {
