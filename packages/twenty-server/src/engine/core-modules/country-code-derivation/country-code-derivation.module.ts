@@ -9,10 +9,7 @@ import { WorkspaceManyOrAllFlatEntityMapsCacheModule } from 'src/engine/metadata
 import { TwentyOrmModule } from 'src/engine/twenty-orm/twenty-orm.module';
 
 @Module({
-  imports: [
-    TwentyOrmModule,
-    WorkspaceManyOrAllFlatEntityMapsCacheModule,
-  ],
+  imports: [TwentyOrmModule, WorkspaceManyOrAllFlatEntityMapsCacheModule],
   providers: [
     CountryCodeFromRelationService,
     CountryCodeCreateOnePreQueryHook,

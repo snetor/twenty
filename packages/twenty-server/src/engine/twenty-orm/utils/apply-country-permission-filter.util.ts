@@ -1,4 +1,4 @@
-import { Brackets, type ObjectLiteral } from 'typeorm';
+import { Brackets } from 'typeorm';
 import { isDefined } from 'twenty-shared/utils';
 
 import { GraphqlQueryFilterFieldParser } from 'src/engine/api/graphql/graphql-query-runner/graphql-query-parsers/graphql-query-filter/graphql-query-filter-field.parser';
@@ -37,7 +37,7 @@ import {
 // aval : `common-update-many-query-runner.service.ts` fait un `UPDATE … RETURNING` sans
 // SELECT préalable. Un utilisateur qui connaissait un `id` hors de son périmètre écrivait
 // dessus. `runMutation` est le point qui ferme ce trou — si l'amont le contourne un jour,
-// c'est la spec `workspace-mutation-query-builders-country-filter.spec.ts` qui le dira.
+// c'est la spec `workspace-repository-country-filter.spec.ts` qui le dira.
 //
 // La sémantique de `allowedCountries` elle-même vit dans `resolve-country-scope.util.ts`,
 // parce qu'elle doit aussi servir aux chemins en contexte système que ce filtre laisse
@@ -308,8 +308,7 @@ const injectScopeFilter = (
   tokens: string[],
   hasCountryField: boolean,
 ): void => {
-  const outerQueryBuilder =
-    queryBuilder as WorkspaceSelectQueryBuilder;
+  const outerQueryBuilder = queryBuilder as WorkspaceSelectQueryBuilder;
 
   const parsedClause = (field: string, filter: object): Brackets =>
     new Brackets((inner) => {
@@ -370,8 +369,7 @@ const injectFieldFilter = (
   // parseKeyFilter (Enterprise, privé) délègue son default case à
   // GraphqlQueryFilterFieldParser.parse — on appelle directement le parser public.
   // Il ne sert que la surface de jointure, on élargit donc à ObjectLiteral.
-  const outerQueryBuilder =
-    queryBuilder as WorkspaceSelectQueryBuilder;
+  const outerQueryBuilder = queryBuilder as WorkspaceSelectQueryBuilder;
 
   const condition = new Brackets((qb) => {
     const fieldParser = new GraphqlQueryFilterFieldParser(
@@ -395,9 +393,7 @@ const injectFieldFilter = (
 
 // Default-deny : un objet non rattaché à un pays (et hors allowlist) est invisible
 // pour un utilisateur scoppé.
-const denyAll = (
-  queryBuilder: WorkspaceSelectQueryBuilder,
-): void => {
+const denyAll = (queryBuilder: WorkspaceSelectQueryBuilder): void => {
   appendCondition(
     queryBuilder,
     new Brackets((qb) => {

@@ -65,13 +65,12 @@ export class TimelineCalendarEventService {
     // sur `calendarEventTargets` et ne consulte plus `personIds` — notre périmètre ne le
     // couvre pas. Le drapeau est éteint hors seeder de développement ; ne pas l'allumer
     // sans étendre le cloisonnement à `targetFilter`.
-    const personIdsInScope = await this.countryScopeService.keepPersonIdsInScope(
-      {
+    const personIdsInScope =
+      await this.countryScopeService.keepPersonIdsInScope({
         personIds,
         workspaceMemberId: currentWorkspaceMemberId,
         workspaceId,
-      },
-    );
+      });
 
     if (personIdsInScope.length === 0) {
       return {

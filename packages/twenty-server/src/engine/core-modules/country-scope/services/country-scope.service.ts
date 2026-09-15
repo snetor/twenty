@@ -55,29 +55,26 @@ export class CountryScopeService {
 
     const authContext = buildSystemAuthContext(workspaceId);
 
-    return this.workspaceOrmManager.executeInWorkspaceContext(
-      async () => {
-        const workspaceMemberRepository =
-          this.workspaceOrmManager.getRepository<WorkspaceMemberWorkspaceEntity>(
-            'workspaceMember',
-            { shouldBypassPermissionChecks: true },
-          );
-
-        const workspaceMember = await workspaceMemberRepository.findOne({
-          where: { userId },
-        });
-
-        if (!isDefined(workspaceMember)) {
-          return { kind: 'tokens', allowed: [] };
-        }
-
-        return resolveScope(
-          readMemberScopesField(workspaceMember),
-          readMemberCountryScopeField(workspaceMember),
+    return this.workspaceOrmManager.executeInWorkspaceContext(async () => {
+      const workspaceMemberRepository =
+        this.workspaceOrmManager.getRepository<WorkspaceMemberWorkspaceEntity>(
+          'workspaceMember',
+          { shouldBypassPermissionChecks: true },
         );
-      },
-      authContext,
-    );
+
+      const workspaceMember = await workspaceMemberRepository.findOne({
+        where: { userId },
+      });
+
+      if (!isDefined(workspaceMember)) {
+        return { kind: 'tokens', allowed: [] };
+      }
+
+      return resolveScope(
+        readMemberScopesField(workspaceMember),
+        readMemberCountryScopeField(workspaceMember),
+      );
+    }, authContext);
   }
 
   /**
@@ -106,52 +103,49 @@ export class CountryScopeService {
 
     const authContext = buildSystemAuthContext(workspaceId);
 
-    return this.workspaceOrmManager.executeInWorkspaceContext(
-      async () => {
-        const workspaceMemberRepository =
-          this.workspaceOrmManager.getRepository<WorkspaceMemberWorkspaceEntity>(
-            'workspaceMember',
-            { shouldBypassPermissionChecks: true },
-          );
-
-        const workspaceMember = await workspaceMemberRepository.findOne({
-          where: { id: workspaceMemberId },
-        });
-
-        if (!isDefined(workspaceMember)) {
-          return [];
-        }
-
-        const scope = resolveScope(
-          readMemberScopesField(workspaceMember),
-          readMemberCountryScopeField(workspaceMember),
+    return this.workspaceOrmManager.executeInWorkspaceContext(async () => {
+      const workspaceMemberRepository =
+        this.workspaceOrmManager.getRepository<WorkspaceMemberWorkspaceEntity>(
+          'workspaceMember',
+          { shouldBypassPermissionChecks: true },
         );
 
-        if (scope.kind === 'unscoped') {
-          return personIds;
-        }
+      const workspaceMember = await workspaceMemberRepository.findOne({
+        where: { id: workspaceMemberId },
+      });
 
-        const personRepository =
-          this.workspaceOrmManager.getRepository<PersonWorkspaceEntity>(
-            'person',
-            { shouldBypassPermissionChecks: true },
-          );
+      if (!isDefined(workspaceMember)) {
+        return [];
+      }
 
-        const persons = await personRepository.find({
-          where: { id: In(personIds) },
-        });
+      const scope = resolveScope(
+        readMemberScopesField(workspaceMember),
+        readMemberCountryScopeField(workspaceMember),
+      );
 
-        return persons
-          .filter((person) =>
-            isScopeInScope(
-              scope,
-              readRecordScopePathField(person),
-              readRecordCountryCodeField(person),
-            ),
-          )
-          .map((person) => person.id);
-      },
-      authContext,
-    );
+      if (scope.kind === 'unscoped') {
+        return personIds;
+      }
+
+      const personRepository =
+        this.workspaceOrmManager.getRepository<PersonWorkspaceEntity>(
+          'person',
+          { shouldBypassPermissionChecks: true },
+        );
+
+      const persons = await personRepository.find({
+        where: { id: In(personIds) },
+      });
+
+      return persons
+        .filter((person) =>
+          isScopeInScope(
+            scope,
+            readRecordScopePathField(person),
+            readRecordCountryCodeField(person),
+          ),
+        )
+        .map((person) => person.id);
+    }, authContext);
   }
 }

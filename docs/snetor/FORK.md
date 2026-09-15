@@ -342,24 +342,41 @@ nous ».
 Si l'une échoue après un merge : **un patch a sauté. Ne pas continuer, ne pas la réparer en
 ajustant l'attente.** Retrouver où l'accroche a disparu.
 
-### L'inventaire complet des tests du fork — 150 cas, 14 fichiers
+### L'inventaire des tests du fork — 13 fichiers, 153 cas
+
+Mesure du 2026-09-15, sur la branche de montée v2.39.0 :
 
 ```
-apply-country-permission-filter.util.spec.ts     34
-resolve-country-scope.util.spec.ts               31
-scope-path-on-create.listener.spec.ts            23
-country-scope.service.spec.ts                    17
-derive-country-code.util.spec.ts                 11
-scope-assignment.listener.spec.ts                 7
-navigate-app-tool.spec.ts                         7
-country-code-from-relation.service.spec.ts        5
-create-message-channel.service.spec.ts            3
-get-messages.service.spec.ts                      3
-workspace-select-query-builder-country-filter     3
-create-calendar-channel.service.spec.ts           2
-workspace-mutation-query-builders-country-filter  2
-group-by-with-records-country-filter              2
+Test Suites: 13 passed, 14 total
+Tests:       153 passed, 154 total
 ```
+
+```
+src/engine/twenty-orm/utils/__tests__/apply-country-permission-filter.util.spec.ts
+src/engine/twenty-orm/utils/__tests__/resolve-country-scope.util.spec.ts
+src/engine/twenty-orm/repository/__tests__/workspace-repository-country-filter.spec.ts   ← sentinelle
+src/engine/core-modules/country-scope/services/__tests__/country-scope.service.spec.ts
+src/engine/core-modules/country-scope/listeners/__tests__/scope-path-on-create.listener.spec.ts
+src/engine/core-modules/country-scope/listeners/__tests__/scope-assignment.listener.spec.ts
+src/engine/core-modules/country-code-derivation/utils/__tests__/derive-country-code.util.spec.ts
+src/engine/core-modules/country-code-derivation/services/__tests__/country-code-from-relation.service.spec.ts
+src/engine/core-modules/tool/tools/navigate-tool/__tests__/navigate-app-tool.spec.ts
+src/engine/core-modules/messaging/services/__tests__/get-messages.service.spec.ts
+src/engine/api/graphql/.../group-by/services/__tests__/group-by-with-records-country-filter.spec.ts  ← sentinelle
+src/engine/core-modules/auth/services/create-message-channel.service.spec.ts              ← sentinelle
+src/engine/core-modules/auth/services/create-calendar-channel.service.spec.ts             ← sentinelle
+```
+
+⚠️ **Comment les lancer sur ce poste.** `packages/twenty-shared` doit être construit avant, sinon
+jest échoue sur `Cannot find module 'twenty-shared/utils'` — ses exports pointent vers `dist/` :
+
+```
+NX_DAEMON=false ./node_modules/.bin/nx build twenty-shared --skip-nx-cache
+```
+
+Sans `NX_DAEMON=false`, ce build reste bloqué indéfiniment sur son étape `generateBarrels`, sans
+rien écrire et sans consommer de CPU — un blocage silencieux qui ressemble à une lenteur. Même
+chose pour `twenty-oxlint-rules`, exigé par `oxlint`.
 
 ---
 
