@@ -96,6 +96,27 @@ ELI8 : le fork avait bien déménagé dans la maison 2.30, meubles compris. Mais
 signé le changement d'adresse. Git croyait qu'on habitait encore l'ancienne et voulait tout
 redéménager depuis là.
 
+### 🟢 La cause a été retirée le 2026-09-15
+
+Le squash n'était pas une négligence : `main` portait la règle **`required_linear_history`**, qui
+**interdit les merge commits**. Un historique linéaire est un historique sans embranchement — or un
+merge amont EST un embranchement, et c'est précisément lui qui enregistre « nous descendons aussi
+de la 2.39 ». La règle interdisait donc d'écrire l'information dont la montée suivante a besoin.
+
+Elle a été retirée du ruleset `Protect core branches` (id `17310656`). **Ce qui reste protégé sur
+`main`, `snetor/main` et `snetor/prod`** : suppression de branche interdite (`deletion`), force
+push interdit (`non_fast_forward`), et une approbation obligatoire (`pull_request`,
+`required_approving_review_count: 1`).
+
+Vérification :
+
+```
+gh api repos/snetor/twenty/rules/branches/main --jq '.[].type'
+→ deletion, non_fast_forward, pull_request
+```
+
+Si `required_linear_history` réapparaît un jour dans cette liste, le piège est revenu.
+
 ### La réparation, si le cas se reproduit
 
 Vérifier d'abord que le contenu est bien celui du tag — seuls les fichiers du fork doivent
@@ -449,6 +470,41 @@ le dépôt `snetor/client-matrix`, pas ici.
       `grep -rn "CountryScopeModule\|CountryCodeDerivationModule" packages/twenty-server/src/engine/core-modules/`
 - [ ] Lint et typecheck : `npx nx lint twenty-server`, `npx nx typecheck twenty-server`.
       **oxlint + oxfmt**, pas eslint.
+
+### Ce que la CI rend sur une PR de montée — et qui n'est pas un défaut
+
+Mesuré sur la PR #25 (v2.30.0 → v2.39.0) : **139 verts, 16 rouges**. Aucun des 16 ne venait de
+notre code. Les reconnaître fait gagner des heures — et surtout évite de « réparer » ce qui n'est
+pas cassé.
+
+**D'abord, la seule chose qui compte vraiment.** Le ruleset ne pose **aucun
+`required_status_checks`** : ces rouges ne bloquent pas le merge, seule l'approbation le fait.
+C'est donc un jugement humain, pas un feu rouge automatique. Raison de plus pour les trier
+sérieusement.
+
+| Rouge | Nature | Quoi faire |
+|---|---|---|
+| `ci-server-status-check`, `ci-twenty-apps-status-check`, `ci-front-component-renderer-status-check`, `ci-create-app-status-check`, `ci-example-app-postcard-status-check`, `notify-main-ci-failure` | **Agrégateurs.** Ils font `exit 1` dès qu'un job dont ils dépendent échoue | Ne pas les compter comme des causes — chercher le job en amont |
+| `server-previous-version-upgrade-mutation-guard` | Interdit de toucher aux commandes de montée des paliers antérieurs. Une PR de merge en apporte forcément : ce sont les commits de l'amont | Vérifier qu'aucun commit Snetor n'en modifie, puis poser le label `ci:allow-previous-version-upgrade-mutation` |
+| `discord`, `last-contact`, `people-data-labs`, `server-apps-install-smoke (…)` | Applications publiques ajoutées par l'amont, qui appellent des API tierces avec des clés que le fork n'a pas | Rien. Elles ne seront jamais vertes ici |
+| `api-breaking-changes` | Compare les schémas GraphQL et REST entre la base et la PR. Neuf releases d'écart = l'API amont a changé | Rien — c'est le changement de l'amont qu'il signale, pas le nôtre |
+| `danger-js` | `The job has exceeded the maximum execution time of 5m0s` — il analyse le diff, ici 9 752 fichiers | Rien. Mécanique sur une PR de merge |
+| `renderer-sb-test` | `The job was not started because it repeatedly failed to be acquired (5 attempts)` — le runner GitHub n'a jamais démarré | Relancer si on y tient. C'est de l'infrastructure |
+| `server-integration-test (N)` | Instable | Relancer une fois avant de conclure |
+
+⚠️ **Le label ne suffit pas à relancer.** Le workflow lit
+`github.event.pull_request.labels.*.name`, c'est-à-dire le **payload de l'événement d'origine**.
+`gh run rerun` rejoue l'ancien payload et échouera encore. Il faut **redéclencher** l'événement :
+fermer puis rouvrir la PR (`gh pr close` / `gh pr reopen`), ce qui ne coûte rien et ne touche pas
+aux commits.
+
+**Ce qu'il faut exiger vert, en revanche** — ce sont eux qui parlent de notre code :
+
+```
+server-lint-typecheck        le typecheck complet, dans un environnement propre
+server-test (1..N)           les tests unitaires du serveur
+check-blocked-contributors   aucun trailer d'attribution IA
+```
 
 ### Pour la pull request
 
