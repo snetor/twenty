@@ -1,7 +1,7 @@
 import { Test, type TestingModule } from '@nestjs/testing';
 
 import { CountryScopeService } from 'src/engine/core-modules/country-scope/services/country-scope.service';
-import { GlobalWorkspaceOrmManager } from 'src/engine/twenty-orm/global-workspace-datasource/global-workspace-orm.manager';
+import { WorkspaceOrmManager } from 'src/engine/twenty-orm/workspace-orm.manager';
 
 describe('CountryScopeService', () => {
   let service: CountryScopeService;
@@ -12,15 +12,13 @@ describe('CountryScopeService', () => {
   beforeEach(async () => {
     jest.clearAllMocks();
 
-    const mockGlobalWorkspaceOrmManager = {
+    const mockWorkspaceOrmManager = {
       getRepository: jest
         .fn()
-        .mockImplementation((_workspaceId: string, entityName: string) =>
-          Promise.resolve(
-            entityName === 'workspaceMember'
-              ? workspaceMemberRepository
-              : personRepository,
-          ),
+        .mockImplementation((entityName: string) =>
+          entityName === 'workspaceMember'
+            ? workspaceMemberRepository
+            : personRepository,
         ),
       executeInWorkspaceContext: jest
         .fn()
@@ -31,8 +29,8 @@ describe('CountryScopeService', () => {
       providers: [
         CountryScopeService,
         {
-          provide: GlobalWorkspaceOrmManager,
-          useValue: mockGlobalWorkspaceOrmManager,
+          provide: WorkspaceOrmManager,
+          useValue: mockWorkspaceOrmManager,
         },
       ],
     }).compile();

@@ -7,6 +7,7 @@
 - **Recordings on every meeting**
 - **A Call Recording tab**
 - **A per-meeting on/off switch**
+- **Customizable in-meeting recording notices**
 - **AI meeting summaries**
 - **Built for AI & automation**
 
@@ -21,6 +22,14 @@ cost scales with how much was said in the meeting, typically **$0.02–$0.06 per
 meeting** on default models. Set the `CALL_RECORDER_SUMMARY_ENABLED` app
 variable to `false` to turn summaries off.
 
+## 🤖 The Recording Bot field
+
+Each calendar event has a **Recording Bot** field. It starts blank and the app
+sets it to On when it actually schedules the recorder for that meeting, which
+happens once the meeting is within the seven-day scheduling window. Set it to
+Off to skip a meeting. Past meetings the recorder never joined simply stay
+blank.
+
 ## 🎥 Supported meeting platforms
 
 The recording bot can only join meetings on these platforms:
@@ -34,6 +43,10 @@ The recording bot can only join meetings on these platforms:
 Events whose conference link points to any other platform (e.g. ro.am, Daily,
 Whereby) or that only have a dial-in number are **ignored** — no bot is
 scheduled, since it can't join the call.
+
+Recording notices are supported in Zoom, Google Meet, and Microsoft Teams.
+Workspace admins can turn them off or customize their text in the Call Recorder
+app settings. Webex and GoTo Meeting do not support bot chat messages.
 
 ## 📌 Heads up
 

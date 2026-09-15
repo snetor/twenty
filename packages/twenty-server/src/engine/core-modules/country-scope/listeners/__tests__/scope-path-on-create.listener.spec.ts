@@ -3,7 +3,7 @@ import { Test, type TestingModule } from '@nestjs/testing';
 import { type ObjectRecordCreateEvent } from 'twenty-shared/database-events';
 
 import { ScopePathOnCreateListener } from 'src/engine/core-modules/country-scope/listeners/scope-path-on-create.listener';
-import { GlobalWorkspaceOrmManager } from 'src/engine/twenty-orm/global-workspace-datasource/global-workspace-orm.manager';
+import { WorkspaceOrmManager } from 'src/engine/twenty-orm/workspace-orm.manager';
 import { type WorkspaceEventBatch } from 'src/engine/workspace-event-emitter/types/workspace-event-batch.type';
 
 describe('ScopePathOnCreateListener', () => {
@@ -21,26 +21,23 @@ describe('ScopePathOnCreateListener', () => {
   beforeEach(async () => {
     jest.clearAllMocks();
 
-    getRepository.mockImplementation(
-      (_workspaceId: string, entityName: string) =>
-        Promise.resolve(
-          entityName === 'workspaceMember'
-            ? memberRepository
-            : entityName === 'company'
-              ? companyRepository
-              : entityName === 'note'
-                ? noteRepository
-                : entityName === 'task'
-                  ? taskRepository
-                  : personRepository,
-        ),
+    getRepository.mockImplementation((entityName: string) =>
+      entityName === 'workspaceMember'
+        ? memberRepository
+        : entityName === 'company'
+          ? companyRepository
+          : entityName === 'note'
+            ? noteRepository
+            : entityName === 'task'
+              ? taskRepository
+              : personRepository,
     );
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         ScopePathOnCreateListener,
         {
-          provide: GlobalWorkspaceOrmManager,
+          provide: WorkspaceOrmManager,
           useValue: {
             getRepository,
             executeInWorkspaceContext: jest
@@ -285,9 +282,9 @@ describe('ScopePathOnCreateListener', () => {
   it('🔴 ne laisse JAMAIS sortir une exception', async () => {
     // [[L97]] : un listener de creation qui leve fait echouer la creation elle-meme. Le
     // commercial verrait une erreur au lieu d'un enregistrement — pire que le defaut repare.
-    getRepository.mockRejectedValue(
-      new Error('objet custom absent du workspace'),
-    );
+    getRepository.mockImplementation(() => {
+      throw new Error('objet custom absent du workspace');
+    });
 
     await expect(
       listener.handleCompanyCreate(

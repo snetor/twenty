@@ -4,7 +4,7 @@ import { Test, type TestingModule } from '@nestjs/testing';
 import { type ObjectRecordCreateEvent } from 'twenty-shared/database-events';
 
 import { ScopeAssignmentListener } from 'src/engine/core-modules/country-scope/listeners/scope-assignment.listener';
-import { GlobalWorkspaceOrmManager } from 'src/engine/twenty-orm/global-workspace-datasource/global-workspace-orm.manager';
+import { WorkspaceOrmManager } from 'src/engine/twenty-orm/workspace-orm.manager';
 import { type WorkspaceEventBatch } from 'src/engine/workspace-event-emitter/types/workspace-event-batch.type';
 
 describe('ScopeAssignmentListener', () => {
@@ -17,16 +17,13 @@ describe('ScopeAssignmentListener', () => {
   beforeEach(async () => {
     jest.clearAllMocks();
 
-    getRepository.mockImplementation(
-      (_workspaceId: string, entityName: string) =>
-        Promise.resolve(
-          entityName === 'workspaceMember'
-            ? workspaceMemberRepository
-            : salespersonRepository,
-        ),
+    getRepository.mockImplementation((entityName: string) =>
+      entityName === 'workspaceMember'
+        ? workspaceMemberRepository
+        : salespersonRepository,
     );
 
-    const mockGlobalWorkspaceOrmManager = {
+    const mockWorkspaceOrmManager = {
       getRepository,
       executeInWorkspaceContext: jest
         .fn()
@@ -37,8 +34,8 @@ describe('ScopeAssignmentListener', () => {
       providers: [
         ScopeAssignmentListener,
         {
-          provide: GlobalWorkspaceOrmManager,
-          useValue: mockGlobalWorkspaceOrmManager,
+          provide: WorkspaceOrmManager,
+          useValue: mockWorkspaceOrmManager,
         },
       ],
     }).compile();
@@ -126,12 +123,13 @@ describe('ScopeAssignmentListener', () => {
     // cette exception remonter casse la connexion elle-même.
     const warn = jest.spyOn(Logger.prototype, 'warn').mockImplementation();
 
-    getRepository.mockImplementation(
-      (_workspaceId: string, entityName: string) =>
-        entityName === 'salesperson'
-          ? Promise.reject(new Error('object metadata not found: salesperson'))
-          : Promise.resolve(workspaceMemberRepository),
-    );
+    getRepository.mockImplementation((entityName: string) => {
+      if (entityName === 'salesperson') {
+        throw new Error('object metadata not found: salesperson');
+      }
+
+      return workspaceMemberRepository;
+    });
 
     await expect(
       listener.handleCreate(

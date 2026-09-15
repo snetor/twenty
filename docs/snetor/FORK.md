@@ -7,8 +7,14 @@ modification s'accroche au code amont, et ce qui casse quand l'amont bouge.
 Il se met à jour **dans la même pull request** que la modification qu'il décrit. Un fichier de
 carte en retard est pire qu'absent : il fait chercher au mauvais endroit.
 
-> **État décrit** : fork sur `twenty/v2.30.0`, 22 commits Snetor, 49 fichiers,
-> +5 542 / −48 lignes. Mesure : `git diff --stat twenty/v2.30.0 origin/main`.
+> **État décrit** : fork sur `twenty/v2.39.0`.
+> Mesure de l'écart avec l'amont : `git diff --stat twenty/v2.39.0 HEAD`.
+>
+> **Ce que la montée 2.30 → 2.39 a changé pour ce fichier**, et c'est le résumé le plus
+> utile qu'il porte : le cloisonnement est passé de **cinq points d'application dispersés à
+> deux**, tous deux sur des interfaces publiques ; le chantier « visibilité messagerie » a
+> **disparu**, absorbé par l'amont ; et les surfaces en contexte système (Emails, Calendar,
+> agent) restent les seules à demander un rappel manuel du périmètre.
 
 ---
 
@@ -45,6 +51,27 @@ rien.
    des ajouts : ils représentent 97 % des lignes et **zéro conflit possible**.
 4. En dernier recours seulement, un patch dans du code amont — et alors **il lui faut une
    spec-sentinelle** (§4).
+
+### Ce que la montée v2.39.0 a permis, et qu'il faut préserver
+
+La règle n'est pas qu'une précaution : appliquée, elle **réduit** le fork. En reposant le
+cloisonnement sur `WorkspaceRepository.onBeforeExecute()` et `runMutation()` — un hook de contexte
+et une méthode publique — les cinq points d'application sont devenus **deux**, et trois surfaces
+qui demandaient chacune leur patch (le groupBy du Kanban, les relations imbriquées, les comptages)
+sont désormais couvertes sans une ligne de code Snetor.
+
+Chaque fois qu'un choix se présente entre « patcher là où ça se voit » et « remonter au point par
+où tout passe », c'est le second qu'il faut prendre, même s'il demande une demi-journée de lecture
+de plus. Le fork ne se juge pas au nombre de lignes qu'il ajoute mais au nombre d'endroits où il
+doit être rebranché à chaque montée.
+
+⚠️ **Et un coin à ne pas couper : ne jamais importer un fichier amont marqué `/* @license
+Enterprise */`.** `render-row-level-permission-filter-to-sql.util.ts` et
+`apply-row-level-permission-predicates.util.ts` font exactement ce dont notre filtre a besoin, et
+sont interdits d'usage. Ils servent de **patron de forme**, jamais de dépendance. Les briques de
+bas niveau, elles, sont libres : `compute-where-condition-parts.ts`,
+`graphql-query-filter-field.parser.ts` et `workspace-repository.ts` ne portent pas ce marqueur —
+vérifier avec `head -1` avant d'importer quoi que ce soit de nouveau.
 
 ---
 
@@ -125,18 +152,32 @@ repli sur `countryCode` ; allow-list `COUNTRY_AGNOSTIC_OBJECTS` (`country`, `pro
 `workspaceMember`, `salesperson`, `salespersonCountry`, `dashboard`) ; table `SELF_OWNED_FILTERS` ;
 puis **`denyAll()` en default-deny**.
 
-**Patchs dans du code amont** — les points fragiles :
+**Patchs dans du code amont — DEUX, tous deux dans `twenty-orm/repository/workspace-repository.ts` :**
 
-| Fichier | Point d'ancrage | Fragilité |
+| Point d'ancrage | Ce qu'il couvre | Fragilité |
 |---|---|---|
-| `twenty-orm/repository/workspace-select-query-builder.ts` | 1 ligne dans `validatePermissions()`, juste après `applyRowLevelPermissionPredicatesToMainAliasAndJoinedRelations()` | 🔴 corps de méthode privée |
-| `twenty-orm/repository/workspace-update-query-builder.ts` | **2** appels : dans `execute()` et dans la boucle `for (const input of this.manyInputs)` | 🔴 dont un dans une boucle |
-| `twenty-orm/repository/workspace-delete-query-builder.ts` | 1 appel dans `execute()` | 🔴 |
-| `twenty-orm/repository/workspace-soft-delete-query-builder.ts` | 1 appel dans `execute()` | 🔴 |
-| `graphql-query-runner/group-by/services/group-by-with-records.service.ts` | 1 ligne dans `addPartitionByToQueryBuilder`, qui doit précéder `subQuery.getQuery()` | 🔴 **le plus fragile** : dépend d'un ordre d'exécution |
+| `onBeforeExecute()` — un appel après `applyRowLevelPermissionPredicates` | **toute la LECTURE.** `createQueryBuilder()` injecte ce hook dans chaque builder de lecture : `find`, `getCount()`, le groupBy du Kanban (via `applyRowLevelPermissions()`), les relations imbriquées | 🟢 hook d'un contexte, interface publique |
+| `runMutation()` — un appel sous la même condition `if (!rowLevelPermissionsApplied)` que l'amont | **toute l'ÉCRITURE.** update, delete, soft-delete, restore | 🟢 méthode publique |
 
-⚠️ **Écart connu, présent depuis la 2.30** : le filtre ne porte que sur l'**alias principal**, alors
-que l'amont applique aussi ses prédicats aux relations jointes. À réévaluer à chaque montée.
+Plus la méthode privée `applyCountryPermissionFilterPredicate()` qui les sert, ajoutée au même
+fichier.
+
+**Avant la v2.39.0 il en fallait cinq**, dont trois au milieu de corps de méthodes privées que
+l'amont a supprimées depuis. C'est la démonstration de la règle d'or, et la raison de ne jamais
+revenir à des points d'application dispersés : chaque surface patchée séparément est une surface
+qu'on peut oublier — c'est exactement ainsi que l'écriture est restée non cloisonnée jusqu'au
+2026-08-30.
+
+⚠️ **Écart connu, hérité de la 2.30 et à réévaluer** : notre filtre porte sur l'alias principal,
+alors que `applyRowLevelPermissionPredicates` itère désormais aussi sur `getJoinAliases()`. Le
+nouveau moteur expose `markRowLevelPermissionApplied(alias)` et `addJoinCondition(alias, sql)` :
+il y a là de quoi étendre le cloisonnement aux relations jointes, ce qui n'était pas faisable avant.
+
+⚠️ **Le `clone()` d'un builder conserve son contexte**, donc son hook — c'est ce qui fait que le
+groupBy est couvert sans patch. Il recopie aussi `aliasesWithRowLevelPermissionApplied`, alors que
+notre filtre n'a pas d'équivalent : une double application reste donc possible sur un clone. Elle
+est inoffensive (un `AND` identique deux fois, jamais moins restrictif), mais à connaître avant de
+s'étonner d'un SQL redondant.
 
 ⚠️ **L'incident qui justifie les deux appels dans l'update** : pendant des semaines, le
 cloisonnement ne filtrait que la **lecture**. Les trois builders de mutation n'appliquaient rien,
@@ -175,18 +216,29 @@ jamais l'écriture.
 
 ---
 
-### Chantier 3 — Visibilité de la messagerie par défaut
+### Chantier 3 — Visibilité de la messagerie par défaut — 🟢 RETIRÉ le 2026-09-14
 
 **But métier** : un compte email ou agenda connecté depuis Settings → Accounts ne partage par
 défaut que les **métadonnées**, pas le corps des mails, à l'ensemble du workspace.
 
-**Patchs amont** : deux littéraux, dans
-`core-modules/auth/services/create-message-channel.service.ts` et
-`create-calendar-channel.service.ts` — `SHARE_EVERYTHING` remplacé par `METADATA`.
+**Le patch n'existe plus.** Le fork imposait `METADATA` depuis la PR #11 ; en `twenty/v2.39.0`
+l'amont porte exactement la même valeur :
 
-⚠️ **C'est une modification de valeur, pas une insertion.** Git résout souvent ce type de conflit
-« en faveur de l'amont » sans même poser de marqueur. Une régression ici repartage silencieusement
-le corps des mails de tous les commerciaux. D'où deux specs-sentinelles pour cinq lignes de patch.
+```
+core-modules/auth/services/create-message-channel.service.ts:54
+    visibility: messageVisibility || MessageChannelVisibility.METADATA
+core-modules/auth/services/create-calendar-channel.service.ts:49
+    visibility: calendarVisibility || CalendarChannelVisibility.METADATA
+```
+
+Le patch a donc été retiré à la montée : deux fichiers amont de moins à porter, définitivement.
+
+⚠️ **Mais les deux specs sont CONSERVÉES, et c'est le point à ne pas rater.** Une dépendance qu'on
+ne patche plus est une dépendance que plus rien ne surveille. Si une release future revenait à
+`SHARE_EVERYTHING`, le corps des mails de tous les commerciaux serait repartagé au workspace
+entier — sans conflit de merge, sans erreur de compilation, sans aucun signal. Ces deux specs sont
+le seul endroit qui s'en apercevrait. Ne pas les supprimer au motif qu'elles « ne défendent plus
+de code Snetor ».
 
 ---
 
@@ -204,7 +256,7 @@ via `CountryScopeService.keepPersonIdsInScope`.
 | Fichier | Nature du patch | Fragilité |
 |---|---|---|
 | `core-modules/messaging/services/get-messages.service.ts` | injection au constructeur + bloc `keepPersonIdsInScope` + early-return + **3 substitutions** `personIds` → `personIdsInScope` | 🔴 substitutions dispersées |
-| `core-modules/calendar/timeline-calendar-event.service.ts` | idem + substitutions dans `count()`, `find()` et 3 `relatedPersonIds` | 🔴 idem |
+| `core-modules/calendar/timeline-calendar-event.service.ts` | idem, avec `currentWorkspaceMemberId` comme identité + substitutions dans le `where`, le retour anticipé et 2 `relatedPersonIds` | 🔴 idem. L'amont y a réécrit 517 lignes à la v2.39.0 |
 | `core-modules/tool/tools/navigate-tool/navigate-app-tool.ts` | injection + signature élargie + renommages `selectColumns` → `baseSelectColumns` et `records` → `allRecords` + `.filter(isScopeInScope(...))` | 🔴 **le patch le plus intrusif du fork** |
 | `core-modules/messaging/timeline-messaging.module.ts` | `CountryScopeModule,` dans `imports:` | 🟢 stable |
 | `core-modules/calendar/timeline-calendar-event.module.ts` | idem | 🟢 stable |
@@ -218,6 +270,19 @@ filtre a l'air actif et ne filtre rien.
 une seule substitution en profondeur. Le filtre devient alors partiellement inopérant, **sans aucun
 signal**. Contrôle : après tout merge, `grep -n "personIds\b"` sur les deux services — aucune
 occurrence nue ne doit subsister après le calcul de `personIdsInScope`.
+
+🔴 **Le piège nouveau, apparu à la v2.39.0 — `IS_MESSAGE_CALENDAR_TARGET_READ_ENABLED`.**
+L'amont a ajouté un `targetFilter` qui sélectionne les threads et les événements **par
+l'enregistrement cible** (`messageThreadTarget` / `calendarEventTargets`) et non plus par les
+personnes. Notre périmètre, lui, ne porte que sur `personIds`.
+
+Tant que ce drapeau est éteint, `resolveTargetFilter` rend `undefined` et le cloisonnement reste
+complet. Son seul `true` du dépôt est dans le seeder de développement
+(`seed-feature-flags.util.ts`), donc il est absent d'un workspace réel.
+
+**L'allumer sans avoir étendu le cloisonnement à `targetFilter` ouvrirait l'onglet Emails et
+l'onglet Calendar d'un enregistrement hors portée.** Les deux services portent le rappel en
+commentaire, à l'endroit exact où il faudrait agir.
 
 ---
 
@@ -251,19 +316,28 @@ modifie régulièrement l'en-tête du README (badges) : conflit récurrent, mais
 
 ---
 
-## 4. Les cinq specs-sentinelles
+## 4. Les quatre specs-sentinelles
 
 Ce sont des tests écrits pour **échouer si un merge fait sauter un patch**. Ils ne testent pas une
 fonctionnalité : ils testent que l'accroche existe encore. **Ils se lancent avant tout le reste
 après un merge.**
 
-| Spec | Ce qu'elle défend | Cas |
-|---|---|---|
-| `twenty-orm/repository/__tests__/workspace-select-query-builder-country-filter.spec.ts` | le filtre de lecture est bien appelé | 3 |
-| `twenty-orm/repository/__tests__/workspace-mutation-query-builders-country-filter.spec.ts` | les trois chemins d'écriture sont filtrés | 2 |
-| `group-by/services/__tests__/group-by-with-records-country-filter.spec.ts` | le filtre précède la sérialisation de la sous-requête — `expect(order).toEqual(['scope','getQuery'])` | 2 |
-| `auth/services/create-message-channel.service.spec.ts` | le défaut de visibilité reste `METADATA` | 3 |
-| `auth/services/create-calendar-channel.service.spec.ts` | idem pour l'agenda | 2 |
+| Spec | Ce qu'elle défend |
+|---|---|
+| `twenty-orm/repository/__tests__/workspace-repository-country-filter.spec.ts` | les **deux** points d'application : `onBeforeExecute` pour la lecture, `runMutation` pour l'écriture |
+| `group-by/services/__tests__/group-by-with-records-country-filter.spec.ts` | que `applyRowLevelPermissions()` précède `getQuery()` dans `buildRankedRecordsStatement` — donc que la sous-requête du Kanban est sérialisée **après** le filtre |
+| `auth/services/create-message-channel.service.spec.ts` | que le défaut de visibilité reste `METADATA` |
+| `auth/services/create-calendar-channel.service.spec.ts` | idem pour l'agenda |
+
+Elles étaient cinq avant la v2.39.0 : celles du select builder et des trois builders de mutation
+ont fusionné, parce que les points d'application ont fusionné.
+
+**Deux d'entre elles ne défendent plus une ligne de code Snetor** — celles des canaux, depuis que
+l'amont a adopté notre défaut ; et celle du groupBy, depuis que le hook rend le patch inutile.
+C'est justement ce qui les rend précieuses : elles surveillent des **dépendances invisibles**, des
+comportements amont dont notre confidentialité dépend sans qu'aucun conflit de merge ne vienne
+jamais nous avertir s'ils changent. Ne pas les supprimer au motif qu'elles ne couvrent « rien à
+nous ».
 
 Si l'une échoue après un merge : **un patch a sauté. Ne pas continuer, ne pas la réparer en
 ajustant l'attente.** Retrouver où l'accroche a disparu.
@@ -291,14 +365,19 @@ group-by-with-records-country-filter              2
 
 ## 5. Ce qu'aucun test ne rattrapera
 
-Trois choses qu'un humain doit relire à l'œil après chaque montée :
+Quatre choses qu'un humain doit relire à l'œil après chaque montée :
 
-1. **Les substitutions `personIds` → `personIdsInScope`** — 6 occurrences sur deux services. Un
+1. **Les substitutions `personIds` → `personIdsInScope`** — sur les deux services de timeline. Un
    merge peut en perdre une seule, sans signal.
 2. **Les renommages dans `navigate-app-tool.ts`** — `selectColumns` → `baseSelectColumns`,
-   `records` → `allRecords`. Si les champs de portée quittent le `select`, le filtre laisse tout
-   passer en silence.
-3. **La résurrection de `external-contributor-pr-auto-draft.yaml`.**
+   `records` → `allRecords`. Si les champs de portée quittent le `select`, `isScopeInScope` les lit
+   `undefined` et **laisse tout passer** : le filtre a l'air actif et ne filtre rien.
+3. **Les drapeaux de fonctionnalité amont qui changent la façon dont une donnée est sélectionnée.**
+   `IS_MESSAGE_CALENDAR_TARGET_READ_ENABLED` en est le premier exemple (§ chantier 4) : il ne
+   touche aucune ligne de notre code, ne produit aucun conflit, et déplace pourtant le critère de
+   sélection hors de notre périmètre. À chaque montée, lire les nouveaux drapeaux qui touchent une
+   lecture de données métier.
+4. **La résurrection de `external-contributor-pr-auto-draft.yaml`.**
 
 ---
 
@@ -342,8 +421,13 @@ le dépôt `snetor/client-matrix`, pas ici.
       alors aucun workflow `pull_request` ne se déclenche : la CI devient muette au lieu de rouge.
 - [ ] Résoudre par risque décroissant : lecture ORM → écriture ORM → groupBy → surfaces système →
       agent → CI → docs.
-- [ ] Lancer **les cinq sentinelles avant tout le reste**.
-- [ ] Relire à l'œil les trois points du §5.
+- [ ] Lancer **les quatre sentinelles avant tout le reste**.
+- [ ] Relire à l'œil les quatre points du §5.
+- [ ] Vérifier qu'aucun fichier **ajouté** par le fork n'a disparu :
+      `git diff --name-only --diff-filter=D twenty/<précédente> HEAD -- \`
+      `packages/twenty-server/src/engine/twenty-orm/utils \`
+      `packages/twenty-server/src/engine/core-modules/country-scope \`
+      `packages/twenty-server/src/engine/core-modules/country-code-derivation`
 - [ ] Vérifier les quatre `imports:` de modules NestJS :
       `grep -rn "CountryScopeModule\|CountryCodeDerivationModule" packages/twenty-server/src/engine/core-modules/`
 - [ ] Lint et typecheck : `npx nx lint twenty-server`, `npx nx typecheck twenty-server`.

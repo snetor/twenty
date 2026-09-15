@@ -6,8 +6,8 @@ import { isDefined } from 'twenty-shared/utils';
 
 import { OnDatabaseBatchEvent } from 'src/engine/api/graphql/graphql-query-runner/decorators/on-database-batch-event.decorator';
 import { DatabaseEventAction } from 'src/engine/api/graphql/graphql-query-runner/enums/database-event-action';
-import { GlobalWorkspaceOrmManager } from 'src/engine/twenty-orm/global-workspace-datasource/global-workspace-orm.manager';
-import { type WorkspaceRepository } from 'src/engine/twenty-orm/repository/workspace.repository';
+import { WorkspaceOrmManager } from 'src/engine/twenty-orm/workspace-orm.manager';
+import { type WorkspaceRepository } from 'src/engine/twenty-orm/repository/workspace-repository';
 import { buildSystemAuthContext } from 'src/engine/twenty-orm/utils/build-system-auth-context.util';
 import {
   MEMBER_SCOPES_FIELD,
@@ -32,9 +32,7 @@ import { type WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-membe
 export class ScopeAssignmentListener {
   private readonly logger = new Logger(ScopeAssignmentListener.name);
 
-  constructor(
-    private readonly globalWorkspaceOrmManager: GlobalWorkspaceOrmManager,
-  ) {}
+  constructor(private readonly workspaceOrmManager: WorkspaceOrmManager) {}
 
   @OnDatabaseBatchEvent('workspaceMember', DatabaseEventAction.CREATED)
   async handleCreate(
@@ -67,21 +65,18 @@ export class ScopeAssignmentListener {
     >,
     workspaceId: string,
   ): Promise<void> {
-    await this.globalWorkspaceOrmManager.executeInWorkspaceContext(async () => {
+    await this.workspaceOrmManager.executeInWorkspaceContext(async () => {
       // `ObjectLiteral` et non les entités typées : `allowedScopes` et `scopeTokens` sont
       // des champs custom Snetor, absents des types d'entité upstream.
       const workspaceMemberRepository =
-        await this.globalWorkspaceOrmManager.getRepository<ObjectLiteral>(
-          workspaceId,
+        this.workspaceOrmManager.getRepository<ObjectLiteral>(
           'workspaceMember',
           { shouldBypassPermissionChecks: true },
         );
       const salespersonRepository =
-        await this.globalWorkspaceOrmManager.getRepository<ObjectLiteral>(
-          workspaceId,
-          'salesperson',
-          { shouldBypassPermissionChecks: true },
-        );
+        this.workspaceOrmManager.getRepository<ObjectLiteral>('salesperson', {
+          shouldBypassPermissionChecks: true,
+        });
 
       // ponytail: une requête par membre créé — un lot vaut une ligne en pratique
       // (un compte naît à un login), grouper n'achèterait rien.

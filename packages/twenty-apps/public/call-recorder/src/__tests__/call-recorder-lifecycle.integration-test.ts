@@ -1,13 +1,23 @@
 import { randomUUID } from 'crypto';
 
 import { CoreApiClient } from 'twenty-client-sdk/core';
-import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import {
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from 'vitest';
 
+import { CALENDAR_EVENT_UPDATE_BATCH_SIZE } from 'src/logic-functions/constants/calendar-event-update-batch-size';
 import { cancelCallRecordingRequest } from 'src/logic-functions/flows/cancel-call-recording-request.util';
 import { reconcileCallRecorderForCalendarEventIds } from 'src/logic-functions/flows/reconcile-call-recorder.util';
 import { retryFailedRecallCancellations } from 'src/logic-functions/flows/retry-failed-recall-cancellations.util';
 import { scheduleRecallBotsForPendingCallRecordings } from 'src/logic-functions/flows/schedule-recall-bots-for-pending-call-recordings.util';
 import { processRecallWebhookHandler } from 'src/logic-functions/process-recall-webhook';
+import reconcileCalendarEventLogicFunction from 'src/logic-functions/reconcile-call-recorder-calendar-event';
 
 // ---------------------------------------------------------------------------
 // Call Recorder end-to-end behavior against a live Twenty server.
@@ -30,14 +40,12 @@ import { processRecallWebhookHandler } from 'src/logic-functions/process-recall-
 
 const WORKSPACE_API_KEY_ENV = 'TWENTY_API_KEY';
 const RECALL_BASE_URL = 'https://us-west-2.recall.ai/api/v1';
-const FUNCTIONS_URL = 'https://call-recorder-functions.test';
-const ARTIFACT_IMPORT_ROUTE = '/call-recorder/import-call-recording-artifacts';
 const RESTRICTED_TITLE_PLACEHOLDER =
   'FIELD_RESTRICTED_ADDITIONAL_PERMISSIONS_REQUIRED';
 
 // The app's generated client only covers the objects the app uses, but test
-// seeding also needs calendarChannelEventAssociations (see below); this hits
-// the workspace GraphQL API directly with the test API key.
+// fixture discovery needs fields that are not part of the app schema; this
+// hits the workspace GraphQL API directly with the test API key.
 const workspaceGraphql = async (
   query: string,
   variables: Record<string, unknown> = {},
@@ -61,56 +69,90 @@ const workspaceGraphql = async (
   return payload.data;
 };
 
-// Calendar events are only readable when a calendar channel with
-// SHARE_EVERYTHING visibility claims them, exactly like events coming from a
-// real calendar sync. The dev seeds provide such a channel; it is found by
-// following a fully visible seeded event to its channel association.
-const discoverShareEverythingChannelId = async (): Promise<string> => {
-  const eventsData = await workspaceGraphql(
-    `query { calendarEvents(first: 30) { edges { node { id title } } } }`,
-  );
-  const visibleEvent = eventsData.calendarEvents.edges
-    .map((edge: any) => edge.node)
-    .find(
-      (node: any) =>
-        node.title !== null && node.title !== RESTRICTED_TITLE_PLACEHOLDER,
+type CalendarEventFixture = {
+  id: string;
+  title: string;
+  startsAt: string;
+  endsAt: string;
+  iCalUid: string;
+  isCanceled: boolean;
+  isFullDay: boolean;
+  callRecorderPreference: string | null;
+  conferenceLink: {
+    primaryLinkLabel: string;
+    primaryLinkUrl: string;
+    secondaryLinks: Array<{ label: string; url: string }> | null;
+  };
+};
+
+const discoverVisibleCalendarEventFixtures = async (): Promise<
+  CalendarEventFixture[]
+> => {
+  const fixtures: CalendarEventFixture[] = [];
+  let after: string | null = null;
+
+  do {
+    const eventsData = await workspaceGraphql(
+      `query ($after: String) {
+        calendarEvents(first: 200, after: $after) {
+          edges {
+            node {
+              id
+              title
+              startsAt
+              endsAt
+              iCalUid
+              isCanceled
+              isFullDay
+              callRecorderPreference
+              conferenceLink {
+                primaryLinkLabel
+                primaryLinkUrl
+                secondaryLinks { label url }
+              }
+            }
+          }
+          pageInfo { hasNextPage endCursor }
+        }
+      }`,
+      { after },
+    );
+    const connection = eventsData.calendarEvents;
+
+    fixtures.push(
+      ...connection.edges
+        .map((edge: any) => edge.node)
+        .filter(
+          (node: CalendarEventFixture) =>
+            node.title !== RESTRICTED_TITLE_PLACEHOLDER &&
+            /^event\d+@calendar\.twentycrm\.com$/.test(node.iCalUid),
+        ),
     );
 
-  if (visibleEvent === undefined) {
+    after = connection.pageInfo.hasNextPage
+      ? connection.pageInfo.endCursor
+      : null;
+  } while (after !== null);
+
+  if (fixtures.length === 0) {
     throw new Error(
-      'No fully visible seeded calendar event found; run the dev seeds before the integration tests',
+      'No fully visible seeded calendar events found; run the dev seeds before the integration tests',
     );
   }
 
-  const associationsData = await workspaceGraphql(
-    `query ($calendarEventId: UUID) {
-      calendarChannelEventAssociations(
-        filter: { calendarEventId: { eq: $calendarEventId } }
-        first: 1
-      ) { edges { node { calendarChannelId } } }
-    }`,
-    { calendarEventId: visibleEvent.id },
-  );
-  const channelId =
-    associationsData.calendarChannelEventAssociations.edges[0]?.node
-      ?.calendarChannelId;
-
-  if (channelId === undefined) {
-    throw new Error('Seeded visible calendar event has no channel association');
-  }
-
-  return channelId;
+  return fixtures;
 };
 
 const inOneHour = () => new Date(Date.now() + 60 * 60 * 1000).toISOString();
-const inTwoHours = () => new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString();
+const inTwoHours = () =>
+  new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString();
 const hoursAgo = (hours: number) =>
   new Date(Date.now() - hours * 60 * 60 * 1000).toISOString();
 
 // ---------------------------------------------------------------------------
-// Recall API fake, installed as a fetch interceptor. Twenty API traffic is
-// never intercepted: the shared client is built before the interceptor and
-// unknown URLs fall through to the real fetch.
+// Recall API fake, installed as a fetch interceptor. Twenty API traffic falls
+// through to the real fetch, except the metadata enqueueJobs mutation, which is
+// captured here so fanned-out jobs do not run inside the test.
 // ---------------------------------------------------------------------------
 
 type FakeRecallBot = {
@@ -126,6 +168,7 @@ class FakeRecallApi {
   listRequestCount = 0;
   artifactImportRequests: object[] = [];
   failNextDelete = false;
+  failCalendarEventUpdates = false;
 
   seedBot(bot: FakeRecallBot): void {
     this.bots.set(bot.id, bot);
@@ -140,10 +183,37 @@ class FakeRecallApi {
   handle(requestUrl: string, requestInit?: any): Response | undefined {
     const method: string = requestInit?.method ?? 'GET';
 
-    if (requestUrl.startsWith(`${FUNCTIONS_URL}${ARTIFACT_IMPORT_ROUTE}`)) {
-      this.artifactImportRequests.push(JSON.parse(requestInit?.body ?? '{}'));
+    // Capture the artifact-import enqueue instead of letting the job run.
+    if (
+      requestUrl === `${process.env.TWENTY_API_URL}/metadata` &&
+      String(requestInit?.body ?? '').includes('enqueueJobs')
+    ) {
+      const sentBody = JSON.parse(requestInit?.body ?? '{}');
+      const [input] = Object.values(sentBody.variables ?? {}) as {
+        logicFunctionUniversalIdentifier: string;
+        payloads: object[];
+      }[];
 
-      return jsonResponse(200, {});
+      this.artifactImportRequests.push(...(input?.payloads ?? []));
+
+      return jsonResponse(200, {
+        data: {
+          enqueueJobs: {
+            enqueued: true,
+            logicFunctionUniversalIdentifier:
+              input?.logicFunctionUniversalIdentifier ?? '',
+            enqueuedJobsCount: input?.payloads?.length ?? 0,
+          },
+        },
+      });
+    }
+
+    if (
+      this.failCalendarEventUpdates &&
+      requestUrl === `${process.env.TWENTY_API_URL}/graphql` &&
+      String(requestInit?.body ?? '').includes('updateCalendarEvents')
+    ) {
+      return jsonResponse(500, { errors: [{ message: 'Internal error' }] });
     }
 
     if (!requestUrl.startsWith(RECALL_BASE_URL)) {
@@ -288,8 +358,8 @@ const buildTranscriptDoneWebhook = ({
 });
 
 // ---------------------------------------------------------------------------
-// Test workspace helpers: real rows in the test database, destroyed after
-// each scenario.
+// Test workspace helpers: real rows in the test database, cleaned up or
+// restored after each scenario.
 // ---------------------------------------------------------------------------
 
 describe('call recorder app lifecycle (integration)', () => {
@@ -297,11 +367,11 @@ describe('call recorder app lifecycle (integration)', () => {
   // Twenty API traffic always uses the real fetch.
   let client: CoreApiClient;
   let workspaceId: string;
-  let shareEverythingChannelId: string;
+  let availableCalendarEventFixtures: CalendarEventFixture[];
+  let nextCalendarEventFixtureIndex = 0;
   let recall: FakeRecallApi;
-  const createdCalendarEventIds: string[] = [];
+  const borrowedCalendarEventFixtures: CalendarEventFixture[] = [];
   const createdCallRecordingIds: string[] = [];
-  const createdAssociationIds: string[] = [];
 
   const readWorkspaceIdFromApiKey = (): string => {
     const apiKey = process.env[WORKSPACE_API_KEY_ENV] ?? '';
@@ -315,7 +385,8 @@ describe('call recorder app lifecycle (integration)', () => {
   beforeAll(async () => {
     client = new CoreApiClient();
     workspaceId = readWorkspaceIdFromApiKey();
-    shareEverythingChannelId = await discoverShareEverythingChannelId();
+    availableCalendarEventFixtures =
+      await discoverVisibleCalendarEventFixtures();
   });
 
   beforeEach(() => {
@@ -339,7 +410,6 @@ describe('call recorder app lifecycle (integration)', () => {
     vi.stubEnv('RECALL_API_KEY', 'recall-api-key');
     vi.stubEnv('RECALL_REGION', 'us-west-2');
     vi.stubEnv('CALL_RECORDER_USE_WORKSPACE_LOGO', 'false');
-    vi.stubEnv('TWENTY_FUNCTIONS_URL', FUNCTIONS_URL);
     // Logic functions normally run with an app access token; the workspace
     // API key is a token with the same workspaceId claim.
     vi.stubEnv(
@@ -356,11 +426,15 @@ describe('call recorder app lifecycle (integration)', () => {
   });
 
   const destroyCreatedRows = async (): Promise<void> => {
+    const calendarEventRestoreErrors: Error[] = [];
+    const borrowedCalendarEventIds = borrowedCalendarEventFixtures.map(
+      ({ id }) => id,
+    );
     const callRecordingsForCreatedCalendarEvents =
-      createdCalendarEventIds.length === 0
+      borrowedCalendarEventIds.length === 0
         ? []
         : await findCallRecordings({
-            calendarEventId: { in: createdCalendarEventIds },
+            calendarEventId: { in: borrowedCalendarEventIds },
           });
     const callRecordingIds = [
       ...new Set([
@@ -377,44 +451,71 @@ describe('call recorder app lifecycle (integration)', () => {
         .catch(() => {});
     }
 
-    for (const associationId of createdAssociationIds) {
-      await workspaceGraphql(
-        `mutation ($id: UUID!) {
-          destroyCalendarChannelEventAssociation(id: $id) { id }
-        }`,
-        { id: associationId },
-      ).catch(() => {});
+    for (const fixture of borrowedCalendarEventFixtures) {
+      try {
+        await client.mutation({
+          updateCalendarEvent: {
+            __args: {
+              id: fixture.id,
+              data: {
+                title: fixture.title,
+                startsAt: fixture.startsAt,
+                endsAt: fixture.endsAt,
+                iCalUid: fixture.iCalUid,
+                isCanceled: fixture.isCanceled,
+                isFullDay: fixture.isFullDay,
+                callRecorderPreference: fixture.callRecorderPreference,
+                conferenceLink: fixture.conferenceLink,
+              },
+            },
+            id: true,
+          },
+        });
+      } catch (error) {
+        calendarEventRestoreErrors.push(
+          error instanceof Error ? error : new Error(String(error)),
+        );
+      }
     }
 
-    for (const calendarEventId of createdCalendarEventIds) {
-      await client
-        .mutation({
-          destroyCalendarEvent: { __args: { id: calendarEventId }, id: true },
-        })
-        .catch(() => {});
-    }
-
-    createdCalendarEventIds.length = 0;
+    borrowedCalendarEventFixtures.length = 0;
     createdCallRecordingIds.length = 0;
-    createdAssociationIds.length = 0;
+
+    if (calendarEventRestoreErrors.length > 0) {
+      throw new Error(
+        `Failed to restore borrowed calendar event fixtures: ${calendarEventRestoreErrors
+          .map(({ message }) => message)
+          .join('; ')}`,
+      );
+    }
   };
 
   const createCalendarEvent = async (
     overrides: Record<string, unknown> = {},
   ): Promise<string> => {
-    const calendarEventId = randomUUID();
+    const fixture =
+      availableCalendarEventFixtures[nextCalendarEventFixtureIndex];
+
+    if (fixture === undefined) {
+      throw new Error('No visible seeded calendar event fixture available');
+    }
+
+    nextCalendarEventFixtureIndex += 1;
+    borrowedCalendarEventFixtures.push(fixture);
 
     await client.mutation({
-      createCalendarEvent: {
+      updateCalendarEvent: {
         __args: {
+          id: fixture.id,
           data: {
-            id: calendarEventId,
             title: 'Customer Sync (call recorder integration test)',
             startsAt: inOneHour(),
             endsAt: inTwoHours(),
-            iCalUid: `call-recorder-test-${calendarEventId}`,
+            iCalUid: `call-recorder-test-${fixture.id}`,
+            isCanceled: false,
+            isFullDay: false,
             conferenceLink: {
-              primaryLinkUrl: `https://meet.google.com/${calendarEventId}`,
+              primaryLinkUrl: `https://meet.google.com/${fixture.id}`,
             },
             callRecorderPreference: 'ON',
             ...overrides,
@@ -423,34 +524,16 @@ describe('call recorder app lifecycle (integration)', () => {
         id: true,
       },
     });
-    createdCalendarEventIds.push(calendarEventId);
 
-    // Without a SHARE_EVERYTHING channel association the event would be
-    // invisible to every query, like an event no calendar sync produced.
-    const associationData = await workspaceGraphql(
-      `mutation ($data: CalendarChannelEventAssociationCreateInput!) {
-        createCalendarChannelEventAssociation(data: $data) { id }
-      }`,
-      {
-        data: {
-          calendarChannelId: shareEverythingChannelId,
-          calendarEventId,
-          eventExternalId: `call-recorder-test-${calendarEventId}`,
-        },
-      },
-    );
-
-    createdAssociationIds.push(
-      associationData.createCalendarChannelEventAssociation.id,
-    );
-
-    return calendarEventId;
+    return fixture.id;
   };
 
   const createPendingCallRecording = async ({
     calendarEventId,
     ...overrides
-  }: Record<string, unknown> & { calendarEventId: string }): Promise<string> => {
+  }: Record<string, unknown> & {
+    calendarEventId: string;
+  }): Promise<string> => {
     const callRecordingId = randomUUID();
 
     await client.mutation({
@@ -497,9 +580,25 @@ describe('call recorder app lifecycle (integration)', () => {
       },
     });
 
-    return (result.callRecordings?.edges ?? []).map(
-      (edge: any) => edge.node,
-    );
+    return (result.callRecordings?.edges ?? []).map((edge: any) => edge.node);
+  };
+
+  const fetchCallRecorderPreference = async (
+    calendarEventId: string,
+  ): Promise<string | null> => {
+    const result = await client.query({
+      calendarEvents: {
+        __args: { filter: { id: { eq: calendarEventId } }, first: 1 },
+        edges: { node: { id: true, callRecorderPreference: true } },
+      },
+    });
+    const calendarEvent = result.calendarEvents?.edges?.[0]?.node;
+
+    if (calendarEvent === undefined) {
+      throw new Error(`Calendar event ${calendarEventId} not found`);
+    }
+
+    return calendarEvent.callRecorderPreference ?? null;
   };
 
   const fetchCallRecording = async (
@@ -545,6 +644,31 @@ describe('call recorder app lifecycle (integration)', () => {
     };
   };
 
+  const deliverCalendarEventUpdate = ({
+    calendarEventId,
+    updatedFields,
+    before,
+    after,
+  }: {
+    calendarEventId: string;
+    updatedFields: string[];
+    before: Record<string, unknown>;
+    after: Record<string, unknown>;
+  }) =>
+    (
+      reconcileCalendarEventLogicFunction.config.handler as (
+        event: unknown,
+      ) => Promise<object | undefined>
+    )({
+      name: 'calendarEvent.updated',
+      recordId: calendarEventId,
+      properties: {
+        updatedFields,
+        before: { id: calendarEventId, ...before },
+        after: { id: calendarEventId, ...after },
+      },
+    });
+
   // Mocked webhook trigger: invokes the webhook logic function handler with
   // the payload Recall would have delivered.
   const deliverRecallWebhook = (body: object) =>
@@ -583,7 +707,9 @@ describe('call recorder app lifecycle (integration)', () => {
       });
 
       expect(
-        await findCallRecordings({ calendarEventId: { in: [calendarEventId] } }),
+        await findCallRecordings({
+          calendarEventId: { in: [calendarEventId] },
+        }),
       ).toEqual([]);
     });
   });
@@ -636,12 +762,7 @@ describe('call recorder app lifecycle (integration)', () => {
         'recall-recording-1',
       );
       expect(processedCallRecording.endedAt).toBeTruthy();
-      // recording.done hands media and transcript work to the artifact
-      // import route.
-      expect(recall.artifactImportRequests).toHaveLength(1);
-      expect(recall.artifactImportRequests[0]).toMatchObject({
-        callRecordingId,
-      });
+      expect(recall.artifactImportRequests).toHaveLength(2);
     });
 
     it('queues another artifact import when the transcript finishes later', async () => {
@@ -660,8 +781,8 @@ describe('call recorder app lifecycle (integration)', () => {
         buildTranscriptDoneWebhook({ botId, metadata }),
       );
 
-      expect(recall.artifactImportRequests).toHaveLength(2);
-      expect(recall.artifactImportRequests[1]).toMatchObject({
+      expect(recall.artifactImportRequests).toHaveLength(3);
+      expect(recall.artifactImportRequests[2]).toMatchObject({
         callRecordingId,
       });
     });
@@ -890,6 +1011,225 @@ describe('call recorder app lifecycle (integration)', () => {
         'bot_never_scheduled',
       );
       expect(recall.botForCallRecording(callRecordingId)).toBeUndefined();
+    });
+  });
+
+  describe('Recording Bot preference', () => {
+    it('marks a blank preference On when it schedules a bot', async () => {
+      const calendarEventId = await createCalendarEvent({
+        callRecorderPreference: null,
+      });
+
+      await reconcileCallRecorderForCalendarEventIds({
+        client,
+        calendarEventIds: [calendarEventId],
+      });
+
+      expect(await fetchCallRecorderPreference(calendarEventId)).toBe('ON');
+
+      const callRecording = (
+        await findCallRecordings({ calendarEventId: { in: [calendarEventId] } })
+      )[0];
+
+      expect(callRecording).toBeDefined();
+      expect(callRecording.externalBotId).toBeTruthy();
+    });
+
+    it('leaves a blank preference blank on a meeting that already ended', async () => {
+      const calendarEventId = await createCalendarEvent({
+        startsAt: hoursAgo(3),
+        endsAt: hoursAgo(2),
+        callRecorderPreference: null,
+      });
+
+      await reconcileCallRecorderForCalendarEventIds({
+        client,
+        calendarEventIds: [calendarEventId],
+      });
+
+      expect(await fetchCallRecorderPreference(calendarEventId)).toBeNull();
+      expect(
+        await findCallRecordings({
+          calendarEventId: { in: [calendarEventId] },
+        }),
+      ).toEqual([]);
+    });
+
+    it('leaves an explicit Off alone and schedules nothing', async () => {
+      const calendarEventId = await createCalendarEvent({
+        callRecorderPreference: 'OFF',
+      });
+
+      await reconcileCallRecorderForCalendarEventIds({
+        client,
+        calendarEventIds: [calendarEventId],
+      });
+
+      expect(await fetchCallRecorderPreference(calendarEventId)).toBe('OFF');
+      expect(
+        await findCallRecordings({
+          calendarEventId: { in: [calendarEventId] },
+        }),
+      ).toEqual([]);
+    });
+
+    it('marks every blank copy of the same meeting On, past the update batch size in one go', async () => {
+      const requiredCalendarEventFixtureCount =
+        CALENDAR_EVENT_UPDATE_BATCH_SIZE + 1;
+      const availableCalendarEventFixtureCount =
+        availableCalendarEventFixtures.length - nextCalendarEventFixtureIndex;
+
+      if (
+        availableCalendarEventFixtureCount < requiredCalendarEventFixtureCount
+      ) {
+        throw new Error(
+          `Batch boundary test requires ${requiredCalendarEventFixtureCount} fully visible seeded calendar events, but only ${availableCalendarEventFixtureCount} remain`,
+        );
+      }
+
+      const startsAt = inOneHour();
+      const endsAt = inTwoHours();
+      const conferenceLink = {
+        primaryLinkUrl: `https://meet.google.com/${randomUUID()}`,
+      };
+      const calendarEventIds: string[] = [];
+
+      for (
+        let copyIndex = 0;
+        copyIndex < requiredCalendarEventFixtureCount;
+        copyIndex += 1
+      ) {
+        calendarEventIds.push(
+          await createCalendarEvent({
+            startsAt,
+            endsAt,
+            conferenceLink,
+            callRecorderPreference: null,
+          }),
+        );
+      }
+
+      await reconcileCallRecorderForCalendarEventIds({
+        client,
+        calendarEventIds: [calendarEventIds[0]],
+      });
+
+      const preferences = await Promise.all(
+        calendarEventIds.map((calendarEventId) =>
+          fetchCallRecorderPreference(calendarEventId),
+        ),
+      );
+
+      expect(preferences.every((preference) => preference === 'ON')).toBe(true);
+      expect(
+        await findCallRecordings({ calendarEventId: { in: calendarEventIds } }),
+      ).toHaveLength(1);
+    });
+
+    it('marks a blank preference On again when it updates an existing scheduled recording', async () => {
+      const { calendarEventId } =
+        await scheduleRecordingThroughCalendarReconciliation();
+
+      await client.mutation({
+        updateCalendarEvent: {
+          __args: {
+            id: calendarEventId,
+            data: { callRecorderPreference: null },
+          },
+          id: true,
+        },
+      });
+      await reconcileCallRecorderForCalendarEventIds({
+        client,
+        calendarEventIds: [calendarEventId],
+      });
+
+      expect(await fetchCallRecorderPreference(calendarEventId)).toBe('ON');
+      expect(
+        await findCallRecordings({
+          calendarEventId: { in: [calendarEventId] },
+        }),
+      ).toHaveLength(1);
+    });
+
+    it('still schedules the bot when the On write is rejected', async () => {
+      const calendarEventId = await createCalendarEvent({
+        callRecorderPreference: null,
+      });
+
+      recall.failCalendarEventUpdates = true;
+
+      const results = await reconcileCallRecorderForCalendarEventIds({
+        client: new CoreApiClient(),
+        calendarEventIds: [calendarEventId],
+      });
+
+      expect(results).toEqual([expect.objectContaining({ action: 'CREATED' })]);
+      expect(await fetchCallRecorderPreference(calendarEventId)).toBeNull();
+
+      const callRecording = (
+        await findCallRecordings({ calendarEventId: { in: [calendarEventId] } })
+      )[0];
+
+      expect(callRecording).toBeDefined();
+      expect(callRecording.externalBotId).toBeTruthy();
+    });
+
+    it('does not reconcile again on the echo of its own On write', async () => {
+      const calendarEventId = await createCalendarEvent({
+        callRecorderPreference: null,
+      });
+
+      await reconcileCallRecorderForCalendarEventIds({
+        client,
+        calendarEventIds: [calendarEventId],
+      });
+
+      const result = await deliverCalendarEventUpdate({
+        calendarEventId,
+        updatedFields: ['callRecorderPreference'],
+        before: { callRecorderPreference: null },
+        after: { callRecorderPreference: 'ON' },
+      });
+
+      expect(result).toEqual({
+        skipped: true,
+        reason: 'no relevant calendar event change',
+      });
+    });
+
+    it('schedules a bot and marks the event On when a user clears an Off', async () => {
+      const calendarEventId = await createCalendarEvent({
+        callRecorderPreference: 'OFF',
+      });
+
+      await client.mutation({
+        updateCalendarEvent: {
+          __args: {
+            id: calendarEventId,
+            data: { callRecorderPreference: null },
+          },
+          id: true,
+        },
+      });
+
+      const result = await deliverCalendarEventUpdate({
+        calendarEventId,
+        updatedFields: ['callRecorderPreference'],
+        before: { callRecorderPreference: 'OFF' },
+        after: { callRecorderPreference: null },
+      });
+
+      expect(result).toEqual(expect.objectContaining({ reconciled: true }));
+      expect(await fetchCallRecorderPreference(calendarEventId)).toBe('ON');
+
+      const callRecording = (
+        await findCallRecordings({ calendarEventId: { in: [calendarEventId] } })
+      )[0];
+
+      expect(callRecording).toBeDefined();
+      expect(callRecording.recordingRequestStatus).toBe('REQUESTED');
+      expect(callRecording.externalBotId).toBeTruthy();
     });
   });
 });

@@ -6,11 +6,11 @@ import { CountryCodeUpdateManyPreQueryHook } from 'src/engine/core-modules/count
 import { CountryCodeUpdateOnePreQueryHook } from 'src/engine/core-modules/country-code-derivation/query-hooks/country-code.update-one.pre-query-hook';
 import { CountryCodeFromRelationService } from 'src/engine/core-modules/country-code-derivation/services/country-code-from-relation.service';
 import { WorkspaceManyOrAllFlatEntityMapsCacheModule } from 'src/engine/metadata-modules/flat-entity/services/workspace-many-or-all-flat-entity-maps-cache.module';
-import { GlobalWorkspaceDataSourceModule } from 'src/engine/twenty-orm/global-workspace-datasource/global-workspace-datasource.module';
+import { TwentyOrmModule } from 'src/engine/twenty-orm/twenty-orm.module';
 
 @Module({
   imports: [
-    GlobalWorkspaceDataSourceModule,
+    TwentyOrmModule,
     WorkspaceManyOrAllFlatEntityMapsCacheModule,
   ],
   providers: [

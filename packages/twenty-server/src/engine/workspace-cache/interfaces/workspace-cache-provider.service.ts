@@ -1,5 +1,7 @@
 import { Injectable } from '@nestjs/common';
 
+import { type WorkspaceCacheRowsRequirement } from 'src/engine/workspace-cache/types/workspace-cache-rows-requirement.type';
+import { type WorkspaceCacheProviderContext } from 'src/engine/workspace-cache/types/workspace-cache-provider-context.type';
 import {
   type WorkspaceCacheDataMap,
   type WorkspaceCacheKeyName,
@@ -10,15 +12,19 @@ type WorkspaceCacheDataType = WorkspaceCacheDataMap[WorkspaceCacheKeyName];
 @Injectable()
 export abstract class WorkspaceCacheProvider<
   T extends WorkspaceCacheDataType = WorkspaceCacheDataType,
-  TEncoded = T,
+  TCompact = T,
 > {
-  abstract computeForCache(workspaceId: string): Promise<T>;
+  readonly rowsRequirement: WorkspaceCacheRowsRequirement = {};
 
-  encodeForCacheStorage(data: T): T | TEncoded {
+  abstract computeForCache(
+    context: WorkspaceCacheProviderContext,
+  ): Promise<T> | T;
+
+  compactForStorage(data: T): T | TCompact {
     return data;
   }
 
-  decodeFromCacheStorage(rawData: T | TEncoded): T {
-    return rawData as T;
+  expandFromStorage(compactData: T | TCompact): T {
+    return compactData as T;
   }
 }
