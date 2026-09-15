@@ -1,4 +1,4 @@
-import { Brackets, type ObjectLiteral } from 'typeorm';
+import { Brackets } from 'typeorm';
 import { isDefined } from 'twenty-shared/utils';
 
 import { GraphqlQueryFilterFieldParser } from 'src/engine/api/graphql/graphql-query-runner/graphql-query-parsers/graphql-query-filter/graphql-query-filter-field.parser';
@@ -7,7 +7,7 @@ import { type WorkspaceAuthContext } from 'src/engine/core-modules/auth/types/wo
 import { buildFieldMapsFromFlatObjectMetadata } from 'src/engine/metadata-modules/flat-field-metadata/utils/build-field-maps-from-flat-object-metadata.util';
 import { type FlatObjectMetadata } from 'src/engine/metadata-modules/flat-object-metadata/types/flat-object-metadata.type';
 import { type WorkspaceInternalContext } from 'src/engine/twenty-orm/interfaces/workspace-internal-context.interface';
-import { type WorkspaceSelectQueryBuilder } from 'src/engine/twenty-orm/repository/workspace-select-query-builder';
+import { type WorkspaceSelectQueryBuilder } from 'src/engine/twenty-orm/query-builder/workspace-select-query-builder';
 import {
   countryIsosOfScope,
   readMemberCountryScopeField,
@@ -17,16 +17,27 @@ import {
   scopeTokenPattern,
 } from 'src/engine/twenty-orm/utils/resolve-country-scope.util';
 
-// Cloisonnement par pays (AGPL, autonome). Branché en LECTURE au choke-point ORM
-// `WorkspaceSelectQueryBuilder.validatePermissions()`, après les checks object-level, et en
-// ÉCRITURE dans les trois constructeurs de mutation (update / delete / soft-delete).
-// N'importe ni ne réutilise le code Enterprise (`apply-row-level-permission-predicates.util.ts`),
-// qui n'est qu'un patron de forme.
+// Cloisonnement par pays (AGPL, autonome). Depuis la montée v2.39.0, il n'a plus que DEUX
+// points d'application, tous deux dans `workspace-repository.ts` :
+//   - LECTURE  : `WorkspaceRepository.onBeforeExecute()`, le hook que `createQueryBuilder()`
+//                injecte dans tout builder de lecture. Il couvre donc d'un seul geste les
+//                `find`, le `getCount()`, le groupBy du Kanban et les relations imbriquées.
+//   - ÉCRITURE : `WorkspaceRepository.runMutation()`, par où passent update, delete,
+//                soft-delete et restore.
+//
+// Avant la v2.39.0 il en fallait CINQ, dont trois au milieu de corps de méthodes privées
+// que l'amont a supprimées depuis. Ne pas revenir en arrière : un patch accroché à une
+// interface publique survit aux montées, un patch dans un corps de méthode disparaît sans
+// erreur de compilation.
+//
+// N'importe ni ne réutilise le code Enterprise (`render-row-level-permission-filter-to-sql.util.ts`,
+// `apply-row-level-permission-predicates.util.ts`), qui ne sert que de patron de forme.
 //
 // 🔴 L'écriture n'était PAS couverte jusqu'au 2026-08-30, et rien ne rattrapait le coup en
 // aval : `common-update-many-query-runner.service.ts` fait un `UPDATE … RETURNING` sans
 // SELECT préalable. Un utilisateur qui connaissait un `id` hors de son périmètre écrivait
-// dessus. Ne jamais ajouter un constructeur de mutation sans y rappeler ce prédicat.
+// dessus. `runMutation` est le point qui ferme ce trou — si l'amont le contourne un jour,
+// c'est la spec `workspace-repository-country-filter.spec.ts` qui le dira.
 //
 // La sémantique de `allowedCountries` elle-même vit dans `resolve-country-scope.util.ts`,
 // parce qu'elle doit aussi servir aux chemins en contexte système que ce filtre laisse
@@ -155,19 +166,19 @@ const SELF_OWNED_FILTERS: Record<
 // Calendar ne passent PAS par ce filtre (contexte système), et sont cloisonnés séparément
 // par `CountryScopeService`. Ce refus-ci n'a jamais eu d'effet sur eux.
 
-type ApplyCountryPermissionFilterArgs<T extends ObjectLiteral> = {
-  queryBuilder: WorkspaceSelectQueryBuilder<T>;
+type ApplyCountryPermissionFilterArgs = {
+  queryBuilder: WorkspaceSelectQueryBuilder;
   objectMetadata: FlatObjectMetadata;
   internalContext: WorkspaceInternalContext;
   authContext: WorkspaceAuthContext;
 };
 
-export const applyCountryPermissionFilter = <T extends ObjectLiteral>({
+export const applyCountryPermissionFilter = ({
   queryBuilder,
   objectMetadata,
   internalContext,
   authContext,
-}: ApplyCountryPermissionFilterArgs<T>): void => {
+}: ApplyCountryPermissionFilterArgs): void => {
   // 1. Bypass : seul un contexte utilisateur est filtré.
   //    Clé API serveur (ingestion) / contexte système ne sont JAMAIS filtrés.
   if (!isUserAuthContext(authContext)) {
@@ -254,25 +265,17 @@ export const applyCountryPermissionFilter = <T extends ObjectLiteral>({
   denyAll(queryBuilder);
 };
 
-// ⚠️ Un UPDATE/DELETE Postgres n'a pas d'alias de table : le field parser produit par
-// défaut `"company"."scopePath"`, que la cible d'un UPDATE ne résout pas forcément — le
-// nom physique de la table (`computeObjectTargetTable`) diffère du `nameSingular` sur les
-// objets custom, et `applyTableAliasOnWhereCondition` ne descend PAS dans un `Brackets`,
-// donc la réécriture d'alias qui suit ne rattrape rien de ce que ce fichier pose. Le
-// parser sait poser la colonne nue : c'est `useDirectTableReference`, la même bascule que
-// le prédicat row-level upstream (`apply-row-level-permission-predicates.util.ts`, L41).
+// ⚠️ Historique, à ne pas réintroduire sans mesure. Jusqu'en v2.34.0, un UPDATE/DELETE
+// Postgres n'avait pas d'alias de table, et ce fichier devait basculer le field parser sur
+// la colonne nue (`useDirectTableReference`) en déduisant le type de requête de
+// `expressionMap.queryType`.
 //
-// 🔴 Déduite du `queryType` et non passée en paramètre, pour qu'un quatrième constructeur
-// de mutation soit couvert sans qu'on y pense. Et `'restore'` est dans la liste alors que
-// l'upstream l'oublie : un restore EST un UPDATE, l'oublier produirait du SQL aliasé dans
-// une requête sans alias.
-const usesDirectTableReference = (
-  queryBuilder: WorkspaceSelectQueryBuilder<ObjectLiteral>,
-): boolean =>
-  queryBuilder.expressionMap.queryType === 'update' ||
-  queryBuilder.expressionMap.queryType === 'soft-delete' ||
-  queryBuilder.expressionMap.queryType === 'delete' ||
-  queryBuilder.expressionMap.queryType === 'restore';
+// Depuis le moteur de requêtes maison (v2.35.0), `buildTableReference` émet
+// `"schema"."table" AS "alias"` pour l'UPDATE comme pour le DELETE, et le critère de
+// mutation est construit sur un `WorkspaceSelectQueryBuilder` aliasé avant d'être repris
+// par `WorkspaceMutationQueryBuilder`. L'alias est donc toujours résolvable, la bascule
+// n'a plus d'objet, et `expressionMap` n'existe plus. Vérification : en v2.39.0 aucun
+// appelant amont ne passe `useDirectTableReference` à `true`.
 
 // Injecte le cloisonnement par portefeuille :
 //
@@ -298,15 +301,14 @@ const usesDirectTableReference = (
 // ponytail: ILIKE '%…%' n'utilise pas d'index. Sans effet à 2099 sociétés ; si la base
 // dépasse ~100 000 enregistrements cloisonnés, passer à une table de jonction
 // (jeton -> enregistrement) indexée, ou à un index GIN trigramme sur la colonne.
-const injectScopeFilter = <T extends ObjectLiteral>(
-  queryBuilder: WorkspaceSelectQueryBuilder<T>,
+const injectScopeFilter = (
+  queryBuilder: WorkspaceSelectQueryBuilder,
   objectMetadata: FlatObjectMetadata,
   internalContext: WorkspaceInternalContext,
   tokens: string[],
   hasCountryField: boolean,
 ): void => {
-  const outerQueryBuilder =
-    queryBuilder as WorkspaceSelectQueryBuilder<ObjectLiteral>;
+  const outerQueryBuilder = queryBuilder as WorkspaceSelectQueryBuilder;
 
   const parsedClause = (field: string, filter: object): Brackets =>
     new Brackets((inner) => {
@@ -322,7 +324,7 @@ const injectScopeFilter = <T extends ObjectLiteral>(
         field,
         filter,
         true,
-        usesDirectTableReference(outerQueryBuilder),
+        false,
       );
     });
 
@@ -358,8 +360,8 @@ const injectScopeFilter = <T extends ObjectLiteral>(
 // Injecte `WHERE <field> <filter>` via le field parser GraphQL (gère l'alias, les
 // params, les champs composites comme `createdBy`). Utilisé pour countryCode
 // (`{ in: [...] }`) comme pour l'appartenance (`assigneeId`/`createdBy`).
-const injectFieldFilter = <T extends ObjectLiteral>(
-  queryBuilder: WorkspaceSelectQueryBuilder<T>,
+const injectFieldFilter = (
+  queryBuilder: WorkspaceSelectQueryBuilder,
   objectMetadata: FlatObjectMetadata,
   internalContext: WorkspaceInternalContext,
   { field, filter }: { field: string; filter: object },
@@ -367,8 +369,7 @@ const injectFieldFilter = <T extends ObjectLiteral>(
   // parseKeyFilter (Enterprise, privé) délègue son default case à
   // GraphqlQueryFilterFieldParser.parse — on appelle directement le parser public.
   // Il ne sert que la surface de jointure, on élargit donc à ObjectLiteral.
-  const outerQueryBuilder =
-    queryBuilder as WorkspaceSelectQueryBuilder<ObjectLiteral>;
+  const outerQueryBuilder = queryBuilder as WorkspaceSelectQueryBuilder;
 
   const condition = new Brackets((qb) => {
     const fieldParser = new GraphqlQueryFilterFieldParser(
@@ -383,7 +384,7 @@ const injectFieldFilter = <T extends ObjectLiteral>(
       field,
       filter,
       true,
-      usesDirectTableReference(outerQueryBuilder),
+      false,
     );
   });
 
@@ -392,9 +393,7 @@ const injectFieldFilter = <T extends ObjectLiteral>(
 
 // Default-deny : un objet non rattaché à un pays (et hors allowlist) est invisible
 // pour un utilisateur scoppé.
-const denyAll = <T extends ObjectLiteral>(
-  queryBuilder: WorkspaceSelectQueryBuilder<T>,
-): void => {
+const denyAll = (queryBuilder: WorkspaceSelectQueryBuilder): void => {
   appendCondition(
     queryBuilder,
     new Brackets((qb) => {
@@ -403,14 +402,20 @@ const denyAll = <T extends ObjectLiteral>(
   );
 };
 
-// Ajoute la condition en AND avec les WHERE existants (ou en WHERE si aucun).
-const appendCondition = <T extends ObjectLiteral>(
-  queryBuilder: WorkspaceSelectQueryBuilder<T>,
+// Ajoute la condition en AND avec les WHERE existants.
+//
+// 🔴 TOUJOURS `andWhere`, JAMAIS `where`. Depuis le moteur maison (v2.35.0), `where()`
+// commence par `this.whereClauses.length = 0` : il EFFACE les conditions déjà posées.
+// L'appeler ici supprimerait le critère de la requête — et sur une mutation, le critère
+// EST ce qui borne l'écriture : `applyMutationCriteriaToQueryBuilder` pose l'`id` cible
+// par `where()`, et notre filtre s'exécute après. Un `where()` ici transformerait un
+// UPDATE sur un enregistrement en UPDATE sur toute la table, restreint au seul périmètre.
+//
+// Le cas « aucun WHERE existant » n'a plus besoin d'être distingué : `appendWhere` ignore
+// l'opérateur de la première clause, donc un `andWhere` initial produit bien `WHERE (…)`.
+const appendCondition = (
+  queryBuilder: WorkspaceSelectQueryBuilder,
   condition: Brackets,
 ): void => {
-  if (queryBuilder.expressionMap.wheres.length === 0) {
-    queryBuilder.where(condition);
-  } else {
-    queryBuilder.andWhere(condition);
-  }
+  queryBuilder.andWhere(condition);
 };

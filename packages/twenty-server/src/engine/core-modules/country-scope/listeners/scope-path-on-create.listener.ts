@@ -6,8 +6,8 @@ import { isDefined } from 'twenty-shared/utils';
 
 import { OnDatabaseBatchEvent } from 'src/engine/api/graphql/graphql-query-runner/decorators/on-database-batch-event.decorator';
 import { DatabaseEventAction } from 'src/engine/api/graphql/graphql-query-runner/enums/database-event-action';
-import { GlobalWorkspaceOrmManager } from 'src/engine/twenty-orm/global-workspace-datasource/global-workspace-orm.manager';
-import { type WorkspaceRepository } from 'src/engine/twenty-orm/repository/workspace.repository';
+import { WorkspaceOrmManager } from 'src/engine/twenty-orm/workspace-orm.manager';
+import { type WorkspaceRepository } from 'src/engine/twenty-orm/repository/workspace-repository';
 import { buildSystemAuthContext } from 'src/engine/twenty-orm/utils/build-system-auth-context.util';
 import {
   buildRecordScopePath,
@@ -56,9 +56,7 @@ type ActivityLink = {
 export class ScopePathOnCreateListener {
   private readonly logger = new Logger(ScopePathOnCreateListener.name);
 
-  constructor(
-    private readonly globalWorkspaceOrmManager: GlobalWorkspaceOrmManager,
-  ) {}
+  constructor(private readonly workspaceOrmManager: WorkspaceOrmManager) {}
 
   @OnDatabaseBatchEvent('company', DatabaseEventAction.CREATED)
   async handleCompanyCreate(
@@ -171,31 +169,25 @@ export class ScopePathOnCreateListener {
     const { workspaceId, objectMetadata } = payload;
     const objectName = objectMetadata.nameSingular;
 
-    await this.globalWorkspaceOrmManager.executeInWorkspaceContext(async () => {
+    await this.workspaceOrmManager.executeInWorkspaceContext(async () => {
       // `ObjectLiteral` et non les entités typées : `scopePath` et `allowedScopes` sont des
       // champs custom Snetor, absents des types d'entité upstream.
       const recordRepository =
-        await this.globalWorkspaceOrmManager.getRepository<ObjectLiteral>(
-          workspaceId,
-          objectName,
-          { shouldBypassPermissionChecks: true },
-        );
+        this.workspaceOrmManager.getRepository<ObjectLiteral>(objectName, {
+          shouldBypassPermissionChecks: true,
+        });
       const memberRepository =
-        await this.globalWorkspaceOrmManager.getRepository<ObjectLiteral>(
-          workspaceId,
+        this.workspaceOrmManager.getRepository<ObjectLiteral>(
           'workspaceMember',
           { shouldBypassPermissionChecks: true },
         );
       const companyRepository = isDefined(parentIdField)
-        ? await this.globalWorkspaceOrmManager.getRepository<ObjectLiteral>(
-            workspaceId,
-            'company',
-            { shouldBypassPermissionChecks: true },
-          )
+        ? this.workspaceOrmManager.getRepository<ObjectLiteral>('company', {
+            shouldBypassPermissionChecks: true,
+          })
         : undefined;
       const activityRepository = isDefined(activityLink)
-        ? await this.globalWorkspaceOrmManager.getRepository<ObjectLiteral>(
-            workspaceId,
+        ? this.workspaceOrmManager.getRepository<ObjectLiteral>(
             activityLink.objectName,
             { shouldBypassPermissionChecks: true },
           )

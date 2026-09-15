@@ -12,7 +12,7 @@ const authContext = { workspace: { id: WORKSPACE_ID } } as never;
 // résolution en base et sa configuration de permissions. Le stub évite aussi de
 // coupler la suite à la forme interne des flat maps, qui bouge en amont.
 const buildService = (find: jest.Mock) => {
-  const getRepository = jest.fn().mockResolvedValue({ find });
+  const getRepository = jest.fn().mockReturnValue({ find });
   const service = new CountryCodeFromRelationService(
     {
       getRepository,
@@ -51,11 +51,7 @@ describe('CountryCodeFromRelationService', () => {
       authContext,
     });
 
-    expect(getRepository).toHaveBeenCalledWith(
-      WORKSPACE_ID,
-      'country',
-      SYSTEM_READ,
-    );
+    expect(getRepository).toHaveBeenCalledWith('country', SYSTEM_READ);
     expect(record.countryCode).toBe('NG');
   });
 
@@ -71,11 +67,7 @@ describe('CountryCodeFromRelationService', () => {
       authContext,
     });
 
-    expect(getRepository).toHaveBeenCalledWith(
-      WORKSPACE_ID,
-      'company',
-      SYSTEM_READ,
-    );
+    expect(getRepository).toHaveBeenCalledWith('company', SYSTEM_READ);
     expect(record.countryCode).toBe('NG');
   });
 

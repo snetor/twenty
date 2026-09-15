@@ -4,6 +4,7 @@ import { CountryScopeService } from 'src/engine/core-modules/country-scope/servi
 import { GetMessagesService } from 'src/engine/core-modules/messaging/services/get-messages.service';
 import { TimelineMessagingService } from 'src/engine/core-modules/messaging/services/timeline-messaging.service';
 import { RelatedPersonIdsService } from 'src/engine/core-modules/related-person-ids/services/related-person-ids.service';
+import { MessageCalendarTargetReadinessService } from 'src/engine/core-modules/target/services/message-calendar-target-readiness.service';
 
 // L'onglet Emails lit la messagerie en contexte système : le filtre du choke-point ORM ne
 // s'y applique pas, et les trois resolvers acceptaient donc n'importe quel identifiant.
@@ -23,6 +24,17 @@ describe('GetMessagesService — périmètre pays', () => {
   };
 
   const countryScopeService = { keepPersonIdsInScope: jest.fn() };
+
+  // Ajouté par l'amont en v2.39.0. `resolveTargetFilter` rend `undefined` quand le drapeau
+  // `IS_MESSAGE_CALENDAR_TARGET_READ_ENABLED` est éteint — c'est l'état d'un workspace
+  // réel, et c'est celui que ces tests doivent refléter.
+  //
+  // 🔴 Ne pas le faire rendre un `targetFilter` sans avoir d'abord étendu le cloisonnement :
+  // avec un `targetFilter`, la sélection se fait par l'enregistrement cible et non par les
+  // personnes, donc hors de la portée que ce service applique.
+  const messageCalendarTargetReadinessService = {
+    resolveTargetFilter: jest.fn().mockResolvedValue(undefined),
+  };
 
   beforeEach(async () => {
     jest.clearAllMocks();
@@ -47,6 +59,10 @@ describe('GetMessagesService — périmètre pays', () => {
         {
           provide: TimelineMessagingService,
           useValue: timelineMessagingService,
+        },
+        {
+          provide: MessageCalendarTargetReadinessService,
+          useValue: messageCalendarTargetReadinessService,
         },
         { provide: CountryScopeService, useValue: countryScopeService },
       ],
@@ -84,6 +100,10 @@ describe('GetMessagesService — périmètre pays', () => {
       'workspace-id',
     );
 
+    // Le 5e argument est le `targetFilter` ajouté par l'amont en v2.39.0. `undefined` est
+    // l'état d'un workspace réel (drapeau `IS_MESSAGE_CALENDAR_TARGET_READ_ENABLED`
+    // éteint) — et c'est ce qui garantit que la sélection passe bien par les personnes du
+    // périmètre, seule chose que ce service sait cloisonner.
     expect(
       timelineMessagingService.getAndCountMessageThreads,
     ).toHaveBeenCalledWith(
@@ -91,6 +111,7 @@ describe('GetMessagesService — périmètre pays', () => {
       'workspace-id',
       0,
       expect.any(Number),
+      undefined,
     );
   });
 

@@ -1,9 +1,18 @@
 import { applyCountryPermissionFilter } from 'src/engine/twenty-orm/utils/apply-country-permission-filter.util';
 
+// 🔴 `where` est ici pour être vérifié ABSENT, pas pour être appelé. Depuis le moteur de
+// requêtes maison (v2.35.0), `WorkspaceSelectQueryBuilder.where()` commence par
+// `this.whereClauses.length = 0` : il EFFACE les conditions déjà posées. Sur une mutation,
+// le critère qui borne l'écriture est justement posé par un `where()` en amont
+// (`applyMutationCriteriaToQueryBuilder`) — un `where()` dans notre filtre transformerait
+// un UPDATE sur un enregistrement en UPDATE sur toute la table, restreint au périmètre.
+//
+// Avant la v2.35.0 le filtre choisissait entre `where` et `andWhere` selon l'état du
+// builder (`expressionMap.wheres.length`). `expressionMap` n'existe plus, et la règle est
+// devenue inconditionnelle : TOUJOURS `andWhere`.
 const makeQb = () => ({
   where: jest.fn(),
   andWhere: jest.fn(),
-  expressionMap: { wheres: [] as unknown[] },
 });
 
 // objectMetadata + internalContext pour un objet portant un champ `countryCode`.
@@ -145,16 +154,15 @@ describe('applyCountryPermissionFilter', () => {
       } as any,
     });
 
-    expect(qb.where).toHaveBeenCalledTimes(1);
-    const brackets = qb.where.mock.calls[0][0];
+    expect(qb.andWhere).toHaveBeenCalledTimes(1);
+    const brackets = qb.andWhere.mock.calls[0][0];
     const inner = { where: jest.fn(), andWhere: jest.fn() };
     brackets.whereFactory(inner);
     expect(inner.where).toHaveBeenCalledWith('1 = 0');
   });
 
-  it('default-deny objet hors allowlist : andWhere si un where existe déjà', () => {
+  it('default-deny objet hors allowlist : ajoute sans écraser le where existant', () => {
     const qb: any = makeQb();
-    qb.expressionMap.wheres = [{ type: 'simple' }];
     const { objectMetadata, internalContext } = objectWithoutCountryCode();
 
     applyCountryPermissionFilter({
@@ -218,7 +226,7 @@ describe('applyCountryPermissionFilter', () => {
         } as any,
       });
 
-      const brackets = qb.where.mock.calls[0][0];
+      const brackets = qb.andWhere.mock.calls[0][0];
       const inner = { where: jest.fn(), andWhere: jest.fn() };
 
       brackets.whereFactory(inner);
@@ -246,7 +254,7 @@ describe('applyCountryPermissionFilter', () => {
         } as any,
       });
 
-      const brackets = qb.where.mock.calls[0][0];
+      const brackets = qb.andWhere.mock.calls[0][0];
       const inner = { where: jest.fn(), andWhere: jest.fn() };
 
       brackets.whereFactory(inner);
@@ -269,8 +277,8 @@ describe('applyCountryPermissionFilter', () => {
       } as any,
     });
 
-    expect(qb.where).toHaveBeenCalledTimes(1);
-    expect(qb.andWhere).not.toHaveBeenCalled();
+    expect(qb.andWhere).toHaveBeenCalledTimes(1);
+    expect(qb.where).not.toHaveBeenCalled();
   });
 
   it('self-owned : blocklist SANS workspaceMember.id => default-deny', () => {
@@ -288,8 +296,8 @@ describe('applyCountryPermissionFilter', () => {
       } as any,
     });
 
-    expect(qb.where).toHaveBeenCalledTimes(1);
-    const brackets = qb.where.mock.calls[0][0];
+    expect(qb.andWhere).toHaveBeenCalledTimes(1);
+    const brackets = qb.andWhere.mock.calls[0][0];
     const inner = { where: jest.fn(), andWhere: jest.fn() };
     brackets.whereFactory(inner);
     expect(inner.where).toHaveBeenCalledWith('1 = 0');
@@ -323,7 +331,7 @@ describe('applyCountryPermissionFilter', () => {
         } as any,
       });
 
-      expect(renderSql(qb.where.mock.calls[0][0])).toBe('(1 = 0)');
+      expect(renderSql(qb.andWhere.mock.calls[0][0])).toBe('(1 = 0)');
     },
   );
 
@@ -348,7 +356,7 @@ describe('applyCountryPermissionFilter', () => {
         } as any,
       });
 
-      expect(renderSql(qb.where.mock.calls[0][0])).toBe('(1 = 0)');
+      expect(renderSql(qb.andWhere.mock.calls[0][0])).toBe('(1 = 0)');
     },
   );
 
@@ -366,13 +374,15 @@ describe('applyCountryPermissionFilter', () => {
       } as any,
     });
 
-    expect(qb.where).toHaveBeenCalledTimes(1); // un Brackets posé (premier where)
-    expect(qb.andWhere).not.toHaveBeenCalled();
+    expect(qb.andWhere).toHaveBeenCalledTimes(1); // un Brackets posé (premier where)
+    expect(qb.where).not.toHaveBeenCalled();
   });
 
-  it('andWhere quand le queryBuilder a déjà un where', () => {
+  // 🔴 Sentinelle du geste le plus dangereux de ce fichier : n'appeler QUE `andWhere`.
+  // Un `where()` effacerait le critère de la requête — sur une mutation, ce critère est ce
+  // qui borne l'écriture à un enregistrement.
+  it("n'utilise jamais where, qui écraserait le critère existant", () => {
     const qb: any = makeQb();
-    qb.expressionMap.wheres = [{ type: 'simple' }];
     const { objectMetadata, internalContext } = scopedObject();
 
     applyCountryPermissionFilter({
@@ -404,7 +414,7 @@ describe('applyCountryPermissionFilter', () => {
     });
 
     // une condition (WHERE 1=0) est posée -> l'objet devient invisible
-    expect(qb.where).toHaveBeenCalledTimes(1);
+    expect(qb.andWhere).toHaveBeenCalledTimes(1);
   });
 
   it('default-deny : le Brackets posé exécute `1 = 0` quand allowed est vide', () => {
@@ -423,7 +433,7 @@ describe('applyCountryPermissionFilter', () => {
 
     // exécute le callback du Brackets posé (whereFactory en typeorm) pour vérifier
     // le predicat default-deny, sans toucher à une vraie base.
-    const brackets = qb.where.mock.calls[0][0];
+    const brackets = qb.andWhere.mock.calls[0][0];
     const inner = { where: jest.fn(), andWhere: jest.fn() };
 
     brackets.whereFactory(inner);
@@ -555,7 +565,7 @@ describe('cloisonnement par scopePath', () => {
     });
 
     const posted =
-      qb.where.mock.calls[0]?.[0] ?? qb.andWhere.mock.calls[0]?.[0];
+      qb.andWhere.mock.calls[0]?.[0] ?? qb.andWhere.mock.calls[0]?.[0];
 
     return { qb, posted, sql: posted === undefined ? '' : renderSql(posted) };
   };
@@ -629,7 +639,7 @@ describe('cloisonnement par scopePath', () => {
       authContext: userWith({ allowedScopes: 'g:217,c:EC' }),
     });
 
-    const sql = renderSql(qb.where.mock.calls[0][0]);
+    const sql = renderSql(qb.andWhere.mock.calls[0][0]);
 
     expect(sql).not.toContain('ILIKE');
     expect(sql).toContain('"company"."countryCode" IN');
@@ -650,7 +660,7 @@ describe('cloisonnement par scopePath', () => {
       authContext: userWith({ allowedScopes: 'g:217' }),
     });
 
-    expect(renderSql(qb.where.mock.calls[0][0])).toBe('(1 = 0)');
+    expect(renderSql(qb.andWhere.mock.calls[0][0])).toBe('(1 = 0)');
   });
 
   it('default-deny : périmètre vide sur les deux champs, objet invisible', () => {
@@ -732,19 +742,30 @@ describe('cloisonnement par scopePath', () => {
 
 // --- Cloisonnement en ÉCRITURE.
 //
-// 🔴 Le prédicat est le même qu'en lecture, mais le SQL ne peut PAS l'être : une cible
-// d'UPDATE/DELETE Postgres n'a pas d'alias, et `applyTableAliasOnWhereCondition` ne
-// descend pas dans un `Brackets` — donc rien ne rattraperait `"company"."scopePath"` en
-// aval. Ces tests rendent le SQL réellement produit pour chaque `queryType` de mutation :
-// une régression ici n'est pas une fuite, c'est une erreur de syntaxe en production.
-describe('cloisonnement sur un constructeur de mutation', () => {
+// Historique, parce qu'il explique ce que ces tests ont cessé de vérifier. Jusqu'en
+// v2.34.0, une cible d'UPDATE/DELETE Postgres n'avait pas d'alias : le filtre devait poser
+// la colonne NUE (`"scopePath"`) plutôt que de l'aliaser (`"company"."scopePath"`), en
+// déduisant le type de requête de `expressionMap.queryType`. Une régression là n'était pas
+// une fuite, c'était une erreur de syntaxe en production.
+//
+// 🟢 Le moteur de requêtes maison (v2.35.0) a fermé ce piège : `buildTableReference` émet
+// `"schema"."table" AS "alias"` pour l'UPDATE comme pour le DELETE, et le critère de
+// mutation est construit sur un `WorkspaceSelectQueryBuilder` aliasé avant d'être repris
+// par `WorkspaceMutationQueryBuilder`. L'alias est donc TOUJOURS résolvable, la bascule a
+// disparu du code, et `expressionMap` n'existe plus.
+//
+// Ce qui reste vérifié ici, et qui compte toujours : le prédicat d'écriture est EXACTEMENT
+// celui de lecture. Une divergence entre les deux surfaces est un trou silencieux — c'est
+// ainsi que l'écriture est restée non cloisonnée jusqu'au 2026-08-30. Le branchement
+// lui-même est gardé par
+// `twenty-orm/repository/__tests__/workspace-repository-country-filter.spec.ts`.
+describe('cloisonnement sur le chemin de mutation', () => {
   // oxlint-disable-next-line typescript/no-explicit-any
-  const runFilter = (queryType: string, authContext: any) => {
+  const runFilter = (authContext: any) => {
     // oxlint-disable-next-line typescript/no-explicit-any
     const qb: any = makeQb();
 
     qb.objectRecordsPermissions = {};
-    qb.expressionMap.queryType = queryType;
 
     const object = portfolioObject();
 
@@ -755,49 +776,30 @@ describe('cloisonnement sur un constructeur de mutation', () => {
       authContext,
     });
 
-    const posted =
-      qb.where.mock.calls[0]?.[0] ?? qb.andWhere.mock.calls[0]?.[0];
+    const posted = qb.andWhere.mock.calls[0]?.[0];
 
     return { qb, sql: posted === undefined ? '' : renderSql(posted) };
   };
 
-  // `'restore'` est dans la liste alors que l'upstream l'oublie : un restore EST un
-  // UPDATE, l'oublier produirait du SQL aliasé dans une requête sans alias.
-  it.each(['update', 'delete', 'soft-delete', 'restore'])(
-    'pose la colonne nue, jamais l alias, sur un %s',
-    (queryType) => {
-      const { sql } = runFilter(
-        queryType,
-        userWith({ allowedScopes: 'g:217,c:EC', allowedCountries: 'EC' }),
-      );
-
-      expect(sql).toContain('"scopePath"::text ILIKE');
-      expect(sql).toContain('"countryCode" IN');
-      expect(sql).not.toContain('"company".');
-    },
-  );
-
-  it('garde l alias sur une lecture (aucun queryType de mutation)', () => {
+  it('pose le prédicat aliasé — le moteur v2.35.0 aliase aussi les mutations', () => {
     const { sql } = runFilter(
-      'select',
       userWith({ allowedScopes: 'g:217,c:EC', allowedCountries: 'EC' }),
     );
 
     expect(sql).toContain('"company"."scopePath"::text ILIKE');
+    expect(sql).toContain('"countryCode" IN');
   });
 
-  // ⚠️ Le bypass et le default-deny doivent se comporter EXACTEMENT comme en lecture :
-  // une divergence entre les deux surfaces est un trou silencieux.
   it('ne filtre jamais une clé API en écriture (ingestion, passes SAP)', () => {
     // oxlint-disable-next-line typescript/no-explicit-any
-    const { qb } = runFilter('update', { type: 'apiKey' } as any);
+    const { qb } = runFilter({ type: 'apiKey' } as any);
 
     expect(qb.where).not.toHaveBeenCalled();
     expect(qb.andWhere).not.toHaveBeenCalled();
   });
 
   it('ne filtre pas un membre non cloisonné en écriture (sentinelle)', () => {
-    const { qb } = runFilter('update', userWith({ allowedScopes: '*' }));
+    const { qb } = runFilter(userWith({ allowedScopes: '*' }));
 
     expect(qb.where).not.toHaveBeenCalled();
     expect(qb.andWhere).not.toHaveBeenCalled();
@@ -805,7 +807,6 @@ describe('cloisonnement sur un constructeur de mutation', () => {
 
   it('default-deny en écriture : périmètre vide, aucune ligne touchée', () => {
     const { sql } = runFilter(
-      'update',
       userWith({ allowedScopes: '', allowedCountries: '' }),
     );
 

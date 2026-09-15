@@ -3,7 +3,7 @@ import { Injectable } from '@nestjs/common';
 import { In } from 'typeorm';
 import { isDefined } from 'twenty-shared/utils';
 
-import { GlobalWorkspaceOrmManager } from 'src/engine/twenty-orm/global-workspace-datasource/global-workspace-orm.manager';
+import { WorkspaceOrmManager } from 'src/engine/twenty-orm/workspace-orm.manager';
 import { buildSystemAuthContext } from 'src/engine/twenty-orm/utils/build-system-auth-context.util';
 import {
   isScopeInScope,
@@ -32,9 +32,7 @@ import { type WorkspaceMemberWorkspaceEntity } from 'src/modules/workspace-membe
 // rejoignent : la liste de personnes.
 @Injectable()
 export class CountryScopeService {
-  constructor(
-    private readonly globalWorkspaceOrmManager: GlobalWorkspaceOrmManager,
-  ) {}
+  constructor(private readonly workspaceOrmManager: WorkspaceOrmManager) {}
 
   /**
    * Périmètre du membre correspondant à un `userId`, pour les surfaces qui ne connaissent
@@ -57,30 +55,26 @@ export class CountryScopeService {
 
     const authContext = buildSystemAuthContext(workspaceId);
 
-    return this.globalWorkspaceOrmManager.executeInWorkspaceContext(
-      async () => {
-        const workspaceMemberRepository =
-          await this.globalWorkspaceOrmManager.getRepository<WorkspaceMemberWorkspaceEntity>(
-            workspaceId,
-            'workspaceMember',
-            { shouldBypassPermissionChecks: true },
-          );
-
-        const workspaceMember = await workspaceMemberRepository.findOne({
-          where: { userId },
-        });
-
-        if (!isDefined(workspaceMember)) {
-          return { kind: 'tokens', allowed: [] };
-        }
-
-        return resolveScope(
-          readMemberScopesField(workspaceMember),
-          readMemberCountryScopeField(workspaceMember),
+    return this.workspaceOrmManager.executeInWorkspaceContext(async () => {
+      const workspaceMemberRepository =
+        this.workspaceOrmManager.getRepository<WorkspaceMemberWorkspaceEntity>(
+          'workspaceMember',
+          { shouldBypassPermissionChecks: true },
         );
-      },
-      authContext,
-    );
+
+      const workspaceMember = await workspaceMemberRepository.findOne({
+        where: { userId },
+      });
+
+      if (!isDefined(workspaceMember)) {
+        return { kind: 'tokens', allowed: [] };
+      }
+
+      return resolveScope(
+        readMemberScopesField(workspaceMember),
+        readMemberCountryScopeField(workspaceMember),
+      );
+    }, authContext);
   }
 
   /**
@@ -109,54 +103,49 @@ export class CountryScopeService {
 
     const authContext = buildSystemAuthContext(workspaceId);
 
-    return this.globalWorkspaceOrmManager.executeInWorkspaceContext(
-      async () => {
-        const workspaceMemberRepository =
-          await this.globalWorkspaceOrmManager.getRepository<WorkspaceMemberWorkspaceEntity>(
-            workspaceId,
-            'workspaceMember',
-            { shouldBypassPermissionChecks: true },
-          );
-
-        const workspaceMember = await workspaceMemberRepository.findOne({
-          where: { id: workspaceMemberId },
-        });
-
-        if (!isDefined(workspaceMember)) {
-          return [];
-        }
-
-        const scope = resolveScope(
-          readMemberScopesField(workspaceMember),
-          readMemberCountryScopeField(workspaceMember),
+    return this.workspaceOrmManager.executeInWorkspaceContext(async () => {
+      const workspaceMemberRepository =
+        this.workspaceOrmManager.getRepository<WorkspaceMemberWorkspaceEntity>(
+          'workspaceMember',
+          { shouldBypassPermissionChecks: true },
         );
 
-        if (scope.kind === 'unscoped') {
-          return personIds;
-        }
+      const workspaceMember = await workspaceMemberRepository.findOne({
+        where: { id: workspaceMemberId },
+      });
 
-        const personRepository =
-          await this.globalWorkspaceOrmManager.getRepository<PersonWorkspaceEntity>(
-            workspaceId,
-            'person',
-            { shouldBypassPermissionChecks: true },
-          );
+      if (!isDefined(workspaceMember)) {
+        return [];
+      }
 
-        const persons = await personRepository.find({
-          where: { id: In(personIds) },
-        });
+      const scope = resolveScope(
+        readMemberScopesField(workspaceMember),
+        readMemberCountryScopeField(workspaceMember),
+      );
 
-        return persons
-          .filter((person) =>
-            isScopeInScope(
-              scope,
-              readRecordScopePathField(person),
-              readRecordCountryCodeField(person),
-            ),
-          )
-          .map((person) => person.id);
-      },
-      authContext,
-    );
+      if (scope.kind === 'unscoped') {
+        return personIds;
+      }
+
+      const personRepository =
+        this.workspaceOrmManager.getRepository<PersonWorkspaceEntity>(
+          'person',
+          { shouldBypassPermissionChecks: true },
+        );
+
+      const persons = await personRepository.find({
+        where: { id: In(personIds) },
+      });
+
+      return persons
+        .filter((person) =>
+          isScopeInScope(
+            scope,
+            readRecordScopePathField(person),
+            readRecordCountryCodeField(person),
+          ),
+        )
+        .map((person) => person.id);
+    }, authContext);
   }
 }

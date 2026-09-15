@@ -4,10 +4,15 @@ import { type EntityManager } from 'typeorm';
 import { CalendarChannelVisibility } from 'twenty-shared/types';
 
 import { CreateCalendarChannelService } from 'src/engine/core-modules/auth/services/create-calendar-channel.service';
-import { GlobalWorkspaceOrmManager } from 'src/engine/twenty-orm/global-workspace-datasource/global-workspace-orm.manager';
+import { WorkspaceOrmManager } from 'src/engine/twenty-orm/workspace-orm.manager';
 
 // Même enjeu que `create-message-channel.service.spec.ts` : ce fallback est le réglage
 // effectif des comptes connectés depuis Settings → Accounts, qui n'envoie rien.
+//
+// ⚠️ Comme elle, cette spec ne défend plus un patch Snetor : l'amont a adopté `METADATA`
+// par défaut en v2.39.0 et le patch du fork a été retiré à la montée. Elle reste comme
+// sentinelle d'une dépendance qu'on ne patche plus — donc que plus rien d'autre ne
+// surveille. Ne pas la supprimer.
 describe('CreateCalendarChannelService', () => {
   let service: CreateCalendarChannelService;
 
@@ -23,7 +28,7 @@ describe('CreateCalendarChannelService', () => {
       providers: [
         CreateCalendarChannelService,
         {
-          provide: GlobalWorkspaceOrmManager,
+          provide: WorkspaceOrmManager,
           useValue: {
             executeInWorkspaceContext: jest.fn((callback) => callback()),
           },

@@ -1,21 +1,42 @@
 import { GroupByWithRecordsService } from 'src/engine/api/graphql/graphql-query-runner/group-by/services/group-by-with-records.service';
 
-// 🔴 La sous-requête du groupBy est sérialisée en SQL brut par `getQuery()`, qui n'est pas
-// surchargée dans `WorkspaceSelectQueryBuilder` : `validatePermissions()` ne tourne donc
-// jamais, et seul le prédicat row-level upstream était posé à la main. Kanban et Calendrier
-// remontaient des enregistrements hors périmètre. Ce test garde le rappel des DEUX
-// prédicats — le seul endroit du code où le cloisonnement dépend d'un appel explicite.
+// ─────────────────────────────────────────────────────────────────────────────
+// SPEC-SENTINELLE. Elle garde l'ORDRE, pas la forme du prédicat.
 //
-// Le builder est un double chaînable : la vraie construction SQL demande une connexion
-// DataSource, et ce n'est pas elle qu'on vérifie ici.
-const makeChainableQueryBuilder = () => {
+// 🔴 L'incident d'origine : la sous-requête du groupBy est sérialisée en SQL brut par
+// `getQuery()`. Si les prédicats de permission sont posés APRÈS cette sérialisation,
+// le SQL est figé sans eux — et Kanban comme Calendrier remontent des enregistrements
+// hors périmètre, sans qu'aucune erreur ne se produise.
+//
+// Ce que la montée v2.39.0 a changé : jusqu'à la v2.34.0 le fork devait rappeler
+// lui-même son prédicat ici, par un patch d'une ligne au milieu d'une méthode privée.
+// Depuis, `subQueryBuilder.applyRowLevelPermissions()` déclenche le hook
+// `onBeforeExecute` du `WorkspaceRepository`, où le cloisonnement Snetor est branché —
+// voir `twenty-orm/repository/__tests__/workspace-repository-country-filter.spec.ts`.
+// Il n'y a donc PLUS de patch Snetor dans ce fichier, et c'est voulu.
+//
+// Cette spec reste parce que l'invariant, lui, reste : si un jour l'amont déplace
+// `applyRowLevelPermissions()` après `getQuery()`, ou le retire, le cloisonnement du
+// groupBy tombe en silence. Ne pas la supprimer au motif qu'elle ne défend plus de
+// code Snetor — c'est précisément ce qu'elle défend : une dépendance invisible.
+// ─────────────────────────────────────────────────────────────────────────────
+
+const makeSubQueryBuilder = (order: string[]) => {
   // oxlint-disable-next-line typescript/no-explicit-any
-  const qb: any = {
-    expressionMap: { parameters: {}, aliases: [{ subQuery: 'sub' }] },
-    applyRowLevelPermissionPredicatesToMainAliasAndJoinedRelations: jest.fn(),
-    applyCountryPermissionFilterPredicate: jest.fn(),
-    getQuery: jest.fn(() => 'SELECT 1'),
+  const queryBuilder: any = {
+    alias: 'company',
+    applyRowLevelPermissions: jest.fn(() => {
+      order.push('permissions');
+
+      return queryBuilder;
+    }),
+    getQuery: jest.fn(() => {
+      order.push('getQuery');
+
+      return 'SELECT 1';
+    }),
     getParameters: jest.fn(() => ({})),
+    parameters: {},
   };
 
   for (const method of [
@@ -23,72 +44,64 @@ const makeChainableQueryBuilder = () => {
     'addSelect',
     'andWhere',
     'where',
-    'from',
     'groupBy',
+    'addGroupBy',
     'setParameters',
     'setParameter',
     'limit',
+    'offset',
+    'orderBy',
+    'addOrderBy',
   ]) {
-    qb[method] = jest.fn(() => qb);
+    queryBuilder[method] = jest.fn(() => queryBuilder);
   }
 
-  return qb;
+  return queryBuilder;
 };
 
-const callAddPartitionBy = (
+const callBuildRankedRecordsStatement = (
   // oxlint-disable-next-line typescript/no-explicit-any
-  queryBuilderForSubQuery: any,
+  subQueryBuilder: any,
 ) => {
   const service = Object.create(
     GroupByWithRecordsService.prototype,
     // oxlint-disable-next-line typescript/no-explicit-any
   ) as any;
 
-  return service.addPartitionByToQueryBuilder({
-    queryBuilderForSubQuery,
+  return service.buildRankedRecordsStatement({
+    subQueryBuilder,
     columnsToSelect: { name: true },
     groupsResult: [{ stage_alias: 'NEW' }],
     groupByDefinitions: [
       { alias: 'stage_alias', expression: '"company"."stage"' },
     ],
-    repository: { createQueryBuilder: () => makeChainableQueryBuilder() },
     orderByForRecords: {},
     flatObjectMetadata: { nameSingular: 'company', fieldIds: [] },
     flatObjectMetadataMaps: {},
     flatFieldMetadataMaps: {},
+    offsetForRecords: 0,
   });
 };
 
 describe('GroupByWithRecordsService — cloisonnement de la sous-requête', () => {
-  it('rappelle le prédicat de portée sur la sous-requête sérialisée', () => {
-    const subQueryBuilder = makeChainableQueryBuilder();
+  it('applique les permissions sur la sous-requête', () => {
+    const order: string[] = [];
+    const subQueryBuilder = makeSubQueryBuilder(order);
 
-    callAddPartitionBy(subQueryBuilder);
+    callBuildRankedRecordsStatement(subQueryBuilder);
 
-    expect(
-      subQueryBuilder.applyCountryPermissionFilterPredicate,
-    ).toHaveBeenCalledTimes(1);
+    expect(subQueryBuilder.applyRowLevelPermissions).toHaveBeenCalled();
   });
 
-  // ⚠️ L'ordre compte : `getQuery()` figerait le SQL sans le prédicat s'il était appelé
-  // avant. Les deux prédicats doivent être posés d'abord.
-  it('pose le prédicat avant de sérialiser la sous-requête', () => {
+  it('les applique AVANT de sérialiser la sous-requête', () => {
     const order: string[] = [];
-    const subQueryBuilder = makeChainableQueryBuilder();
+    const subQueryBuilder = makeSubQueryBuilder(order);
 
-    subQueryBuilder.applyCountryPermissionFilterPredicate.mockImplementation(
-      () => {
-        order.push('scope');
-      },
+    callBuildRankedRecordsStatement(subQueryBuilder);
+
+    expect(order.indexOf('permissions')).toBeGreaterThanOrEqual(0);
+    expect(order.indexOf('getQuery')).toBeGreaterThan(
+      order.indexOf('permissions'),
     );
-    subQueryBuilder.getQuery.mockImplementation(() => {
-      order.push('getQuery');
-
-      return 'SELECT 1';
-    });
-
-    callAddPartitionBy(subQueryBuilder);
-
-    expect(order).toEqual(['scope', 'getQuery']);
   });
 });

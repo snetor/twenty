@@ -5,7 +5,7 @@ import { NavigateAppTool } from 'src/engine/core-modules/tool/tools/navigate-too
 import { NavigationMenuItemService } from 'src/engine/metadata-modules/navigation-menu-item/navigation-menu-item.service';
 import { WorkspaceManyOrAllFlatEntityMapsCacheService } from 'src/engine/metadata-modules/flat-entity/services/workspace-many-or-all-flat-entity-maps-cache.service';
 import { ViewService } from 'src/engine/metadata-modules/view/services/view.service';
-import { GlobalWorkspaceOrmManager } from 'src/engine/twenty-orm/global-workspace-datasource/global-workspace-orm.manager';
+import { WorkspaceOrmManager } from 'src/engine/twenty-orm/workspace-orm.manager';
 
 // `navigateToRecord` lit TOUS les enregistrements de l'objet en bypass de permissions et en
 // contexte système : ni les permissions object-level ni le filtre de portée ne s'y appliquent,
@@ -62,9 +62,9 @@ describe('NavigateAppTool — périmètre sur navigateToRecord', () => {
           },
         },
         {
-          provide: GlobalWorkspaceOrmManager,
+          provide: WorkspaceOrmManager,
           useValue: {
-            getRepository: jest.fn().mockResolvedValue({ find }),
+            getRepository: jest.fn().mockReturnValue({ find }),
             executeInWorkspaceContext: jest
               .fn()
               .mockImplementation((callback: () => unknown) => callback()),

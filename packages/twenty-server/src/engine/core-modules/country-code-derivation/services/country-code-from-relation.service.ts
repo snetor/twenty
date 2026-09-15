@@ -15,7 +15,7 @@ import { WorkspaceManyOrAllFlatEntityMapsCacheService } from 'src/engine/metadat
 import { findFlatEntityByIdInFlatEntityMaps } from 'src/engine/metadata-modules/flat-entity/utils/find-flat-entity-by-id-in-flat-entity-maps.util';
 import { buildFieldMapsFromFlatObjectMetadata } from 'src/engine/metadata-modules/flat-field-metadata/utils/build-field-maps-from-flat-object-metadata.util';
 import { buildObjectIdByNameMaps } from 'src/engine/metadata-modules/flat-object-metadata/utils/build-object-id-by-name-maps.util';
-import { GlobalWorkspaceOrmManager } from 'src/engine/twenty-orm/global-workspace-datasource/global-workspace-orm.manager';
+import { WorkspaceOrmManager } from 'src/engine/twenty-orm/workspace-orm.manager';
 
 // La dérivation est une lecture SYSTÈME, pas une lecture de l'utilisateur : elle résout
 // l'isoCode d'un pays (ou le countryCode de la company parente) que l'appelant vient
@@ -50,7 +50,7 @@ export class CountryCodeFromRelationService {
   private readonly logger = new Logger(CountryCodeFromRelationService.name);
 
   constructor(
-    private readonly globalWorkspaceOrmManager: GlobalWorkspaceOrmManager,
+    private readonly workspaceOrmManager: WorkspaceOrmManager,
     private readonly flatEntityMapsCacheService: WorkspaceManyOrAllFlatEntityMapsCacheService,
   ) {}
 
@@ -86,13 +86,8 @@ export class CountryCodeFromRelationService {
 
     try {
       const countryCodeByFkId =
-        await this.globalWorkspaceOrmManager.executeInWorkspaceContext(
-          () =>
-            this.resolveCountryCodeByFkId(
-              derivation.kind,
-              authContext.workspace.id,
-              fkIds,
-            ),
+        await this.workspaceOrmManager.executeInWorkspaceContext(
+          () => this.resolveCountryCodeByFkId(derivation.kind, fkIds),
           authContext,
         );
 
@@ -157,15 +152,13 @@ export class CountryCodeFromRelationService {
 
   private async resolveCountryCodeByFkId(
     kind: 'self' | 'parent',
-    workspaceId: string,
     fkIds: string[],
   ): Promise<Map<string, string | null>> {
     if (kind === 'self') {
       // company.countryId -> country.isoCode
-      const countryRepository =
-        await this.globalWorkspaceOrmManager.getRepository<
-          ObjectLiteral & { id: string; isoCode?: string | null }
-        >(workspaceId, 'country', SYSTEM_READ);
+      const countryRepository = this.workspaceOrmManager.getRepository<
+        ObjectLiteral & { id: string; isoCode?: string | null }
+      >('country', SYSTEM_READ);
       const countries = await countryRepository.find({
         where: { id: In(fkIds) },
       });
@@ -181,10 +174,9 @@ export class CountryCodeFromRelationService {
     }
 
     // (person|opportunity).companyId / (clientProduct|visit).clientId -> company.countryCode
-    const companyRepository =
-      await this.globalWorkspaceOrmManager.getRepository<
-        ObjectLiteral & { id: string; countryCode?: string | null }
-      >(workspaceId, 'company', SYSTEM_READ);
+    const companyRepository = this.workspaceOrmManager.getRepository<
+      ObjectLiteral & { id: string; countryCode?: string | null }
+    >('company', SYSTEM_READ);
     const companies = await companyRepository.find({
       where: { id: In(fkIds) },
     });
