@@ -439,6 +439,28 @@ Le code est volontairement défensif — `isDefined(fieldIdByName[SCOPE_PATH_FIE
 Les scripts qui peuplent ces champs (`sync_member_scopes.py`, `compute_scope_paths.py`) vivent dans
 le dépôt `snetor/client-matrix`, pas ici.
 
+### `NX_DAEMON=false` — une variable qui n'est pas dans ce dépôt non plus
+
+Le 2026-09-14, `nx build twenty-shared` est resté bloqué **11 heures** sur son étape
+`generateBarrels` : aucun log écrit, aucun CPU consommé. Un blocage silencieux ressemble à une
+lenteur, donc on l'attend au lieu de le diagnostiquer. Le daemon Nx en était la cause, et
+`NX_DAEMON=false` le débloque.
+
+La variable est posée dans le `~/.claude/settings.json` du poste, déployé par
+`scripts/deploy-claude.ps1` du dépôt `snetor/snetor-ai-guidelines`. **Pas ici, et c'est délibéré :**
+le `.claude/settings.json` de ce dépôt est un fichier **amont** — son contenu est identique à
+`upstream/main`, et Twenty l'a réécrit 5 fois en 6 mois. Y écrire la variable fabriquerait un point
+d'ancrage de plus à recoller à chaque montée, pour une valeur qui ne concerne que nos postes.
+
+Conséquence à connaître : un poste qui n'a jamais lancé `deploy-claude.ps1`, ou un terminal ouvert
+hors session Claude Code, **n'a pas la variable**. Si un build se met à ne plus rien écrire pendant
+plus de trois minutes, c'est la première chose à vérifier :
+
+```
+echo "NX_DAEMON=[$NX_DAEMON]"        # attendu : NX_DAEMON=[false]
+NX_DAEMON=false npx nx build twenty-shared --skip-nx-cache
+```
+
 ---
 
 ## 7. La checklist de montée
@@ -452,6 +474,8 @@ le dépôt `snetor/client-matrix`, pas ici.
       `git diff --name-status twenty/<actuelle> twenty/<cible> -- '**/upgrade-version-command/**'`.
       Repère : entre 2.30 et 2.39, **121 commandes de montée** sur neuf paliers.
 - [ ] Prendre une sauvegarde **vérifiée** de la base, et relever un repère PITR.
+- [ ] `echo "NX_DAEMON=[$NX_DAEMON]"` doit rendre `[false]`. Sinon, un `nx build` peut rester
+      bloqué des heures sans écrire un log (§6).
 
 ### Pendant
 
