@@ -337,7 +337,7 @@ modifie régulièrement l'en-tête du README (badges) : conflit récurrent, mais
 
 ---
 
-## 4. Les quatre specs-sentinelles
+## 4. Les cinq specs-sentinelles
 
 Ce sont des tests écrits pour **échouer si un merge fait sauter un patch**. Ils ne testent pas une
 fonctionnalité : ils testent que l'accroche existe encore. **Ils se lancent avant tout le reste
@@ -349,16 +349,26 @@ après un merge.**
 | `group-by/services/__tests__/group-by-with-records-country-filter.spec.ts` | que `applyRowLevelPermissions()` précède `getQuery()` dans `buildRankedRecordsStatement` — donc que la sous-requête du Kanban est sérialisée **après** le filtre |
 | `auth/services/create-message-channel.service.spec.ts` | que le défaut de visibilité reste `METADATA` |
 | `auth/services/create-calendar-channel.service.spec.ts` | idem pour l'agenda |
+| `auth/utils/__tests__/get-microsoft-apis-oauth-scopes.spec.ts` | que les scopes Graph demandés restent ceux consentis dans Entra |
 
 Elles étaient cinq avant la v2.39.0 : celles du select builder et des trois builders de mutation
 ont fusionné, parce que les points d'application ont fusionné.
 
-**Deux d'entre elles ne défendent plus une ligne de code Snetor** — celles des canaux, depuis que
-l'amont a adopté notre défaut ; et celle du groupBy, depuis que le hook rend le patch inutile.
-C'est justement ce qui les rend précieuses : elles surveillent des **dépendances invisibles**, des
-comportements amont dont notre confidentialité dépend sans qu'aucun conflit de merge ne vienne
-jamais nous avertir s'ils changent. Ne pas les supprimer au motif qu'elles ne couvrent « rien à
-nous ».
+**Trois d'entre elles ne défendent plus une ligne de code Snetor** — celles des canaux, depuis que
+l'amont a adopté notre défaut ; celle du groupBy, depuis que le hook rend le patch inutile ; et
+celle des scopes, qui n'a jamais gardé de patch du tout. C'est justement ce qui les rend
+précieuses : elles surveillent des **dépendances invisibles**, des comportements amont dont notre
+confidentialité — ou notre capacité à nous connecter — dépend sans qu'aucun conflit de merge ne
+vienne jamais nous avertir s'ils changent. Ne pas les supprimer au motif qu'elles ne couvrent
+« rien à nous ».
+
+⚠️ **La sentinelle des scopes surveille une dépendance qui n'est même pas dans un dépôt** :
+l'inscription d'application Entra `app-twenty-dev`. Le 2026-09-18, la v2.39.0 a fait passer le code
+de `Calendars.Read` à `Calendars.ReadWrite` ; Entra ne déclarait que le premier ; **toute personne
+connectant son compte Microsoft tombait sur « approbation administrateur requise »**, sans conflit
+de merge, sans erreur au démarrage et sans CI rouge. Le seul signal a été une commerciale bloquée,
+trois jours plus tard. Si cette spec échoue, mettre à jour l'inscription Entra **avant** de
+déployer — le détail est dans son en-tête et dans `modules/twenty/main.tf` d'`azure-landing-zone`.
 
 Si l'une échoue après un merge : **un patch a sauté. Ne pas continuer, ne pas la réparer en
 ajustant l'attente.** Retrouver où l'accroche a disparu.
@@ -476,6 +486,10 @@ NX_DAEMON=false npx nx build twenty-shared --skip-nx-cache
 - [ ] Prendre une sauvegarde **vérifiée** de la base, et relever un repère PITR.
 - [ ] `echo "NX_DAEMON=[$NX_DAEMON]"` doit rendre `[false]`. Sinon, un `nx build` peut rester
       bloqué des heures sans écrire un log (§6).
+- [ ] **Comparer les scopes Graph demandés par le code à ceux déclarés dans Entra.** La
+      spec-sentinelle le fait (§4), mais elle ne tourne qu'après le merge : un coup d'œil à
+      `getMicrosoftApisOauthScopes()` dans le diff amont coûte dix secondes et évite de découvrir
+      l'écart par un utilisateur qui ne peut plus connecter son compte.
 
 ### Pendant
 
