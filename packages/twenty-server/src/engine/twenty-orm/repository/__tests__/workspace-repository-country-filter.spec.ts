@@ -134,4 +134,25 @@ describe('WorkspaceRepository — branchement du cloisonnement par portefeuille'
       expect(applyMock).not.toHaveBeenCalled();
     });
   });
+
+  // 🔴 L'UNIQUE lecture qui lève le filtre, et elle ne lève que lui. Défaut du
+  // 2026-09-24 : la relecture d'une création passait par le filtre avant que
+  // `scopePath` soit posé, rendait 0 ligne, et le membre cloisonné recevait une erreur
+  // sur une note pourtant écrite.
+  describe('RELECTURE DE SES PROPRES INSERTIONS — onBeforeExecuteOwnInserts', () => {
+    it('ne pose PAS le filtre de portée, mais garde les permissions d objet et de champ', () => {
+      const repository = buildRepository();
+      const rowLevel = jest.fn();
+      const validate = jest.fn();
+
+      (repository as any).applyRowLevelPermissionPredicates = rowLevel;
+      (repository as any).validateQueryIsPermitted = validate;
+
+      (repository as any).onBeforeExecuteOwnInserts(buildQueryBuilder());
+
+      expect(applyMock).not.toHaveBeenCalled();
+      expect(rowLevel).toHaveBeenCalledTimes(1);
+      expect(validate).toHaveBeenCalledTimes(1);
+    });
+  });
 });

@@ -37,6 +37,7 @@ import { buildColumnsToReturn } from 'src/engine/api/graphql/graphql-query-runne
 import { buildColumnsToSelect } from 'src/engine/api/graphql/graphql-query-runner/utils/build-columns-to-select';
 import { assertIsValidUuid } from 'src/engine/api/graphql/workspace-query-runner/utils/assert-is-valid-uuid.util';
 import { getAllSelectableColumnNames } from 'src/engine/api/utils/get-all-selectable-column-names.utils';
+import { isUserAuthContext } from 'src/engine/core-modules/auth/guards/is-user-auth-context.guard';
 import { WorkspaceAuthContext } from 'src/engine/core-modules/auth/types/workspace-auth-context.type';
 import { RecordPositionService } from 'src/engine/core-modules/record-position/services/record-position.service';
 import { type FlatEntityMaps } from 'src/engine/metadata-modules/flat-entity/types/flat-entity-maps.type';
@@ -52,6 +53,38 @@ import { containsNestedRelationCreate } from 'src/engine/twenty-orm/utils/contai
 import { getNestedRelationFieldNames } from 'src/engine/twenty-orm/utils/get-nested-relation-field-names.util';
 
 const MAX_NESTED_RELATION_CREATE_DEPTH = 5;
+
+// Snetor — pas de note ni de tâche sur la fiche d'un COMMERCIAL, depuis l'écran.
+//
+// 🔴 Une note de coaching est une donnée RH. `salesperson` est un annuaire lisible de tous,
+// et `ScopePathOnCreateListener` ne sait hériter que d'une SOCIÉTÉ : pour une jonction vers
+// un commercial il retombe sur la portée du CRÉATEUR, donc la note d'un manager
+// `g:131,g:229` deviendrait lisible par tous les commerciaux de ces groupes — le commercial
+// concerné compris. Tant qu'une note privée au manager n'existe pas, on refuse, et on le
+// dit. Placé dans `run()` : `createOne` y délègue sans passer par `validate()`.
+// La clé API et le contexte système (ingestion) ne sont pas concernés.
+export const assertNoActivityOnSalespersonFromUser = (
+  objectNameSingular: string,
+  records: Partial<ObjectRecord>[],
+  authContext: WorkspaceAuthContext,
+): void => {
+  if (
+    !['noteTarget', 'taskTarget'].includes(objectNameSingular) ||
+    !isUserAuthContext(authContext)
+  ) {
+    return;
+  }
+
+  if (records.some((record) => isDefined(record?.targetSalespersonId))) {
+    throw new CommonQueryRunnerException(
+      `Activity targets on salesperson are refused for users (HR confidentiality)`,
+      CommonQueryRunnerExceptionCode.BAD_REQUEST,
+      {
+        userFriendlyMessage: msg`Notes and tasks on a Sales Rep are not available yet: they would be visible to the whole team.`,
+      },
+    );
+  }
+};
 
 @Injectable()
 export class CommonCreateManyQueryRunnerService extends CommonBaseQueryRunnerService<
@@ -90,6 +123,12 @@ export class CommonCreateManyQueryRunnerService extends CommonBaseQueryRunnerSer
           }),
       );
     }
+
+    assertNoActivityOnSalespersonFromUser(
+      queryRunnerContext.flatObjectMetadata.nameSingular,
+      args.data,
+      queryRunnerContext.authContext,
+    );
 
     if (args.data.length > QUERY_MAX_RECORDS) {
       throw new CommonQueryRunnerException(
@@ -137,6 +176,7 @@ export class CommonCreateManyQueryRunnerService extends CommonBaseQueryRunnerSer
       flatFieldMetadataMaps,
       repository,
       selectedFieldsResult: args.selectedFieldsResult,
+      isInsertOnly: !args.upsert,
     });
 
     await this.processNestedRelationsIfNeeded({
@@ -613,6 +653,7 @@ export class CommonCreateManyQueryRunnerService extends CommonBaseQueryRunnerSer
     flatFieldMetadataMaps,
     repository,
     selectedFieldsResult,
+    isInsertOnly,
   }: {
     objectRecords: InsertResult;
     flatObjectMetadata: FlatObjectMetadata;
@@ -620,10 +661,15 @@ export class CommonCreateManyQueryRunnerService extends CommonBaseQueryRunnerSer
     flatFieldMetadataMaps: FlatEntityMaps<OrmFlatFieldMetadata>;
     repository: WorkspaceRepository<ObjectLiteral>;
     selectedFieldsResult: CommonSelectedFieldsResult;
+    isInsertOnly: boolean;
   }): Promise<ObjectRecord[]> {
-    const queryBuilder = repository.createQueryBuilder(
-      flatObjectMetadata.nameSingular,
-    );
+    // Snetor — une création relit SES lignes hors cloisonnement, cf.
+    // `WorkspaceRepository.createQueryBuilderForOwnInserts`. Un upsert, non.
+    const queryBuilder = isInsertOnly
+      ? repository.createQueryBuilderForOwnInserts(
+          flatObjectMetadata.nameSingular,
+        )
+      : repository.createQueryBuilder(flatObjectMetadata.nameSingular);
 
     const columnsToSelect = buildColumnsToSelect({
       select: selectedFieldsResult.select,
