@@ -54,12 +54,12 @@ describe('ScopeAssignmentListener', () => {
   it('écrit allowedScopes depuis les scopeTokens du salesperson du même mail', async () => {
     salespersonRepository.findOne.mockResolvedValue({
       id: 'sp-1',
-      email: 'c.ribeiro@snetor.com',
+      email: 'j.doe@snetor.com',
       scopeTokens: 'g:131,g:229',
     });
 
     await listener.handleCreate(
-      batchOf([{ id: 'wm-1', userEmail: 'c.ribeiro@snetor.com' }]),
+      batchOf([{ id: 'wm-1', userEmail: 'j.doe@snetor.com' }]),
     );
 
     expect(workspaceMemberRepository.update).toHaveBeenCalledWith('wm-1', {
@@ -70,12 +70,12 @@ describe('ScopeAssignmentListener', () => {
   it('rapproche le mail sans tenir compte de la casse', async () => {
     salespersonRepository.findOne.mockResolvedValue({
       id: 'sp-1',
-      email: 'c.ribeiro@snetor.com',
+      email: 'j.doe@snetor.com',
       scopeTokens: 'g:131',
     });
 
     await listener.handleCreate(
-      batchOf([{ id: 'wm-1', userEmail: 'C.Ribeiro@Snetor.com' }]),
+      batchOf([{ id: 'wm-1', userEmail: 'J.Doe@Snetor.com' }]),
     );
 
     expect(workspaceMemberRepository.update).toHaveBeenCalledWith('wm-1', {
@@ -133,7 +133,7 @@ describe('ScopeAssignmentListener', () => {
 
     await expect(
       listener.handleCreate(
-        batchOf([{ id: 'wm-1', userEmail: 'c.ribeiro@snetor.com' }]),
+        batchOf([{ id: 'wm-1', userEmail: 'j.doe@snetor.com' }]),
       ),
     ).resolves.toBeUndefined();
 

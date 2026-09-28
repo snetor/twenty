@@ -38,6 +38,10 @@ import { buildColumnsToSelect } from 'src/engine/api/graphql/graphql-query-runne
 import { hasRecordFieldValue } from 'src/engine/api/graphql/graphql-query-runner/utils/has-record-field-value.util';
 import { mergeFieldValues } from 'src/engine/api/graphql/graphql-query-runner/utils/merge-field-values.util';
 import { WorkspaceAuthContext } from 'src/engine/core-modules/auth/types/workspace-auth-context.type';
+import {
+  splitMergedScopePath,
+  writeMergedScopePathAsSystem,
+} from 'src/engine/core-modules/country-scope/utils/merged-scope-path.util';
 import { MetricsKeys } from 'src/engine/core-modules/metrics/types/metrics-keys.type';
 import { computeMorphOrRelationFieldJoinColumnName } from 'src/engine/metadata-modules/field-metadata/utils/compute-morph-or-relation-field-join-column-name.util';
 import { FlatEntityMaps } from 'src/engine/metadata-modules/flat-entity/types/flat-entity-maps.type';
@@ -89,12 +93,17 @@ export class CommonMergeManyQueryRunnerService extends CommonBaseQueryRunnerServ
 
     const idsToDelete = args.ids.filter((id) => id !== priorityRecord.id);
 
+    // Snetor — `scopePath` leaves the user's SET, see merged-scope-path.util.ts
+    const { mergedData: mergedDataForUser, scopePathToWrite } =
+      splitMergedScopePath(mergedData, priorityRecord);
+
     const updatedRecord = await this.executeMergeWithinTransaction({
       args,
       queryRunnerContext,
       idsToDelete,
       priorityRecordId: priorityRecord.id,
-      mergedData,
+      mergedData: mergedDataForUser,
+      scopePathToWrite,
     });
 
     await this.processNestedRelations({
@@ -433,12 +442,14 @@ export class CommonMergeManyQueryRunnerService extends CommonBaseQueryRunnerServ
     idsToDelete,
     priorityRecordId,
     mergedData,
+    scopePathToWrite,
   }: {
     args: CommonExtendedInput<MergeManyQueryArgs>;
     queryRunnerContext: CommonExtendedQueryRunnerContext;
     idsToDelete: string[];
     priorityRecordId: string;
     mergedData: Partial<ObjectRecord>;
+    scopePathToWrite: string | undefined;
   }): Promise<ObjectRecord> {
     const {
       flatObjectMetadata,
@@ -525,6 +536,14 @@ export class CommonMergeManyQueryRunnerService extends CommonBaseQueryRunnerServ
             { userFriendlyMessage: STANDARD_ERROR_MESSAGE },
           );
         }
+
+        // Snetor — only once the user's own update succeeded, see merged-scope-path.util.ts
+        await writeMergedScopePathAsSystem({
+          transactionScope,
+          objectName: alias,
+          recordId: priorityRecordId,
+          scopePath: scopePathToWrite,
+        });
 
         return updatedRecords[0];
       },

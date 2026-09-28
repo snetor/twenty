@@ -159,6 +159,7 @@ engine/core-modules/country-scope/country-scope.module.ts
 engine/core-modules/country-scope/services/country-scope.service.ts
 engine/core-modules/country-scope/listeners/scope-assignment.listener.ts
 engine/core-modules/country-scope/listeners/scope-path-on-create.listener.ts
+engine/core-modules/country-scope/utils/merged-scope-path.util.ts         scopePath du merge, en contexte système
 ```
 
 `resolve-country-scope.util.ts` n'a **aucune dépendance NestJS ni TypeORM**. C'est le fichier le
@@ -183,16 +184,28 @@ puis **`denyAll()` en default-deny**.
 Plus la méthode privée `applyCountryPermissionFilterPredicate()` qui les sert, ajoutée au même
 fichier.
 
+**A third upstream patch, added 2026-09-28 — the native merge**
+(`api/common/common-query-runners/common-merge-many-query-runner.service.ts`). Sales and Manager
+carry `canUpdateFieldValue=false` on `scopePath`, and the native merge puts every non-system field
+in one SET run with the user's permissions: a Manager got
+`no permission to write field scopePath on company` and could not merge duplicates. The lock
+stays. Two calls, both marked `// Snetor`: `splitMergedScopePath` in the public `run()` takes
+`scopePath` out of the user's SET, and `writeMergedScopePathAsSystem` at the end of the
+transaction callback of the private `executeMergeWithinTransaction()` writes the merge's own value
+with `shouldBypassPermissionChecks`, after the user's update of the same record succeeded. The
+portfolio filter still applies to that write (the transaction repository keeps the user's
+`authContext`). 🟠 Half of it sits in a private method body: its sentinel is
+`common-merge-many-query-runner-scope-path.spec.ts`, which drives the real `run()`.
+
 **Avant la v2.39.0 il en fallait cinq**, dont trois au milieu de corps de méthodes privées que
 l'amont a supprimées depuis. C'est la démonstration de la règle d'or, et la raison de ne jamais
 revenir à des points d'application dispersés : chaque surface patchée séparément est une surface
 qu'on peut oublier — c'est exactement ainsi que l'écriture est restée non cloisonnée jusqu'au
 2026-08-30.
 
-⚠️ **Écart connu, hérité de la 2.30 et à réévaluer** : notre filtre porte sur l'alias principal,
-alors que `applyRowLevelPermissionPredicates` itère désormais aussi sur `getJoinAliases()`. Le
-nouveau moteur expose `markRowLevelPermissionApplied(alias)` et `addJoinCondition(alias, sql)` :
-il y a là de quoi étendre le cloisonnement aux relations jointes, ce qui n'était pas faisable avant.
+⚠️ **Known gaps of the portfolio filter are not described in this public repository.** They
+live in `docs/live/runbooks/twenty-fork-security-checks.md` in `snetor/client-matrix`
+(private). Read it before any upgrade and before touching the filter.
 
 ⚠️ **Le `clone()` d'un builder conserve son contexte**, donc son hook — c'est ce qui fait que le
 groupBy est couvert sans patch. Il recopie aussi `aliasesWithRowLevelPermissionApplied`, alors que
@@ -283,27 +296,9 @@ via `CountryScopeService.keepPersonIdsInScope`.
 | `core-modules/calendar/timeline-calendar-event.module.ts` | idem | 🟢 stable |
 | `core-modules/tool/tool.module.ts` | idem | 🟠 placé au milieu d'un bloc trié — contrarie `oxfmt` |
 
-⚠️ **Le piège de `navigate-app-tool.ts`, à relire à chaque montée** : si les champs de portée ne
-sont pas ajoutés au `select`, `isScopeInScope` les lit `undefined` et **laisse tout passer**. Le
-filtre a l'air actif et ne filtre rien.
-
-⚠️ **Le piège des substitutions** : un merge peut très bien accepter le bloc d'en-tête et perdre
-une seule substitution en profondeur. Le filtre devient alors partiellement inopérant, **sans aucun
-signal**. Contrôle : après tout merge, `grep -n "personIds\b"` sur les deux services — aucune
-occurrence nue ne doit subsister après le calcul de `personIdsInScope`.
-
-🔴 **Le piège nouveau, apparu à la v2.39.0 — `IS_MESSAGE_CALENDAR_TARGET_READ_ENABLED`.**
-L'amont a ajouté un `targetFilter` qui sélectionne les threads et les événements **par
-l'enregistrement cible** (`messageThreadTarget` / `calendarEventTargets`) et non plus par les
-personnes. Notre périmètre, lui, ne porte que sur `personIds`.
-
-Tant que ce drapeau est éteint, `resolveTargetFilter` rend `undefined` et le cloisonnement reste
-complet. Son seul `true` du dépôt est dans le seeder de développement
-(`seed-feature-flags.util.ts`), donc il est absent d'un workspace réel.
-
-**L'allumer sans avoir étendu le cloisonnement à `targetFilter` ouvrirait l'onglet Emails et
-l'onglet Calendar d'un enregistrement hors portée.** Les deux services portent le rappel en
-commentaire, à l'endroit exact où il faudrait agir.
+⚠️ **These patches carry three upgrade traps**, each able to switch a surface's filtering off
+without a signal. Their description and the check for each are in
+`docs/live/runbooks/twenty-fork-security-checks.md` in `snetor/client-matrix` (private).
 
 ---
 
@@ -337,7 +332,7 @@ modifie régulièrement l'en-tête du README (badges) : conflit récurrent, mais
 
 ---
 
-## 4. Les cinq specs-sentinelles
+## 4. Les six specs-sentinelles
 
 Ce sont des tests écrits pour **échouer si un merge fait sauter un patch**. Ils ne testent pas une
 fonctionnalité : ils testent que l'accroche existe encore. **Ils se lancent avant tout le reste
@@ -350,6 +345,7 @@ après un merge.**
 | `auth/services/create-message-channel.service.spec.ts` | que le défaut de visibilité reste `METADATA` |
 | `auth/services/create-calendar-channel.service.spec.ts` | idem pour l'agenda |
 | `auth/utils/__tests__/get-microsoft-apis-oauth-scopes.spec.ts` | que les scopes Graph demandés restent ceux consentis dans Entra |
+| `api/common/common-query-runners/__tests__/common-merge-many-query-runner-scope-path.spec.ts` | that the native merge never writes `scopePath` with the user's permissions, and writes it in system context only after the user's update succeeded |
 
 Elles étaient cinq avant la v2.39.0 : celles du select builder et des trois builders de mutation
 ont fusionné, parce que les points d'application ont fusionné.
@@ -389,6 +385,7 @@ src/engine/twenty-orm/repository/__tests__/workspace-repository-country-filter.s
 src/engine/core-modules/country-scope/services/__tests__/country-scope.service.spec.ts
 src/engine/core-modules/country-scope/listeners/__tests__/scope-path-on-create.listener.spec.ts
 src/engine/core-modules/country-scope/listeners/__tests__/scope-assignment.listener.spec.ts
+src/engine/api/common/common-query-runners/__tests__/common-merge-many-query-runner-scope-path.spec.ts  ← sentinel (2026-09-28)
 src/engine/core-modules/country-code-derivation/utils/__tests__/derive-country-code.util.spec.ts
 src/engine/core-modules/country-code-derivation/services/__tests__/country-code-from-relation.service.spec.ts
 src/engine/core-modules/tool/tools/navigate-tool/__tests__/navigate-app-tool.spec.ts
@@ -415,16 +412,8 @@ chose pour `twenty-oxlint-rules`, exigé par `oxlint`.
 
 Quatre choses qu'un humain doit relire à l'œil après chaque montée :
 
-1. **Les substitutions `personIds` → `personIdsInScope`** — sur les deux services de timeline. Un
-   merge peut en perdre une seule, sans signal.
-2. **Les renommages dans `navigate-app-tool.ts`** — `selectColumns` → `baseSelectColumns`,
-   `records` → `allRecords`. Si les champs de portée quittent le `select`, `isScopeInScope` les lit
-   `undefined` et **laisse tout passer** : le filtre a l'air actif et ne filtre rien.
-3. **Les drapeaux de fonctionnalité amont qui changent la façon dont une donnée est sélectionnée.**
-   `IS_MESSAGE_CALENDAR_TARGET_READ_ENABLED` en est le premier exemple (§ chantier 4) : il ne
-   touche aucune ligne de notre code, ne produit aucun conflit, et déplace pourtant le critère de
-   sélection hors de notre périmètre. À chaque montée, lire les nouveaux drapeaux qui touchent une
-   lecture de données métier.
+1. to 3. **The three traps of chantier 4**, and how to check each: see
+   `docs/live/runbooks/twenty-fork-security-checks.md` in `snetor/client-matrix` (private).
 4. **La résurrection de `external-contributor-pr-auto-draft.yaml`.**
 
 ---
