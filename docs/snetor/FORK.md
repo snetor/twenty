@@ -189,10 +189,9 @@ revenir à des points d'application dispersés : chaque surface patchée sépar�
 qu'on peut oublier — c'est exactement ainsi que l'écriture est restée non cloisonnée jusqu'au
 2026-08-30.
 
-⚠️ **Écart connu, hérité de la 2.30 et à réévaluer** : notre filtre porte sur l'alias principal,
-alors que `applyRowLevelPermissionPredicates` itère désormais aussi sur `getJoinAliases()`. Le
-nouveau moteur expose `markRowLevelPermissionApplied(alias)` et `addJoinCondition(alias, sql)` :
-il y a là de quoi étendre le cloisonnement aux relations jointes, ce qui n'était pas faisable avant.
+⚠️ **Known gaps of the portfolio filter are not described in this public repository.** They
+live in `docs/live/runbooks/twenty-fork-security-checks.md` in `snetor/client-matrix`
+(private). Read it before any upgrade and before touching the filter.
 
 ⚠️ **Le `clone()` d'un builder conserve son contexte**, donc son hook — c'est ce qui fait que le
 groupBy est couvert sans patch. Il recopie aussi `aliasesWithRowLevelPermissionApplied`, alors que
@@ -283,27 +282,9 @@ via `CountryScopeService.keepPersonIdsInScope`.
 | `core-modules/calendar/timeline-calendar-event.module.ts` | idem | 🟢 stable |
 | `core-modules/tool/tool.module.ts` | idem | 🟠 placé au milieu d'un bloc trié — contrarie `oxfmt` |
 
-⚠️ **Le piège de `navigate-app-tool.ts`, à relire à chaque montée** : si les champs de portée ne
-sont pas ajoutés au `select`, `isScopeInScope` les lit `undefined` et **laisse tout passer**. Le
-filtre a l'air actif et ne filtre rien.
-
-⚠️ **Le piège des substitutions** : un merge peut très bien accepter le bloc d'en-tête et perdre
-une seule substitution en profondeur. Le filtre devient alors partiellement inopérant, **sans aucun
-signal**. Contrôle : après tout merge, `grep -n "personIds\b"` sur les deux services — aucune
-occurrence nue ne doit subsister après le calcul de `personIdsInScope`.
-
-🔴 **Le piège nouveau, apparu à la v2.39.0 — `IS_MESSAGE_CALENDAR_TARGET_READ_ENABLED`.**
-L'amont a ajouté un `targetFilter` qui sélectionne les threads et les événements **par
-l'enregistrement cible** (`messageThreadTarget` / `calendarEventTargets`) et non plus par les
-personnes. Notre périmètre, lui, ne porte que sur `personIds`.
-
-Tant que ce drapeau est éteint, `resolveTargetFilter` rend `undefined` et le cloisonnement reste
-complet. Son seul `true` du dépôt est dans le seeder de développement
-(`seed-feature-flags.util.ts`), donc il est absent d'un workspace réel.
-
-**L'allumer sans avoir étendu le cloisonnement à `targetFilter` ouvrirait l'onglet Emails et
-l'onglet Calendar d'un enregistrement hors portée.** Les deux services portent le rappel en
-commentaire, à l'endroit exact où il faudrait agir.
+⚠️ **These patches carry three upgrade traps**, each able to switch a surface's filtering off
+without a signal. Their description and the check for each are in
+`docs/live/runbooks/twenty-fork-security-checks.md` in `snetor/client-matrix` (private).
 
 ---
 
@@ -415,16 +396,8 @@ chose pour `twenty-oxlint-rules`, exigé par `oxlint`.
 
 Quatre choses qu'un humain doit relire à l'œil après chaque montée :
 
-1. **Les substitutions `personIds` → `personIdsInScope`** — sur les deux services de timeline. Un
-   merge peut en perdre une seule, sans signal.
-2. **Les renommages dans `navigate-app-tool.ts`** — `selectColumns` → `baseSelectColumns`,
-   `records` → `allRecords`. Si les champs de portée quittent le `select`, `isScopeInScope` les lit
-   `undefined` et **laisse tout passer** : le filtre a l'air actif et ne filtre rien.
-3. **Les drapeaux de fonctionnalité amont qui changent la façon dont une donnée est sélectionnée.**
-   `IS_MESSAGE_CALENDAR_TARGET_READ_ENABLED` en est le premier exemple (§ chantier 4) : il ne
-   touche aucune ligne de notre code, ne produit aucun conflit, et déplace pourtant le critère de
-   sélection hors de notre périmètre. À chaque montée, lire les nouveaux drapeaux qui touchent une
-   lecture de données métier.
+1. to 3. **The three traps of chantier 4**, and how to check each: see
+   `docs/live/runbooks/twenty-fork-security-checks.md` in `snetor/client-matrix` (private).
 4. **La résurrection de `external-contributor-pr-auto-draft.yaml`.**
 
 ---
