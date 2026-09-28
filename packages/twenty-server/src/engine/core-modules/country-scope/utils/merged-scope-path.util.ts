@@ -10,7 +10,7 @@ import { SCOPE_PATH_FIELD } from 'src/engine/twenty-orm/utils/resolve-country-sc
 // own perimeter. The native merge puts every non-system field of the merged record in one
 // SET, run with the user's permissions — so the lock refused it with
 // "no permission to write field scopePath on company", and a Manager could not merge two
-// duplicates (Carla RIBEIRO, 2026-09-28).
+// duplicates (reported 2026-09-28).
 //
 // **The fix.** Take `scopePath` out of the user's SET, then write the value the merge
 // computed — upstream's own rule, the priority record's value or else the first non-empty

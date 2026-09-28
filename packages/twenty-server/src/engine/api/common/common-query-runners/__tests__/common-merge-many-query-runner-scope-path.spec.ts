@@ -13,7 +13,7 @@ jest.mock(
 // `scopePath` — the field the portfolio filter reads to decide who sees what.
 // The native merge puts every non-system field in its SET, so a Manager hit
 // "no permission to write field scopePath on company" and could not merge two
-// duplicates (Carla RIBEIRO, 2026-09-28). The lock stays; the merge writes
+// duplicates (reported 2026-09-28). The lock stays; the merge writes
 // `scopePath` in system context instead, after the user's own update of the
 // same record succeeded.
 //
