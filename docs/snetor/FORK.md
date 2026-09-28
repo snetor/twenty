@@ -159,6 +159,7 @@ engine/core-modules/country-scope/country-scope.module.ts
 engine/core-modules/country-scope/services/country-scope.service.ts
 engine/core-modules/country-scope/listeners/scope-assignment.listener.ts
 engine/core-modules/country-scope/listeners/scope-path-on-create.listener.ts
+engine/core-modules/country-scope/utils/merged-scope-path.util.ts         scopePath du merge, en contexte système
 ```
 
 `resolve-country-scope.util.ts` n'a **aucune dépendance NestJS ni TypeORM**. C'est le fichier le
@@ -182,6 +183,19 @@ puis **`denyAll()` en default-deny**.
 
 Plus la méthode privée `applyCountryPermissionFilterPredicate()` qui les sert, ajoutée au même
 fichier.
+
+**A third upstream patch, added 2026-09-28 — the native merge**
+(`api/common/common-query-runners/common-merge-many-query-runner.service.ts`). Sales and Manager
+carry `canUpdateFieldValue=false` on `scopePath`, and the native merge puts every non-system field
+in one SET run with the user's permissions: a Manager got
+`no permission to write field scopePath on company` and could not merge duplicates. The lock
+stays. Two calls, both marked `// Snetor`: `splitMergedScopePath` in the public `run()` takes
+`scopePath` out of the user's SET, and `writeMergedScopePathAsSystem` at the end of the
+transaction callback of the private `executeMergeWithinTransaction()` writes the merge's own value
+with `shouldBypassPermissionChecks`, after the user's update of the same record succeeded. The
+portfolio filter still applies to that write (the transaction repository keeps the user's
+`authContext`). 🟠 Half of it sits in a private method body: its sentinel is
+`common-merge-many-query-runner-scope-path.spec.ts`, which drives the real `run()`.
 
 **Avant la v2.39.0 il en fallait cinq**, dont trois au milieu de corps de méthodes privées que
 l'amont a supprimées depuis. C'est la démonstration de la règle d'or, et la raison de ne jamais
@@ -318,7 +332,7 @@ modifie régulièrement l'en-tête du README (badges) : conflit récurrent, mais
 
 ---
 
-## 4. Les cinq specs-sentinelles
+## 4. Les six specs-sentinelles
 
 Ce sont des tests écrits pour **échouer si un merge fait sauter un patch**. Ils ne testent pas une
 fonctionnalité : ils testent que l'accroche existe encore. **Ils se lancent avant tout le reste
@@ -331,6 +345,7 @@ après un merge.**
 | `auth/services/create-message-channel.service.spec.ts` | que le défaut de visibilité reste `METADATA` |
 | `auth/services/create-calendar-channel.service.spec.ts` | idem pour l'agenda |
 | `auth/utils/__tests__/get-microsoft-apis-oauth-scopes.spec.ts` | que les scopes Graph demandés restent ceux consentis dans Entra |
+| `api/common/common-query-runners/__tests__/common-merge-many-query-runner-scope-path.spec.ts` | that the native merge never writes `scopePath` with the user's permissions, and writes it in system context only after the user's update succeeded |
 
 Elles étaient cinq avant la v2.39.0 : celles du select builder et des trois builders de mutation
 ont fusionné, parce que les points d'application ont fusionné.
@@ -370,6 +385,7 @@ src/engine/twenty-orm/repository/__tests__/workspace-repository-country-filter.s
 src/engine/core-modules/country-scope/services/__tests__/country-scope.service.spec.ts
 src/engine/core-modules/country-scope/listeners/__tests__/scope-path-on-create.listener.spec.ts
 src/engine/core-modules/country-scope/listeners/__tests__/scope-assignment.listener.spec.ts
+src/engine/api/common/common-query-runners/__tests__/common-merge-many-query-runner-scope-path.spec.ts  ← sentinel (2026-09-28)
 src/engine/core-modules/country-code-derivation/utils/__tests__/derive-country-code.util.spec.ts
 src/engine/core-modules/country-code-derivation/services/__tests__/country-code-from-relation.service.spec.ts
 src/engine/core-modules/tool/tools/navigate-tool/__tests__/navigate-app-tool.spec.ts
