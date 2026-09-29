@@ -162,6 +162,34 @@ export class WorkspaceRepository<TEntity extends ObjectLiteral = ObjectRecord> {
     );
   }
 
+  // Snetor — relire ce que l'appelant VIENT d'insérer, sans le cloisonnement par portefeuille.
+  //
+  // 🔴 Le défaut (mesuré le 2026-09-24, sessions utilisateur `Sales` et `Manager`) : une
+  // création relit sa ligne pour la rendre, à travers le filtre. À cet
+  // instant `scopePath` est vide — `ScopePathOnCreateListener` est asynchrone et ne passe
+  // qu'après — donc la relecture rend 0 ligne et le client reçoit
+  // « Cannot convert undefined or null to object » alors que la ligne EST écrite. Tout
+  // membre cloisonné en était privé de créer une note, une tâche ou une visite.
+  //
+  // Lever le filtre ici ne découvre rien : les ids viennent de l'`INSERT` de la requête
+  // elle-même, pas de l'utilisateur, et l'auteur relit ce qu'il vient d'envoyer. Les
+  // permissions d'objet et de champ restent appliquées. ⚠️ Réservé aux INSERT : un upsert
+  // peut tomber sur une ligne existante, qu'il ne doit pas relire hors de son périmètre.
+  createQueryBuilderForOwnInserts(alias?: string): WorkspaceSelectQueryBuilder {
+    return new WorkspaceSelectQueryBuilder(
+      alias ?? this.options.tableShape.nameSingular,
+      {
+        tableShape: this.options.tableShape,
+        executor: this.options.executor,
+        objectRecordsPermissions: this.options.objectRecordsPermissions,
+        tableShapeByObjectMetadataId: this.options.tableShapeByObjectMetadataId,
+        onBeforeExecute: (queryBuilder) =>
+          this.onBeforeExecuteOwnInserts(queryBuilder),
+        formatResult: (records) => this.formatResult(records),
+      },
+    );
+  }
+
   private createPermissionBypassingQueryBuilder(): WorkspaceSelectQueryBuilder {
     return this.buildBypassingEventSelectQueryBuilder(
       this.options.tableShape.nameSingular,
@@ -1477,6 +1505,14 @@ export class WorkspaceRepository<TEntity extends ObjectLiteral = ObjectRecord> {
     // appel ici couvre les `find`, `getCount()`, le groupBy du Kanban et les relations
     // imbriquées. Avant la v2.39.0 il fallait patcher chacun de ces chemins séparément.
     this.applyCountryPermissionFilterPredicate(queryBuilder);
+    this.validateQueryIsPermitted(queryBuilder);
+  }
+
+  // `onBeforeExecute` moins le cloisonnement — cf. `createQueryBuilderForOwnInserts`.
+  private onBeforeExecuteOwnInserts(
+    queryBuilder: WorkspaceSelectQueryBuilder,
+  ): void {
+    this.applyRowLevelPermissionPredicates(queryBuilder);
     this.validateQueryIsPermitted(queryBuilder);
   }
 

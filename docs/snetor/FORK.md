@@ -197,6 +197,17 @@ portfolio filter still applies to that write (the transaction repository keeps t
 `authContext`). 🟠 Half of it sits in a private method body: its sentinel is
 `common-merge-many-query-runner-scope-path.spec.ts`, which drives the real `run()`.
 
+**A fourth upstream patch, added 2026-09-24 (PR #28) — reading back a creation**
+(`api/common/common-query-runners/common-create-many-query-runner/common-create-many-query-runner.service.ts`).
+A creation reads its rows back through the portfolio filter before the asynchronous
+`ScopePathOnCreateListener` has set `scopePath`, so every scoped account got
+`Cannot convert undefined or null to object` although the row was written. Two pieces:
+`WorkspaceRepository.createQueryBuilderForOwnInserts()` — a new public method, the read hook
+minus the portfolio filter — used by `fetchUpsertedRecords` for **inserts only** (an upsert can
+land on an existing out-of-scope row); and `assertNoActivityOnSalespersonFromUser` at the top of
+`run()`, which refuses a user's note or task on a `salesperson` record. 🟠 Both calls sit in method
+bodies: the sentinel is `snetor-create-readback.spec.ts`.
+
 **Avant la v2.39.0 il en fallait cinq**, dont trois au milieu de corps de méthodes privées que
 l'amont a supprimées depuis. C'est la démonstration de la règle d'or, et la raison de ne jamais
 revenir à des points d'application dispersés : chaque surface patchée séparément est une surface
@@ -332,7 +343,7 @@ modifie régulièrement l'en-tête du README (badges) : conflit récurrent, mais
 
 ---
 
-## 4. Les six specs-sentinelles
+## 4. Les sept specs-sentinelles
 
 Ce sont des tests écrits pour **échouer si un merge fait sauter un patch**. Ils ne testent pas une
 fonctionnalité : ils testent que l'accroche existe encore. **Ils se lancent avant tout le reste
@@ -345,6 +356,7 @@ après un merge.**
 | `auth/services/create-message-channel.service.spec.ts` | que le défaut de visibilité reste `METADATA` |
 | `auth/services/create-calendar-channel.service.spec.ts` | idem pour l'agenda |
 | `auth/utils/__tests__/get-microsoft-apis-oauth-scopes.spec.ts` | que les scopes Graph demandés restent ceux consentis dans Entra |
+| `api/common/common-query-runners/common-create-many-query-runner/__tests__/snetor-create-readback.spec.ts` | that a creation reads its own inserts back outside the portfolio filter, and an upsert does not |
 | `api/common/common-query-runners/__tests__/common-merge-many-query-runner-scope-path.spec.ts` | that the native merge never writes `scopePath` with the user's permissions, and writes it in system context only after the user's update succeeded |
 
 Elles étaient cinq avant la v2.39.0 : celles du select builder et des trois builders de mutation
@@ -386,6 +398,7 @@ src/engine/core-modules/country-scope/services/__tests__/country-scope.service.s
 src/engine/core-modules/country-scope/listeners/__tests__/scope-path-on-create.listener.spec.ts
 src/engine/core-modules/country-scope/listeners/__tests__/scope-assignment.listener.spec.ts
 src/engine/api/common/common-query-runners/__tests__/common-merge-many-query-runner-scope-path.spec.ts  ← sentinel (2026-09-28)
+src/engine/api/common/common-query-runners/common-create-many-query-runner/__tests__/snetor-create-readback.spec.ts  ← sentinel (2026-09-24)
 src/engine/core-modules/country-code-derivation/utils/__tests__/derive-country-code.util.spec.ts
 src/engine/core-modules/country-code-derivation/services/__tests__/country-code-from-relation.service.spec.ts
 src/engine/core-modules/tool/tools/navigate-tool/__tests__/navigate-app-tool.spec.ts
