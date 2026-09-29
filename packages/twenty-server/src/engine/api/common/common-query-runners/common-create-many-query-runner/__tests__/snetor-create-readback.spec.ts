@@ -47,7 +47,10 @@ describe('Création — relecture des lignes créées', () => {
 
     expect(repository.createQueryBuilderForOwnInserts).toHaveBeenCalledTimes(1);
     expect(repository.createQueryBuilder).not.toHaveBeenCalled();
-    expect(records.map((record: { id: string }) => record.id)).toEqual(['a', 'b']);
+    expect(records.map((record: { id: string }) => record.id)).toEqual([
+      'a',
+      'b',
+    ]);
   });
 
   it('un UPSERT reste filtré : il peut tomber sur une ligne existante hors périmètre', async () => {

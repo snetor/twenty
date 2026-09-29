@@ -164,8 +164,8 @@ export class WorkspaceRepository<TEntity extends ObjectLiteral = ObjectRecord> {
 
   // Snetor — relire ce que l'appelant VIENT d'insérer, sans le cloisonnement par portefeuille.
   //
-  // 🔴 Le défaut (mesuré le 2026-09-24, session utilisateur `Sales` et fiche de Carla
-  // RIBEIRO) : une création relit sa ligne pour la rendre, à travers le filtre. À cet
+  // 🔴 Le défaut (mesuré le 2026-09-24, sessions utilisateur `Sales` et `Manager`) : une
+  // création relit sa ligne pour la rendre, à travers le filtre. À cet
   // instant `scopePath` est vide — `ScopePathOnCreateListener` est asynchrone et ne passe
   // qu'après — donc la relecture rend 0 ligne et le client reçoit
   // « Cannot convert undefined or null to object » alors que la ligne EST écrite. Tout
