@@ -1,17 +1,20 @@
 name: "Snetor: build & deploy to ACR"
 
-# The Snetor CI/CD standard (azure-landing-zone docs/dated/decisions/cicd-standard.md), since
-# 2026-10-02. The image is built by the registry itself (`az acr build`, no Docker: GitHub-hosted
-# runners are blocked for the org since 2026-09-23, and the self-hosted runner has no daemon), with
-# this repo's own identity `id-ci-twenty-dev`, federated on the `twenty-deploy` environment (whose
-# branch policy allows `v*` tags, `snetor/main`, `snetor/prod`). The deploy is an issue
-# `deploy: twenty:<tag>` on azure-landing-zone, opened by the `snetor-deploy` App; the landing zone
-# patches `twenty-image.auto.tfvars`, applies and runs the db-init Job. This repo no longer holds
-# the shared Contributor SP nor `LANDING_ZONE_PAT`.
+# The Snetor CI/CD standard (azure-landing-zone docs/dated/decisions/cicd-standard.md), adapted to
+# a PUBLIC repo (2026-10-02). This fork is public, so it cannot call the landing zone's private
+# reusable workflow `app-image.yml` (GitHub refuses the whole file), and it must never run on the
+# landing zone's self-hosted runner (a pull request from anyone would execute code inside the
+# VNet). It keeps GitHub-hosted runners, free for public repos, and what the standard secures:
+#   - its own identity `id-ci-twenty-dev` (`vars.AZURE_CLIENT_ID`), federated on the
+#     `twenty-deploy` environment, `AcrPush` on `acrtwentydevf6fc` only: never the shared SP;
+#   - the deploy is an issue `deploy: twenty:<tag>` on azure-landing-zone, opened by the
+#     `snetor-deploy` App (`Issues: write` there only): never `LANDING_ZONE_PAT`. The landing zone
+#     patches `twenty-image.auto.tfvars`, applies and runs the db-init Job.
+# The announce step mirrors app-image.yml's; change both together.
 #
-# Release discipline unchanged: tag `vX.Y.Z-snetor.N` on the release commit, APP_VERSION from the
-# tag (Twenty refuses to boot on a non-SemVer one). A manual dispatch builds `dev-<sha>` or the
-# given tag, with the package.json version.
+# Release discipline unchanged: tag `vX.Y.Z-snetor.N`, APP_VERSION from the tag (Twenty refuses to
+# boot on a non-SemVer one). The environment's branch policy allows `v*` tags, `snetor/main` and
+# `snetor/prod`.
 
 on:
   workflow_dispatch:
@@ -23,21 +26,24 @@ on:
     tags:
       - "v*"
 
+permissions:
+  id-token: write # OIDC login to Azure
+  contents: read
+
 concurrency:
   group: snetor-deploy
   cancel-in-progress: false
 
 jobs:
-  meta:
-    runs-on: [self-hosted, linux, snetor-aca]
-    timeout-minutes: 5
-    permissions:
-      contents: read
-    outputs:
-      tag: ${{ steps.meta.outputs.tag }}
-      app_version: ${{ steps.meta.outputs.app_version }}
+  build-push-deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    environment: twenty-deploy
+    env:
+      ACR_NAME: acrtwentydevf6fc
     steps:
       - uses: actions/checkout@v4
+
       - name: Compute image tag and APP_VERSION
         id: meta
         env:
@@ -54,22 +60,59 @@ jobs:
           echo "app_version=$APP_VERSION" >> "$GITHUB_OUTPUT"
           echo "Publishing image tag: $TAG  (APP_VERSION=$APP_VERSION)"
 
-  image:
-    needs: meta
-    uses: snetor/azure-landing-zone/.github/workflows/app-image.yml@main
-    permissions:
-      id-token: write
-      contents: read
-    with:
-      app: twenty
-      registry: acrtwentydevf6fc
-      dockerfile: packages/twenty-docker/twenty/Dockerfile
-      target: twenty
-      build-args: APP_VERSION=${{ needs.meta.outputs.app_version }}
-      tag: ${{ needs.meta.outputs.tag }}
-      environment: twenty-deploy
-      # Measured on 2026-10-02: ~26 minutes uncached on the registry's default agent.
-      timeout-minutes: 75
-      client-id: ${{ vars.AZURE_CLIENT_ID }}
-    secrets:
-      deploy-app-key: ${{ secrets.SNETOR_DEPLOY_APP_KEY }}
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: 001f9f70-baf4-4a4e-9a03-03c7289f290c
+          subscription-id: d8e186ee-ad84-4533-9393-090c937a3172
+
+      - name: ACR login
+        run: az acr login --name "$ACR_NAME"
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build & push image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: packages/twenty-docker/twenty/Dockerfile
+          target: twenty
+          push: true
+          tags: ${{ env.ACR_NAME }}.azurecr.io/twenty:${{ steps.meta.outputs.tag }}
+          build-args: |
+            APP_VERSION=${{ steps.meta.outputs.app_version }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Token of the snetor-deploy App
+        id: app-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: 5151099
+          private-key: ${{ secrets.SNETOR_DEPLOY_APP_KEY }}
+          owner: snetor
+          repositories: azure-landing-zone
+
+      - name: Announce, then wait for the landing zone's answer
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          TITLE: "deploy: twenty:${{ steps.meta.outputs.tag }}"
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          URL=$(gh issue create -R snetor/azure-landing-zone --title "$TITLE" \
+            --body "Built by $RUN_URL (commit \`${GITHUB_SHA}\`).")
+          NUM=${URL##*/}
+          echo "Announced: $URL"
+          # apps-image-announced answers in a comment and closes the issue: accepted (the apply is
+          # dispatched, with the db-init Job) or refused. Its runs queue behind any Terraform run.
+          for _ in $(seq 1 60); do
+            if [ "$(gh issue view "$NUM" -R snetor/azure-landing-zone --json state --jq .state)" = CLOSED ]; then
+              LAST=$(gh issue view "$NUM" -R snetor/azure-landing-zone --json comments --jq '.comments[-1].body')
+              echo "$LAST"
+              case "$LAST" in ⛔*) exit 1 ;; *) exit 0 ;; esac
+            fi
+            sleep 20
+          done
+          echo "::error::No answer on $URL after 20 minutes."
+          exit 1
