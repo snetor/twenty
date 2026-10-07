@@ -1,7 +1,10 @@
 import { AiChatApiKeyNotConfiguredMessage } from '@/ai/components/AiChatApiKeyNotConfiguredMessage';
 import { AiChatErrorMessage } from '@/ai/components/AiChatErrorMessage';
+import { AiChatQuotaLimitExhaustedMessage } from '@/ai/components/AiChatQuotaLimitExhaustedMessage';
 import { type AiChatError } from '@/ai/types/AiChatError';
 import { AiChatErrorCode } from '@/ai/utils/aiChatErrorCode';
+import { getAiChatQuotaExhaustedKind } from '@/ai/utils/getAiChatQuotaExhaustedKind';
+import { isAiChatCreditsExhaustedError } from '@/ai/utils/isAiChatCreditsExhaustedError';
 import { isGraphqlErrorOfType } from '~/utils/is-graphql-error-of-type.util';
 
 type AiChatErrorRendererProps = {
@@ -13,9 +16,8 @@ export const AiChatErrorRenderer = ({
   error,
   onRetry,
 }: AiChatErrorRendererProps) => {
-  if (isGraphqlErrorOfType(error, AiChatErrorCode.BILLING_CREDITS_EXHAUSTED)) {
-    // Handled by AIChatNoMoreBillingCreditsBanner, which useHasReachedAiChatCreditsCap
-    // keeps mounted for exactly this error so nothing is swallowed here
+  // Rendered by AIChatNoMoreBillingCreditsBanner, which stays mounted for this error.
+  if (isAiChatCreditsExhaustedError(error)) {
     return null;
   }
 
@@ -29,6 +31,11 @@ export const AiChatErrorRenderer = ({
 
   if (isGraphqlErrorOfType(error, AiChatErrorCode.CONNECTION_LOST)) {
     return <AiChatErrorMessage error={error} />;
+  }
+
+  // The quota is checked before persistence, so a retry repeats the same refusal
+  if (getAiChatQuotaExhaustedKind(error) === 'limit') {
+    return <AiChatQuotaLimitExhaustedMessage error={error} />;
   }
 
   return <AiChatErrorMessage error={error} onRetry={onRetry} />;

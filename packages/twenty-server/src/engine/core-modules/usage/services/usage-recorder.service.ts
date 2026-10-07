@@ -30,7 +30,7 @@ export class UsageRecorderService implements OnModuleInit, OnModuleDestroy {
   private readonly buffer = new UsageRollupBuffer(MAX_BUFFERED_ROLLUPS);
   private flushTimer: NodeJS.Timeout | null = null;
   private pendingFlush: Promise<void> = Promise.resolve();
-  private creditAllowanceProvider: CreditAllowanceProvider | null = null;
+  private creditAllowanceProvider: CreditAllowanceProvider;
 
   constructor(
     private readonly workspaceEventEmitter: WorkspaceEventEmitter,
@@ -153,10 +153,7 @@ export class UsageRecorderService implements OnModuleInit, OnModuleDestroy {
     );
   }
 
-  // Every recorded row funnels through here, so the credit invariant holds for
-  // any caller rather than each one clamping its own arithmetic. The event is
-  // still recorded, at zero credits, so the activity stays visible in the
-  // breakdown.
+  // Every row funnels through here so the credit invariant holds for all callers; the event still records at zero credits.
   private withDefaults(input: RecordUsageInput): UsageEvent {
     const creditsUsedMicro = input.creditsUsedMicro ?? 0;
 
@@ -175,7 +172,7 @@ export class UsageRecorderService implements OnModuleInit, OnModuleDestroy {
     workspaceId: string,
   ): Promise<Date | undefined> {
     const period =
-      await this.creditAllowanceProvider?.getCreditAllowancePeriod(workspaceId);
+      await this.creditAllowanceProvider.getCreditAllowancePeriod(workspaceId);
 
     return period?.periodStart;
   }

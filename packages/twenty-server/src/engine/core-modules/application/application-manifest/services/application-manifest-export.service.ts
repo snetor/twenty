@@ -10,6 +10,13 @@ import { assertFlatApplicationIsExportable } from 'src/engine/core-modules/appli
 import { classifyApplicationFlatEntities } from 'src/engine/core-modules/application/application-manifest/utils/classify-application-flat-entities.util';
 import { getApplicationSubAllFlatEntityMaps } from 'src/engine/core-modules/application/application-manifest/utils/get-application-sub-all-flat-entity-maps.util';
 import { reconstructDataModelManifest } from 'src/engine/core-modules/application/application-manifest/utils/reconstruct-data-model-manifest.util';
+import { getResolvableReferenceUniversalIdentifiers } from 'src/engine/core-modules/application/application-manifest/utils/get-resolvable-reference-universal-identifiers.util';
+import { reconstructNavigationMenuItemsManifest } from 'src/engine/core-modules/application/application-manifest/utils/reconstruct-navigation-menu-items-manifest.util';
+import { reconstructPageLayoutsManifest } from 'src/engine/core-modules/application/application-manifest/utils/reconstruct-page-layouts-manifest.util';
+import { reconstructRolesManifest } from 'src/engine/core-modules/application/application-manifest/utils/reconstruct-roles-manifest.util';
+import { reconstructViewsManifest } from 'src/engine/core-modules/application/application-manifest/utils/reconstruct-views-manifest.util';
+import { ApplicationRegistrationLookupService } from 'src/engine/core-modules/application/application-registration/application-registration-lookup/application-registration-lookup.service';
+import { ApplicationTranslationCacheService } from 'src/engine/core-modules/application/application-translation/application-translation-cache.service';
 import {
   ApplicationException,
   ApplicationExceptionCode,
@@ -33,7 +40,11 @@ const findUniversalIdentifierById = ({
 
 @Injectable()
 export class ApplicationManifestExportService {
-  constructor(private readonly workspaceCacheService: WorkspaceCacheService) {}
+  constructor(
+    private readonly workspaceCacheService: WorkspaceCacheService,
+    private readonly applicationTranslationCacheService: ApplicationTranslationCacheService,
+    private readonly applicationRegistrationLookupService: ApplicationRegistrationLookupService,
+  ) {}
 
   async exportApplication({
     workspaceId,
@@ -62,14 +73,81 @@ export class ApplicationManifestExportService {
 
     assertFlatApplicationIsExportable(flatApplication);
 
+    await this.applicationRegistrationLookupService.findOneOwnedByWorkspaceOrThrow(
+      {
+        universalIdentifier: applicationUniversalIdentifier,
+        workspaceId,
+      },
+    );
+
     const applicationAllFlatEntityMaps = getApplicationSubAllFlatEntityMaps({
       applicationIds: [flatApplication.id],
       fromAllFlatEntityMaps: allFlatEntityMaps,
     });
 
-    const { objects, fields, indexes, coverage } = reconstructDataModelManifest(
-      { applicationAllFlatEntityMaps },
+    const {
+      objects,
+      fields,
+      indexes,
+      coverage: dataModelCoverage,
+    } = reconstructDataModelManifest({ applicationAllFlatEntityMaps });
+    const exportedObjectUniversalIdentifiers = new Set(
+      objects.map(({ universalIdentifier }) => universalIdentifier),
     );
+    const {
+      permissionFlags,
+      roles,
+      coverage: rolesCoverage,
+    } = reconstructRolesManifest({
+      applicationAllFlatEntityMaps,
+      allFlatEntityMaps,
+      exportedObjectUniversalIdentifiers,
+      resolvableFieldUniversalIdentifiers:
+        getResolvableReferenceUniversalIdentifiers({
+          coverage: dataModelCoverage,
+          metadataName: 'fieldMetadata',
+        }),
+    });
+    const {
+      views,
+      viewFields,
+      coverage: viewsCoverage,
+    } = reconstructViewsManifest({
+      applicationAllFlatEntityMaps,
+      allFlatEntityMaps,
+      exportedObjectUniversalIdentifiers,
+    });
+    const {
+      pageLayouts,
+      pageLayoutTabs,
+      pageLayoutWidgets,
+      coverage: pageLayoutsCoverage,
+    } = reconstructPageLayoutsManifest({
+      applicationAllFlatEntityMaps,
+      allFlatEntityMaps,
+      exportedObjectUniversalIdentifiers,
+    });
+    const { navigationMenuItems, coverage: navigationMenuItemsCoverage } =
+      reconstructNavigationMenuItemsManifest({
+        applicationAllFlatEntityMaps,
+        allFlatEntityMaps,
+        exportedObjectUniversalIdentifiers,
+        resolvableViewUniversalIdentifiers:
+          getResolvableReferenceUniversalIdentifiers({
+            coverage: viewsCoverage,
+            metadataName: 'view',
+          }),
+        resolvablePageLayoutUniversalIdentifiers:
+          getResolvableReferenceUniversalIdentifiers({
+            coverage: pageLayoutsCoverage,
+            metadataName: 'pageLayout',
+          }),
+      });
+    const translations = isDefined(flatApplication.applicationRegistrationId)
+      ? await this.applicationTranslationCacheService.getCatalogsByLocale(
+          flatApplication.applicationRegistrationId,
+        )
+      : undefined;
 
     const manifest: Manifest = {
       application: fromFlatApplicationToApplicationManifest({
@@ -85,18 +163,21 @@ export class ApplicationManifestExportService {
       indexes,
       logicFunctions: [],
       frontComponents: [],
-      permissionFlags: [],
-      roles: [],
+      permissionFlags,
+      roles,
       skills: [],
       agents: [],
       publicAssets: [],
-      views: [],
-      viewFields: [],
-      navigationMenuItems: [],
-      pageLayouts: [],
-      pageLayoutTabs: [],
+      views,
+      viewFields,
+      navigationMenuItems,
+      pageLayouts,
+      pageLayoutWidgets,
+      pageLayoutTabs,
       commandMenuItems: [],
       timelineActivityTypes: [],
+      settingsMenuItems: [],
+      ...(isDefined(translations) ? { translations } : {}),
     };
 
     return {
@@ -110,7 +191,13 @@ export class ApplicationManifestExportService {
         flatApplication,
         applicationAllFlatEntityMaps,
         allFlatEntityMaps,
-        reconstructedCoverage: coverage,
+        reconstructedCoverage: [
+          ...dataModelCoverage,
+          ...rolesCoverage,
+          ...viewsCoverage,
+          ...pageLayoutsCoverage,
+          ...navigationMenuItemsCoverage,
+        ],
       }),
       files: [],
     };

@@ -7,27 +7,24 @@ import {
 
 import { type MessageDescriptor } from '@/sdk/front-component/translations/message';
 
-// Which manifest collection carries which metadata entity. The properties to
-// extract are not listed here on purpose: they come from the shared registry,
-// so the SDK cannot drift from what the server actually resolves at runtime.
-// Metadata names with no manifest collection (viewFieldGroup) are simply absent.
+// Manifest collection per metadata entity; the properties come from the shared registry so the SDK cannot drift from the server
 const MANIFEST_KEY_BY_METADATA_NAME = {
   objectMetadata: 'objects',
   fieldMetadata: 'fields',
   view: 'views',
   pageLayout: 'pageLayouts',
   pageLayoutTab: 'pageLayoutTabs',
+  pageLayoutWidget: 'pageLayoutWidgets',
   commandMenuItem: 'commandMenuItems',
   navigationMenuItem: 'navigationMenuItems',
   timelineActivityType: 'timelineActivityTypes',
+  settingsMenuItem: 'settingsMenuItems',
 } as const satisfies Partial<Record<TranslatableMetadataName, keyof Manifest>>;
 
 export const collectTranslatableStrings = (
   manifest: Manifest,
 ): MessageDescriptor[] => {
-  // The same string can label several roles ('Invoice' as an object name and a
-  // field label), and each role is its own catalog entry, so descriptors are
-  // deduplicated per (context, message) rather than per message.
+  // One string can label several roles, each its own catalog entry, so dedupe per (context, message)
   const descriptorByKey = new Map<string, MessageDescriptor>();
 
   const addEntityStrings = (
@@ -70,8 +67,13 @@ export const collectTranslatableStrings = (
     }
   }
 
-  // Tab and widget titles live nested under pageLayouts[].tabs[], not in the
-  // flat pageLayoutTabs array, so walk the tree to reach them.
+  for (const objectManifest of manifest.objects ?? []) {
+    for (const field of objectManifest.fields ?? []) {
+      addEntityStrings(field, 'fieldMetadata');
+    }
+  }
+
+  // Tab and widget titles are nested under pageLayouts[].tabs[], not in the flat pageLayoutTabs array
   for (const pageLayout of manifest.pageLayouts ?? []) {
     for (const tab of pageLayout.tabs ?? []) {
       addEntityStrings(tab, 'pageLayoutTab');
@@ -79,6 +81,12 @@ export const collectTranslatableStrings = (
       for (const widget of tab.widgets ?? []) {
         addEntityStrings(widget, 'pageLayoutWidget');
       }
+    }
+  }
+
+  for (const pageLayoutTab of manifest.pageLayoutTabs ?? []) {
+    for (const widget of pageLayoutTab.widgets ?? []) {
+      addEntityStrings(widget, 'pageLayoutWidget');
     }
   }
 

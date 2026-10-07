@@ -7,12 +7,16 @@ import {
   waitForWorkflowCompletion,
   type WorkflowRunStatusType,
 } from 'test/integration/graphql/suites/workflow/utils/workflow-run-test.util';
-import { makeGraphqlAPIRequest } from 'test/integration/graphql/utils/make-graphql-api-request.util';
+import { makeGraphqlApiRequest } from 'test/integration/graphql/utils/make-graphql-api-request.util';
 
 type WorkflowActionStepType =
   | 'SEND_EMAIL'
   | 'DRAFT_EMAIL'
-  | 'CREATE_CALENDAR_EVENT';
+  | 'SEND_CHAT_MESSAGE'
+  | 'CREATE_CALENDAR_EVENT'
+  | 'CREATE_RECORD'
+  | 'UPDATE_RECORD'
+  | 'CODE';
 
 type WorkflowVersionStep = {
   id: string;
@@ -28,7 +32,7 @@ export type WorkflowActionStepRun = {
 };
 
 const createWorkflow = async (name: string): Promise<string> => {
-  const response = await makeGraphqlAPIRequest({
+  const response = await makeGraphqlApiRequest({
     query: gql`
       mutation CreateWorkflow($name: String!) {
         createWorkflow(data: { name: $name }) {
@@ -45,7 +49,7 @@ const createWorkflow = async (name: string): Promise<string> => {
 };
 
 const destroyWorkflow = async (workflowId: string): Promise<void> => {
-  await makeGraphqlAPIRequest({
+  await makeGraphqlApiRequest({
     query: gql`
       mutation DestroyWorkflow($id: ID!) {
         destroyWorkflow(id: $id) {
@@ -60,7 +64,7 @@ const destroyWorkflow = async (workflowId: string): Promise<void> => {
 const findDraftWorkflowVersionId = async (
   workflowId: string,
 ): Promise<string> => {
-  const response = await makeGraphqlAPIRequest({
+  const response = await makeGraphqlApiRequest({
     query: gql`
       query FindDraftWorkflowVersion($workflowId: UUID!) {
         workflowVersions(
@@ -89,7 +93,7 @@ const createWorkflowVersionStep = async ({
   workflowVersionId: string;
   stepType: WorkflowActionStepType;
 }): Promise<void> => {
-  const response = await makeGraphqlAPIRequest({
+  const response = await makeGraphqlApiRequest({
     query: gql`
       mutation CreateWorkflowVersionStep(
         $input: CreateWorkflowVersionStepInput!
@@ -119,7 +123,7 @@ const findWorkflowVersionStep = async ({
   workflowVersionId: string;
   stepType: WorkflowActionStepType;
 }): Promise<WorkflowVersionStep> => {
-  const response = await makeGraphqlAPIRequest({
+  const response = await makeGraphqlApiRequest({
     query: gql`
       query FindWorkflowVersionSteps($workflowVersionId: UUID!) {
         workflowVersion(filter: { id: { eq: $workflowVersionId } }) {
@@ -151,7 +155,7 @@ const updateWorkflowVersionStepInput = async ({
   step: WorkflowVersionStep;
   input: Record<string, unknown>;
 }): Promise<void> => {
-  const response = await makeGraphqlAPIRequest({
+  const response = await makeGraphqlApiRequest({
     query: gql`
       mutation UpdateWorkflowVersionStep(
         $input: UpdateWorkflowVersionStepInput!
@@ -183,11 +187,15 @@ export const runWorkflowActionStep = async ({
   stepType,
   input,
   payload,
+  runToken,
+  beforeRun,
 }: {
   name: string;
   stepType: WorkflowActionStepType;
   input: Record<string, unknown>;
   payload?: object;
+  runToken?: string;
+  beforeRun?: () => Promise<unknown>;
 }): Promise<WorkflowActionStepRun> => {
   const workflowId = await createWorkflow(name);
 
@@ -213,7 +221,13 @@ export const runWorkflowActionStep = async ({
 
     await updateWorkflowVersionStepInput({ workflowVersionId, step, input });
 
-    workflowRunId = await runWorkflowVersion({ workflowVersionId, payload });
+    await beforeRun?.();
+
+    workflowRunId = await runWorkflowVersion({
+      workflowVersionId,
+      payload,
+      token: runToken,
+    });
 
     const workflowRun = await waitForWorkflowCompletion(workflowRunId);
     const stepInfo = workflowRun?.state?.stepInfos?.[step.id];

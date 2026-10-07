@@ -1,9 +1,9 @@
 import { styled } from '@linaria/react';
 import { t } from '@lingui/core/macro';
 import { useState, type Ref } from 'react';
-import { CircularProgressBar } from 'twenty-ui/feedback';
-import { Button } from 'twenty-ui/input';
-import { themeCssVariables } from 'twenty-ui/theme-constants';
+import { Loader } from 'twenty-ui/primitives/feedback';
+import { Button } from 'twenty-ui/primitives/input';
+import { themeCssVariables } from 'twenty-ui/theme';
 
 // Forces Safari to decode the first frame under preload="metadata".
 const FIRST_FRAME_SEEK_FRAGMENT = '#t=0.001';
@@ -134,12 +134,11 @@ export const CallRecordingVideoPlayer = ({
             {t`The recording could not be loaded.`}
           </StyledPlaybackErrorDescription>
           <Button
-            title={t`Retry`}
-            variant="secondary"
             disabled={isRetrying}
-            isLoading={isRetrying}
+            loading={isRetrying}
             onClick={handleRetry}
-          />
+            variant="outline"
+          >{t`Retry`}</Button>
         </StyledPlaybackErrorState>
       </StyledVideoViewport>
     );
@@ -166,7 +165,7 @@ export const CallRecordingVideoPlayer = ({
       <StyledBufferingOverlay
         isVisible={loadState === 'awaiting-first-frame' || isPlaybackStalled}
       >
-        <CircularProgressBar barWidth={3} size={24} />
+        <Loader />
       </StyledBufferingOverlay>
     </StyledVideoViewport>
   );

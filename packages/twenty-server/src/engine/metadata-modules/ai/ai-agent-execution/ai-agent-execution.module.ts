@@ -1,9 +1,11 @@
+import { AgentMessageResolver } from 'src/engine/metadata-modules/ai/ai-agent-execution/resolvers/agent-message.resolver';
 import { forwardRef, Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
-import { ApplicationModule } from 'src/engine/core-modules/application/application.module';
+import { ApplicationLookupModule } from 'src/engine/core-modules/application/application-lookup/application-lookup.module';
 import { BillingModule } from 'src/engine/core-modules/billing/billing.module';
 import { WorkspaceDomainsModule } from 'src/engine/core-modules/domain/workspace-domains/workspace-domains.module';
+import { FileEntity } from 'src/engine/core-modules/file/entities/file.entity';
 import { FileUrlModule } from 'src/engine/core-modules/file/file-url/file-url.module';
 import { MetricsModule } from 'src/engine/core-modules/metrics/metrics.module';
 import { ToolProviderModule } from 'src/engine/core-modules/tool-provider/tool-provider.module';
@@ -28,13 +30,14 @@ import { AgentRunResolver } from './resolvers/agent-run.resolver';
 import { AgentActorContextService } from './services/agent-actor-context.service';
 import { AgentAsyncExecutorService } from './services/agent-async-executor.service';
 import { AgentRunService } from './services/agent-run.service';
+import { RunAgentAttachmentService } from './services/run-agent-attachment.service';
 
 @Module({
   imports: [
     AiBillingModule,
     AiModelsModule,
     AiAgentModule,
-    ApplicationModule,
+    ApplicationLookupModule,
     BillingModule,
     FileUrlModule,
     WorkspaceDomainsModule,
@@ -49,6 +52,7 @@ import { AgentRunService } from './services/agent-run.service';
       AgentMessageEntity,
       AgentMessagePartEntity,
       AgentTurnEntity,
+      FileEntity,
       RoleTargetEntity,
       WorkspaceEntity,
     ]),
@@ -58,10 +62,13 @@ import { AgentRunService } from './services/agent-run.service';
     AgentActorContextService,
     AiGraphqlApiExceptionInterceptor,
     AgentMessagePartResolver,
+    AgentMessageResolver,
     AgentRunResolver,
     AgentRunService,
+    RunAgentAttachmentService,
     provideWorkspaceScopedRepository(RoleTargetEntity),
     provideWorkspaceScopedRepository(AgentEntity),
+    provideWorkspaceScopedRepository(FileEntity),
   ],
   exports: [
     AgentAsyncExecutorService,

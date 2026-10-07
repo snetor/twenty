@@ -9,8 +9,10 @@ import {
   MetadataReadability,
   MetadataWritability,
   ObjectOpenRecordIn,
+  ObjectSharingReach,
 } from 'twenty-shared/types';
 
+import { type AuthoredOverrides } from 'src/engine/metadata-modules/overrides/types/authored-overrides.type';
 import { type WorkspaceEntityDuplicateCriteria } from 'src/engine/api/graphql/workspace-query-builder/types/workspace-entity-duplicate-criteria.type';
 import { UUIDScalarType } from 'src/engine/api/graphql/workspace-schema-builder/graphql-types/scalars';
 import { type ObjectMetadataOverrides } from 'src/engine/metadata-modules/object-metadata/types/object-metadata-overrides.type';
@@ -18,6 +20,7 @@ import { type ObjectMetadataOverrides } from 'src/engine/metadata-modules/object
 registerEnumType(ObjectOpenRecordIn, { name: 'ObjectOpenRecordIn' });
 registerEnumType(MetadataReadability, { name: 'MetadataReadability' });
 registerEnumType(MetadataWritability, { name: 'MetadataWritability' });
+registerEnumType(ObjectSharingReach, { name: 'ObjectSharingReach' });
 
 @ObjectType('Object')
 export class ObjectMetadataDTO {
@@ -46,7 +49,7 @@ export class ObjectMetadataDTO {
   icon?: string;
 
   @HideField()
-  overrides?: ObjectMetadataOverrides | null;
+  overrides?: AuthoredOverrides<ObjectMetadataOverrides> | null;
 
   @Field({ nullable: true })
   shortcut?: string;
@@ -69,8 +72,7 @@ export class ObjectMetadataDTO {
   @Field()
   isUICreatable: boolean;
 
-  // Deprecated alias kept for one release: stays exposed (and filterable via
-  // ObjectFilter) so external API consumers are not broken.
+  // Deprecated alias kept for one release so external API consumers are not broken
   @Field({
     deprecationReason: 'Use isUIEditable',
   })
@@ -85,6 +87,11 @@ export class ObjectMetadataDTO {
   @Field(() => MetadataReadability)
   readability: MetadataReadability;
 
+  @Field(() => [UUIDScalarType], { nullable: true })
+  readabilityParentFieldUniversalIdentifiers: string[] | null;
+
+  @Field(() => ObjectSharingReach)
+  sharingReach: ObjectSharingReach;
   @Field(() => MetadataWritability)
   writability: MetadataWritability;
 

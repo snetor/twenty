@@ -9,6 +9,7 @@ import { objectMetadataItemsSelector } from '@/object-metadata/states/objectMeta
 import { type EnrichedObjectMetadataItem } from '@/object-metadata/types/EnrichedObjectMetadataItem';
 import { formatFieldMetadataItemAsColumnDefinition } from '@/object-metadata/utils/formatFieldMetadataItemAsColumnDefinition';
 import { RecordComponentInstanceContextsWrapper } from '@/object-record/components/RecordComponentInstanceContextsWrapper';
+import { RecordCreationFormProvider } from '@/object-record/record-form/components/RecordCreationFormProvider';
 import { useObjectPermissions } from '@/object-record/hooks/useObjectPermissions';
 import { currentRecordFieldsComponentState } from '@/object-record/record-field/states/currentRecordFieldsComponentState';
 import { visibleRecordFieldsComponentSelector } from '@/object-record/record-field/states/visibleRecordFieldsComponentSelector';
@@ -22,7 +23,7 @@ import {
 import { useSetRecordTableData } from '@/object-record/record-table/hooks/internal/useSetRecordTableData';
 import { RecordTableComponentInstanceContext } from '@/object-record/record-table/states/context/RecordTableComponentInstanceContext';
 import { getRecordIndexIdFromObjectNamePluralAndViewId } from '@/object-record/utils/getRecordIndexIdFromObjectNamePluralAndViewId';
-import { getObjectPermissionsFromMapByObjectMetadataId } from '@/settings/roles/role-permissions/objects-permissions/utils/getObjectPermissionsFromMapByObjectMetadataId';
+import { getObjectPermissionsForObject } from '@/object-metadata/utils/getObjectPermissionsForObject';
 import { useAtomComponentSelectorValue } from '@/ui/utilities/state/jotai/hooks/useAtomComponentSelectorValue';
 import { useAtomComponentStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomComponentStateValue';
 import { useAtomFamilySelectorValue } from '@/ui/utilities/state/jotai/hooks/useAtomFamilySelectorValue';
@@ -177,10 +178,10 @@ const InternalTableContextProviders = ({
           objectMetadataItems: objectMetadataItems,
           recordTableId: objectMetadataItem.namePlural,
           viewBarId: 'view-bar',
-          objectPermissions: getObjectPermissionsFromMapByObjectMetadataId({
+          objectPermissions: getObjectPermissionsForObject(
             objectPermissionsByObjectMetadataId,
-            objectMetadataId: objectMetadataItem.id,
-          }),
+            objectMetadataItem.id,
+          ),
           visibleRecordFields,
           onRecordIdentifierClick: () => {},
           triggerEvent,
@@ -242,10 +243,12 @@ export const RecordTableDecorator: Decorator = (Story, context) => {
             <InternalTableContextProviders
               objectMetadataItem={objectMetadataItem}
             >
-              <InternalTableStateLoaderEffect
-                objectMetadataItem={objectMetadataItem}
-              />
-              <Story />
+              <RecordCreationFormProvider>
+                <InternalTableStateLoaderEffect
+                  objectMetadataItem={objectMetadataItem}
+                />
+                <Story />
+              </RecordCreationFormProvider>
             </InternalTableContextProviders>
           </CommandMenuComponentInstanceContext.Provider>
         </RecordComponentInstanceContextsWrapper>

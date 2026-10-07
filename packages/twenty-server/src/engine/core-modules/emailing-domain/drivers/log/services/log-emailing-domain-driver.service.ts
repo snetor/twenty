@@ -10,6 +10,7 @@ import {
   EmailingDomainDriverExceptionCode,
 } from 'src/engine/core-modules/emailing-domain/drivers/exceptions/emailing-domain-driver.exception';
 import { UNSUBSCRIBE_HOSTNAME_PREFIX } from 'src/engine/core-modules/emailing-domain/constants/unsubscribe-hostname-prefix.constant';
+import { buildLogDriverUnsubscribeBaseUrl } from 'src/engine/core-modules/emailing-domain/drivers/log/utils/build-log-driver-unsubscribe-base-url.util';
 import {
   type EmailingDomainDriverInterface,
   type EmailingDomainResourceInput,
@@ -161,6 +162,7 @@ export class LogEmailingDomainDriver implements EmailingDomainDriverInterface {
 
     return {
       messageId,
+      headerMessageId: null,
       deliveredRecipients: {
         to: emailToSend.to,
         cc: emailToSend.cc ?? [],
@@ -205,7 +207,12 @@ export class LogEmailingDomainDriver implements EmailingDomainDriverInterface {
             }`,
         );
 
-        return { recipientIndex: index, messageId, errorMessage: null };
+        return {
+          recipientIndex: index,
+          messageId,
+          headerMessageId: null,
+          errorMessage: null,
+        };
       }),
     };
   }
@@ -221,12 +228,12 @@ export class LogEmailingDomainDriver implements EmailingDomainDriverInterface {
       return null;
     }
 
-    const baseUrl = new URL(this.twentyConfigService.get('SERVER_URL'));
-
-    baseUrl.hostname = this.twentyConfigService.get('IS_MULTIWORKSPACE_ENABLED')
-      ? `${UNSUBSCRIBE_HOSTNAME_PREFIX}.${workspace.subdomain}.${baseUrl.hostname}`
-      : `${UNSUBSCRIBE_HOSTNAME_PREFIX}.${baseUrl.hostname}`;
-
-    return baseUrl.origin;
+    return buildLogDriverUnsubscribeBaseUrl({
+      serverUrl: this.twentyConfigService.get('SERVER_URL'),
+      isMultiWorkspaceEnabled: this.twentyConfigService.get(
+        'IS_MULTIWORKSPACE_ENABLED',
+      ),
+      subdomain: workspace.subdomain,
+    });
   }
 }

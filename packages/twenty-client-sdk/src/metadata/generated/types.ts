@@ -11,97 +11,104 @@ export default {
         17,
         22,
         24,
-        25,
         26,
+        27,
         28,
         29,
-        36,
-        37,
-        38,
+        31,
+        32,
         39,
+        40,
+        41,
         42,
-        44,
-        50,
-        53,
+        45,
+        47,
         55,
         57,
         59,
-        62,
-        65,
-        66,
+        61,
+        64,
         67,
         68,
         69,
+        70,
         71,
-        72,
+        73,
         74,
         75,
-        82,
+        77,
+        78,
+        83,
+        84,
         85,
-        90,
-        91,
-        94,
+        87,
         95,
-        97,
-        100,
-        101,
+        102,
+        105,
+        107,
         111,
-        126,
-        132,
-        133,
+        112,
+        115,
+        116,
+        118,
+        121,
+        122,
         134,
-        136,
-        145,
-        147,
-        154,
-        156,
-        159,
+        149,
+        153,
+        157,
+        158,
         161,
+        168,
+        171,
+        172,
         176,
-        177,
-        178,
-        186,
-        190,
-        197,
-        198,
-        205,
-        208,
-        211,
+        179,
+        181,
+        202,
+        207,
+        214,
+        215,
         222,
-        239,
-        240,
-        242,
-        247,
-        250,
-        259,
-        290,
-        297,
-        305,
-        306,
-        307,
-        309,
-        310,
-        311,
-        312,
-        313,
-        314,
-        315,
+        227,
+        230,
+        253,
+        263,
+        264,
+        266,
+        271,
+        274,
+        283,
+        316,
         323,
-        324,
-        327,
-        364,
-        371,
-        373,
-        374,
-        375,
-        376,
-        378,
-        380,
-        385,
-        400,
-        412,
-        527,
-        552
+        329,
+        330,
+        331,
+        333,
+        334,
+        335,
+        336,
+        337,
+        338,
+        339,
+        349,
+        350,
+        353,
+        387,
+        401,
+        403,
+        404,
+        405,
+        406,
+        408,
+        410,
+        417,
+        436,
+        440,
+        451,
+        571,
+        575,
+        605
     ],
     "types": {
         "BillingProductDTO": {
@@ -115,13 +122,13 @@ export default {
                 1
             ],
             "metadata": [
-                131
+                82
             ],
             "on_BillingLicensedProduct": [
-                140
+                91
             ],
             "on_BillingMeteredProduct": [
-                141
+                92
             ],
             "__typename": [
                 1
@@ -148,7 +155,7 @@ export default {
                 4
             ],
             "role": [
-                48
+                51
             ],
             "__typename": [
                 1
@@ -194,6 +201,9 @@ export default {
                 8
             ],
             "isDeprecated": [
+                8
+            ],
+            "isRequired": [
                 8
             ],
             "type": [
@@ -329,6 +339,12 @@ export default {
             "frontComponentSharedDependenciesChecksum": [
                 1
             ],
+            "applicationName": [
+                1
+            ],
+            "applicationGrantedCapabilities": [
+                1
+            ],
             "__typename": [
                 1
             ]
@@ -338,6 +354,9 @@ export default {
                 3
             ],
             "workflowVersionId": [
+                3
+            ],
+            "coreWorkflowVersionId": [
                 3
             ],
             "frontComponentId": [
@@ -437,6 +456,42 @@ export default {
                 1
             ]
         },
+        "SettingsMenuItem": {
+            "id": [
+                3
+            ],
+            "frontComponentId": [
+                3
+            ],
+            "title": [
+                1
+            ],
+            "icon": [
+                1
+            ],
+            "position": [
+                15
+            ],
+            "scope": [
+                22
+            ],
+            "universalIdentifier": [
+                3
+            ],
+            "applicationId": [
+                3
+            ],
+            "createdAt": [
+                4
+            ],
+            "updatedAt": [
+                4
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "SettingsMenuItemScope": {},
         "LogicFunction": {
             "id": [
                 3
@@ -454,7 +509,7 @@ export default {
                 15
             ],
             "executionMode": [
-                22
+                24
             ],
             "sourceHandlerPath": [
                 1
@@ -488,6 +543,9 @@ export default {
             ],
             "updatedAt": [
                 4
+            ],
+            "canRunOnDemand": [
+                8
             ],
             "__typename": [
                 1
@@ -547,13 +605,19 @@ export default {
                 8
             ],
             "openRecordIn": [
-                24
+                26
             ],
             "readability": [
-                25
+                27
+            ],
+            "readabilityParentFieldUniversalIdentifiers": [
+                3
+            ],
+            "sharingReach": [
+                28
             ],
             "writability": [
-                26
+                29
             ],
             "applicationId": [
                 3
@@ -577,39 +641,39 @@ export default {
                 1
             ],
             "fields": [
-                254,
+                278,
                 {
                     "paging": [
-                        27,
+                        30,
                         "CursorPaging!"
                     ],
                     "filter": [
-                        30,
+                        33,
                         "FieldFilter!"
                     ]
                 }
             ],
             "indexMetadatas": [
-                255,
+                279,
                 {
                     "paging": [
-                        27,
+                        30,
                         "CursorPaging!"
                     ],
                     "filter": [
-                        33,
+                        36,
                         "IndexFilter!"
                     ]
                 }
             ],
             "fieldsList": [
-                241
+                265
             ],
             "indexMetadataList": [
-                249
+                273
             ],
             "searchFieldMetadataList": [
-                257
+                281
             ],
             "__typename": [
                 1
@@ -617,19 +681,20 @@ export default {
         },
         "ObjectOpenRecordIn": {},
         "MetadataReadability": {},
+        "ObjectSharingReach": {},
         "MetadataWritability": {},
         "CursorPaging": {
             "before": [
-                29
+                32
             ],
             "after": [
-                29
+                32
             ],
             "first": [
-                28
+                31
             ],
             "last": [
-                28
+                31
             ],
             "__typename": [
                 1
@@ -639,28 +704,28 @@ export default {
         "ConnectionCursor": {},
         "FieldFilter": {
             "and": [
-                30
+                33
             ],
             "or": [
-                30
+                33
             ],
             "id": [
-                31
+                34
             ],
             "isActive": [
-                32
+                35
             ],
             "isSystem": [
-                32
+                35
             ],
             "isUIEditable": [
-                32
+                35
             ],
             "isUIReadOnly": [
-                32
+                35
             ],
             "objectMetadataId": [
-                31
+                34
             ],
             "__typename": [
                 1
@@ -726,16 +791,16 @@ export default {
         },
         "IndexFilter": {
             "and": [
-                33
+                36
             ],
             "or": [
-                33
+                36
             ],
             "id": [
-                31
+                34
             ],
             "isCustom": [
-                32
+                35
             ],
             "__typename": [
                 1
@@ -757,7 +822,7 @@ export default {
                 3
             ],
             "name": [
-                34
+                37
             ],
             "userEmail": [
                 1
@@ -769,7 +834,7 @@ export default {
                 1
             ],
             "openRecordIn": [
-                36
+                39
             ],
             "avatarUrl": [
                 1
@@ -778,25 +843,28 @@ export default {
                 1
             ],
             "calendarStartDay": [
-                28
+                31
             ],
             "timeZone": [
                 1
             ],
             "dateFormat": [
-                37
+                40
             ],
             "timeFormat": [
-                38
+                41
             ],
             "roles": [
-                48
+                51
+            ],
+            "userId": [
+                3
             ],
             "userWorkspaceId": [
                 3
             ],
             "numberFormat": [
-                39
+                42
             ],
             "__typename": [
                 1
@@ -837,7 +905,7 @@ export default {
                 1
             ],
             "logicalOperator": [
-                42
+                45
             ],
             "positionInRowLevelPermissionPredicateGroup": [
                 15
@@ -864,7 +932,7 @@ export default {
                 1
             ],
             "operand": [
-                44
+                47
             ],
             "subFieldName": [
                 1
@@ -912,10 +980,10 @@ export default {
                 9
             ],
             "rowLevelPermissionPredicates": [
-                43
+                46
             ],
             "rowLevelPermissionPredicateGroups": [
-                41
+                44
             ],
             "__typename": [
                 1
@@ -981,13 +1049,13 @@ export default {
                 8
             ],
             "workspaceMembers": [
-                35
+                38
             ],
             "agents": [
                 10
             ],
             "apiKeys": [
-                47
+                50
             ],
             "canUpdateAllSettings": [
                 8
@@ -1008,19 +1076,19 @@ export default {
                 8
             ],
             "permissionFlags": [
-                46
+                49
             ],
             "objectPermissions": [
-                45
+                48
             ],
             "fieldPermissions": [
-                40
-            ],
-            "rowLevelPermissionPredicates": [
                 43
             ],
+            "rowLevelPermissionPredicates": [
+                46
+            ],
             "rowLevelPermissionPredicateGroups": [
-                41
+                44
             ],
             "__typename": [
                 1
@@ -1044,9 +1112,6 @@ export default {
             ],
             "universalIdentifier": [
                 1
-            ],
-            "state": [
-                50
             ],
             "packageJsonChecksum": [
                 1
@@ -1078,8 +1143,11 @@ export default {
             "settingsCustomTabFrontComponentId": [
                 3
             ],
+            "healthCheckLogicFunctionId": [
+                3
+            ],
             "defaultLogicFunctionRole": [
-                48
+                51
             ],
             "agents": [
                 10
@@ -1090,11 +1158,14 @@ export default {
             "commandMenuItems": [
                 14
             ],
-            "logicFunctions": [
+            "settingsMenuItems": [
                 21
             ],
-            "objects": [
+            "logicFunctions": [
                 23
+            ],
+            "objects": [
+                25
             ],
             "applicationVariables": [
                 7
@@ -1109,7 +1180,6 @@ export default {
                 1
             ]
         },
-        "ApplicationState": {},
         "TwoFactorAuthenticationMethodSummary": {
             "twoFactorAuthenticationMethodId": [
                 3
@@ -1129,7 +1199,7 @@ export default {
                 3
             ],
             "user": [
-                73
+                76
             ],
             "userId": [
                 3
@@ -1147,16 +1217,16 @@ export default {
                 4
             ],
             "permissionFlags": [
-                53
+                55
             ],
             "objectPermissions": [
-                45
+                48
             ],
             "objectsPermissions": [
-                45
+                48
             ],
             "twoFactorAuthenticationMethodSummary": [
-                51
+                53
             ],
             "isImpersonating": [
                 8
@@ -1192,7 +1262,7 @@ export default {
                 15
             ],
             "aggregateOperation": [
-                55
+                57
             ],
             "viewId": [
                 3
@@ -1231,7 +1301,7 @@ export default {
                 3
             ],
             "logicalOperator": [
-                57
+                59
             ],
             "positionInViewFilterGroup": [
                 15
@@ -1264,7 +1334,7 @@ export default {
                 3
             ],
             "operand": [
-                59
+                61
             ],
             "value": [
                 9
@@ -1341,7 +1411,7 @@ export default {
                 3
             ],
             "direction": [
-                62
+                64
             ],
             "subFieldName": [
                 1
@@ -1398,7 +1468,7 @@ export default {
                 4
             ],
             "viewFields": [
-                54
+                56
             ],
             "isOverridden": [
                 8
@@ -1427,10 +1497,10 @@ export default {
                 3
             ],
             "type": [
-                65
+                67
             ],
             "key": [
-                66
+                68
             ],
             "icon": [
                 1
@@ -1445,10 +1515,10 @@ export default {
                 8
             ],
             "openRecordIn": [
-                67
+                69
             ],
             "kanbanAggregateOperation": [
-                55
+                57
             ],
             "kanbanAggregateOperationFieldMetadataId": [
                 3
@@ -1460,7 +1530,10 @@ export default {
                 8
             ],
             "kanbanColumnWidth": [
-                28
+                31
+            ],
+            "groupLoadLimit": [
+                31
             ],
             "calendarFieldMetadataId": [
                 3
@@ -1475,7 +1548,7 @@ export default {
                 1
             ],
             "calendarLayout": [
-                68
+                70
             ],
             "createdAt": [
                 4
@@ -1487,25 +1560,25 @@ export default {
                 4
             ],
             "viewFields": [
-                54
-            ],
-            "viewFilters": [
-                58
-            ],
-            "viewFilterGroups": [
                 56
             ],
-            "viewSorts": [
-                61
-            ],
-            "viewGroups": [
+            "viewFilters": [
                 60
             ],
-            "viewFieldGroups": [
+            "viewFilterGroups": [
+                58
+            ],
+            "viewSorts": [
                 63
             ],
+            "viewGroups": [
+                62
+            ],
+            "viewFieldGroups": [
+                65
+            ],
             "visibility": [
-                69
+                71
             ],
             "createdByUserWorkspaceId": [
                 3
@@ -1553,8 +1626,14 @@ export default {
             "isPublicInviteLinkEnabled": [
                 8
             ],
+            "isCampaignClickTrackingEnabled": [
+                8
+            ],
+            "isCampaignOpenTrackingEnabled": [
+                8
+            ],
             "workspaceDiscoverability": [
-                71
+                73
             ],
             "trashRetentionDays": [
                 15
@@ -1566,25 +1645,25 @@ export default {
                 15
             ],
             "activationStatus": [
-                72
+                74
             ],
             "views": [
-                64
+                66
             ],
             "viewFields": [
-                54
-            ],
-            "viewFilters": [
-                58
-            ],
-            "viewFilterGroups": [
                 56
             ],
-            "viewGroups": [
+            "viewFilters": [
                 60
             ],
+            "viewFilterGroups": [
+                58
+            ],
+            "viewGroups": [
+                62
+            ],
             "viewSorts": [
-                61
+                63
             ],
             "metadataVersion": [
                 15
@@ -1625,50 +1704,53 @@ export default {
             "isInternalMessagesImportEnabled": [
                 8
             ],
+            "allowedIframeOrigins": [
+                1
+            ],
             "editableProfileFields": [
                 1
             ],
             "defaultRole": [
-                48
+                51
             ],
-            "fastModel": [
-                1
+            "aiChatModelTier": [
+                75
             ],
-            "smartModel": [
+            "aiAgentModelTier": [
+                75
+            ],
+            "isAutoModelSelectionEnabled": [
+                8
+            ],
+            "aiModelIdByTier": [
+                9
+            ],
+            "aiEvaluationModelId": [
                 1
             ],
             "aiAdditionalInstructions": [
                 1
             ],
-            "enabledAiModelIds": [
-                1
-            ],
-            "useRecommendedModels": [
-                8
-            ],
-            "routerModel": [
-                1
-            ],
             "workspaceCustomApplication": [
-                49
+                52
             ],
             "featureFlags": [
-                189
+                206
             ],
             "billingSubscriptions": [
-                144
+                94
             ],
             "installedApplications": [
-                49
+                52
             ],
             "currentBillingSubscription": [
-                144
+                94
             ],
             "billingCustomer": [
-                143
+                96
             ],
             "billingEntitlements": [
-                258
+                282
             ],
             "hasValidSignedEnterpriseKey": [
                 8
@@ -1677,7 +1759,7 @@ export default {
                 8
             ],
             "workspaceUrls": [
-                191
+                208
             ],
             "workspaceCustomApplicationId": [
                 1
@@ -1688,6 +1770,7 @@ export default {
         },
         "WorkspaceDiscoverability": {},
         "WorkspaceActivationStatus": {},
+        "AiModelTier": {},
         "User": {
             "id": [
                 3
@@ -1726,31 +1809,31 @@ export default {
                 1
             ],
             "workspaceMember": [
-                35
+                38
             ],
             "userWorkspaces": [
-                52
+                54
             ],
             "onboardingStatus": [
-                74
+                77
             ],
             "previousOnboardingStatus": [
-                74
+                77
             ],
             "currentWorkspace": [
-                70
+                72
             ],
             "currentUserWorkspace": [
-                52
+                54
             ],
             "userVars": [
-                75
+                78
             ],
             "workspaceMembers": [
-                35
+                38
             ],
             "deletedWorkspaceMembers": [
-                232
+                250
             ],
             "hasPassword": [
                 8
@@ -1762,10 +1845,10 @@ export default {
                 8
             ],
             "workspaces": [
-                52
+                54
             ],
             "availableWorkspaces": [
-                231
+                249
             ],
             "__typename": [
                 1
@@ -1827,6 +1910,230 @@ export default {
             ],
             "galleryImagesUrls": [
                 1
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "BillingSubscriptionSchedulePhaseItem": {
+            "price": [
+                1
+            ],
+            "quantity": [
+                15
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "BillingSubscriptionSchedulePhase": {
+            "start_date": [
+                15
+            ],
+            "end_date": [
+                15
+            ],
+            "items": [
+                80
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "BillingProductMetadata": {
+            "planKey": [
+                83
+            ],
+            "priceUsageBased": [
+                84
+            ],
+            "productKey": [
+                85
+            ],
+            "isLegacy": [
+                1
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "BillingPlanKey": {},
+        "BillingUsageType": {},
+        "BillingProductKey": {},
+        "BillingPriceLicensed": {
+            "recurringInterval": [
+                87
+            ],
+            "unitAmount": [
+                15
+            ],
+            "stripePriceId": [
+                1
+            ],
+            "priceUsageType": [
+                84
+            ],
+            "creditAmount": [
+                15
+            ],
+            "isSellable": [
+                8
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "SubscriptionInterval": {},
+        "BillingPriceTier": {
+            "upTo": [
+                15
+            ],
+            "flatAmount": [
+                15
+            ],
+            "unitAmount": [
+                15
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "BillingPriceMetered": {
+            "tiers": [
+                88
+            ],
+            "recurringInterval": [
+                87
+            ],
+            "stripePriceId": [
+                1
+            ],
+            "priceUsageType": [
+                84
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "BillingProduct": {
+            "name": [
+                1
+            ],
+            "description": [
+                1
+            ],
+            "images": [
+                1
+            ],
+            "metadata": [
+                82
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "BillingLicensedProduct": {
+            "name": [
+                1
+            ],
+            "description": [
+                1
+            ],
+            "images": [
+                1
+            ],
+            "metadata": [
+                82
+            ],
+            "prices": [
+                86
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "BillingMeteredProduct": {
+            "name": [
+                1
+            ],
+            "description": [
+                1
+            ],
+            "images": [
+                1
+            ],
+            "metadata": [
+                82
+            ],
+            "prices": [
+                89
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "BillingSubscriptionItem": {
+            "id": [
+                3
+            ],
+            "hasReachedCurrentPeriodCap": [
+                8
+            ],
+            "quantity": [
+                15
+            ],
+            "stripePriceId": [
+                1
+            ],
+            "unitAmount": [
+                15
+            ],
+            "creditAmount": [
+                15
+            ],
+            "billingProduct": [
+                0
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "BillingSubscription": {
+            "id": [
+                3
+            ],
+            "status": [
+                95
+            ],
+            "interval": [
+                87
+            ],
+            "billingSubscriptionItems": [
+                93
+            ],
+            "currentPeriodEnd": [
+                4
+            ],
+            "metadata": [
+                9
+            ],
+            "phases": [
+                81
+            ],
+            "cancelAt": [
+                4
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "SubscriptionStatus": {},
+        "BillingCustomer": {
+            "id": [
+                3
+            ],
+            "hasPaymentMethod": [
+                8
             ],
             "__typename": [
                 1
@@ -1902,19 +2209,19 @@ export default {
                 1
             ],
             "type": [
-                82
+                102
             ],
             "objectMetadataId": [
                 3
             ],
             "gridPosition": [
-                80
+                100
             ],
             "position": [
-                83
+                103
             ],
             "configuration": [
-                88
+                109
             ],
             "conditionalDisplay": [
                 9
@@ -1944,13 +2251,13 @@ export default {
         "WidgetType": {},
         "PageLayoutWidgetPosition": {
             "on_PageLayoutWidgetGridPosition": [
-                84
+                104
             ],
             "on_PageLayoutWidgetVerticalListPosition": [
-                86
+                106
             ],
             "on_PageLayoutWidgetCanvasPosition": [
-                87
+                108
             ],
             "__typename": [
                 1
@@ -1958,19 +2265,19 @@ export default {
         },
         "PageLayoutWidgetGridPosition": {
             "layoutMode": [
-                85
+                105
             ],
             "row": [
-                28
+                31
             ],
             "column": [
-                28
+                31
             ],
             "rowSpan": [
-                28
+                31
             ],
             "columnSpan": [
-                28
+                31
             ],
             "__typename": [
                 1
@@ -1979,18 +2286,22 @@ export default {
         "PageLayoutTabLayoutMode": {},
         "PageLayoutWidgetVerticalListPosition": {
             "layoutMode": [
-                85
+                105
             ],
             "index": [
-                28
+                31
+            ],
+            "heightBehavior": [
+                107
             ],
             "__typename": [
                 1
             ]
         },
+        "PageLayoutWidgetVerticalListHeightBehavior": {},
         "PageLayoutWidgetCanvasPosition": {
             "layoutMode": [
-                85
+                105
             ],
             "__typename": [
                 1
@@ -1998,85 +2309,91 @@ export default {
         },
         "WidgetConfiguration": {
             "on_AggregateChartConfiguration": [
-                89
-            ],
-            "on_StandaloneRichTextConfiguration": [
-                92
-            ],
-            "on_PieChartConfiguration": [
-                93
-            ],
-            "on_LineChartConfiguration": [
-                96
-            ],
-            "on_IframeConfiguration": [
-                98
-            ],
-            "on_BarChartConfiguration": [
-                99
-            ],
-            "on_CalendarConfiguration": [
-                102
-            ],
-            "on_FrontComponentConfiguration": [
-                103
-            ],
-            "on_EmailsConfiguration": [
-                104
-            ],
-            "on_EmailThreadConfiguration": [
-                105
-            ],
-            "on_CallRecordingSummaryConfiguration": [
-                106
-            ],
-            "on_CallRecordingTranscriptConfiguration": [
-                107
-            ],
-            "on_MessageCampaignBodyConfiguration": [
-                108
-            ],
-            "on_MessageCampaignDetailsConfiguration": [
-                109
-            ],
-            "on_FieldConfiguration": [
                 110
             ],
-            "on_FieldRichTextConfiguration": [
-                112
-            ],
-            "on_FieldsConfiguration": [
+            "on_StandaloneRichTextConfiguration": [
                 113
             ],
-            "on_FormFieldConfiguration": [
+            "on_PieChartConfiguration": [
                 114
             ],
-            "on_FilesConfiguration": [
-                115
-            ],
-            "on_NotesConfiguration": [
-                116
-            ],
-            "on_TasksConfiguration": [
+            "on_LineChartConfiguration": [
                 117
             ],
-            "on_TimelineConfiguration": [
-                118
-            ],
-            "on_ViewConfiguration": [
+            "on_IframeConfiguration": [
                 119
             ],
-            "on_RecordTableConfiguration": [
+            "on_BarChartConfiguration": [
                 120
             ],
+            "on_CalendarConfiguration": [
+                123
+            ],
+            "on_FrontComponentConfiguration": [
+                124
+            ],
+            "on_EmailsConfiguration": [
+                125
+            ],
+            "on_EmailThreadConfiguration": [
+                126
+            ],
+            "on_CallRecordingSummaryConfiguration": [
+                127
+            ],
+            "on_CallRecordingTranscriptConfiguration": [
+                128
+            ],
+            "on_ChatThreadsConfiguration": [
+                129
+            ],
+            "on_ChatConfiguration": [
+                130
+            ],
+            "on_MessageCampaignBodyConfiguration": [
+                131
+            ],
+            "on_MessageCampaignDetailsConfiguration": [
+                132
+            ],
+            "on_FieldConfiguration": [
+                133
+            ],
+            "on_FieldRichTextConfiguration": [
+                135
+            ],
+            "on_FieldsConfiguration": [
+                136
+            ],
+            "on_FormFieldConfiguration": [
+                137
+            ],
+            "on_FilesConfiguration": [
+                138
+            ],
+            "on_NotesConfiguration": [
+                139
+            ],
+            "on_TasksConfiguration": [
+                140
+            ],
+            "on_TimelineConfiguration": [
+                141
+            ],
+            "on_ViewConfiguration": [
+                142
+            ],
+            "on_RecordTableConfiguration": [
+                143
+            ],
             "on_WorkflowConfiguration": [
-                121
+                144
             ],
             "on_WorkflowRunConfiguration": [
-                122
+                145
             ],
             "on_WorkflowVersionConfiguration": [
-                123
+                146
             ],
             "__typename": [
                 1
@@ -2084,13 +2401,13 @@ export default {
         },
         "AggregateChartConfiguration": {
             "configurationType": [
-                90
+                111
             ],
             "aggregateFieldMetadataId": [
                 3
             ],
             "aggregateOperation": [
-                55
+                57
             ],
             "label": [
                 1
@@ -2099,7 +2416,7 @@ export default {
                 8
             ],
             "numberFormat": [
-                91
+                112
             ],
             "description": [
                 1
@@ -2111,7 +2428,7 @@ export default {
                 1
             ],
             "firstDayOfTheWeek": [
-                28
+                31
             ],
             "prefix": [
                 1
@@ -2120,7 +2437,7 @@ export default {
                 1
             ],
             "ratioAggregateConfig": [
-                78
+                98
             ],
             "__typename": [
                 1
@@ -2130,10 +2447,10 @@ export default {
         "ChartNumberFormat": {},
         "StandaloneRichTextConfiguration": {
             "configurationType": [
-                90
+                111
             ],
             "body": [
-                79
+                99
             ],
             "__typename": [
                 1
@@ -2141,13 +2458,13 @@ export default {
         },
         "PieChartConfiguration": {
             "configurationType": [
-                90
+                111
             ],
             "aggregateFieldMetadataId": [
                 3
             ],
             "aggregateOperation": [
-                55
+                57
             ],
             "groupByFieldMetadataId": [
                 3
@@ -2156,10 +2473,10 @@ export default {
                 1
             ],
             "dateGranularity": [
-                94
+                115
             ],
             "orderBy": [
-                95
+                116
             ],
             "manualSortOrder": [
                 1
@@ -2177,7 +2494,7 @@ export default {
                 8
             ],
             "numberFormat": [
-                91
+                112
             ],
             "splitMultiValueFields": [
                 8
@@ -2195,7 +2512,7 @@ export default {
                 1
             ],
             "firstDayOfTheWeek": [
-                28
+                31
             ],
             "__typename": [
                 1
@@ -2205,13 +2522,13 @@ export default {
         "GraphOrderBy": {},
         "LineChartConfiguration": {
             "configurationType": [
-                90
+                111
             ],
             "aggregateFieldMetadataId": [
                 3
             ],
             "aggregateOperation": [
-                55
+                57
             ],
             "primaryAxisGroupByFieldMetadataId": [
                 3
@@ -2220,10 +2537,10 @@ export default {
                 1
             ],
             "primaryAxisDateGranularity": [
-                94
+                115
             ],
             "primaryAxisOrderBy": [
-                95
+                116
             ],
             "primaryAxisManualSortOrder": [
                 1
@@ -2235,10 +2552,10 @@ export default {
                 1
             ],
             "secondaryAxisGroupByDateGranularity": [
-                94
+                115
             ],
             "secondaryAxisOrderBy": [
-                95
+                116
             ],
             "secondaryAxisManualSortOrder": [
                 1
@@ -2250,7 +2567,7 @@ export default {
                 8
             ],
             "axisNameDisplay": [
-                97
+                118
             ],
             "displayDataLabel": [
                 8
@@ -2259,7 +2576,7 @@ export default {
                 8
             ],
             "numberFormat": [
-                91
+                112
             ],
             "rangeMin": [
                 15
@@ -2286,7 +2603,7 @@ export default {
                 1
             ],
             "firstDayOfTheWeek": [
-                28
+                31
             ],
             "__typename": [
                 1
@@ -2295,7 +2612,7 @@ export default {
         "AxisNameDisplay": {},
         "IframeConfiguration": {
             "configurationType": [
-                90
+                111
             ],
             "url": [
                 1
@@ -2306,13 +2623,13 @@ export default {
         },
         "BarChartConfiguration": {
             "configurationType": [
-                90
+                111
             ],
             "aggregateFieldMetadataId": [
                 3
             ],
             "aggregateOperation": [
-                55
+                57
             ],
             "primaryAxisGroupByFieldMetadataId": [
                 3
@@ -2321,10 +2638,10 @@ export default {
                 1
             ],
             "primaryAxisDateGranularity": [
-                94
+                115
             ],
             "primaryAxisOrderBy": [
-                95
+                116
             ],
             "primaryAxisManualSortOrder": [
                 1
@@ -2336,10 +2653,10 @@ export default {
                 1
             ],
             "secondaryAxisGroupByDateGranularity": [
-                94
+                115
             ],
             "secondaryAxisOrderBy": [
-                95
+                116
             ],
             "secondaryAxisManualSortOrder": [
                 1
@@ -2351,7 +2668,7 @@ export default {
                 8
             ],
             "axisNameDisplay": [
-                97
+                118
             ],
             "displayDataLabel": [
                 8
@@ -2360,7 +2677,7 @@ export default {
                 8
             ],
             "numberFormat": [
-                91
+                112
             ],
             "rangeMin": [
                 15
@@ -2378,10 +2695,10 @@ export default {
                 9
             ],
             "groupMode": [
-                100
+                121
             ],
             "layout": [
-                101
+                122
             ],
             "isCumulative": [
                 8
@@ -2390,7 +2707,7 @@ export default {
                 1
             ],
             "firstDayOfTheWeek": [
-                28
+                31
             ],
             "__typename": [
                 1
@@ -2400,7 +2717,7 @@ export default {
         "BarChartLayout": {},
         "CalendarConfiguration": {
             "configurationType": [
-                90
+                111
             ],
             "__typename": [
                 1
@@ -2408,7 +2725,7 @@ export default {
         },
         "FrontComponentConfiguration": {
             "configurationType": [
-                90
+                111
             ],
             "frontComponentId": [
                 3
@@ -2422,7 +2739,7 @@ export default {
         },
         "EmailsConfiguration": {
             "configurationType": [
-                90
+                111
             ],
             "__typename": [
                 1
@@ -2430,7 +2747,7 @@ export default {
         },
         "EmailThreadConfiguration": {
             "configurationType": [
-                90
+                111
             ],
             "__typename": [
                 1
@@ -2438,7 +2755,7 @@ export default {
         },
         "CallRecordingSummaryConfiguration": {
             "configurationType": [
-                90
+                111
             ],
             "__typename": [
                 1
@@ -2446,7 +2763,23 @@ export default {
         },
         "CallRecordingTranscriptConfiguration": {
             "configurationType": [
-                90
+                111
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "ChatThreadsConfiguration": {
+            "configurationType": [
+                111
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "ChatConfiguration": {
+            "configurationType": [
+                111
             ],
             "__typename": [
                 1
@@ -2454,7 +2787,7 @@ export default {
         },
         "MessageCampaignBodyConfiguration": {
             "configurationType": [
-                90
+                111
             ],
             "__typename": [
                 1
@@ -2462,7 +2795,7 @@ export default {
         },
         "MessageCampaignDetailsConfiguration": {
             "configurationType": [
-                90
+                111
             ],
             "__typename": [
                 1
@@ -2470,13 +2803,13 @@ export default {
         },
         "FieldConfiguration": {
             "configurationType": [
-                90
+                111
             ],
             "fieldMetadataId": [
                 1
             ],
             "fieldDisplayMode": [
-                111
+                134
             ],
             "viewId": [
                 1
@@ -2494,7 +2827,7 @@ export default {
         "FieldDisplayMode": {},
         "FieldRichTextConfiguration": {
             "configurationType": [
-                90
+                111
             ],
             "__typename": [
                 1
@@ -2502,7 +2835,7 @@ export default {
         },
         "FieldsConfiguration": {
             "configurationType": [
-                90
+                111
             ],
             "viewId": [
                 1
@@ -2519,7 +2852,7 @@ export default {
         },
         "FormFieldConfiguration": {
             "configurationType": [
-                90
+                111
             ],
             "fieldMetadataId": [
                 1
@@ -2530,7 +2863,7 @@ export default {
         },
         "FilesConfiguration": {
             "configurationType": [
-                90
+                111
             ],
             "__typename": [
                 1
@@ -2538,7 +2871,7 @@ export default {
         },
         "NotesConfiguration": {
             "configurationType": [
-                90
+                111
             ],
             "__typename": [
                 1
@@ -2546,7 +2879,7 @@ export default {
         },
         "TasksConfiguration": {
             "configurationType": [
-                90
+                111
             ],
             "__typename": [
                 1
@@ -2554,7 +2887,7 @@ export default {
         },
         "TimelineConfiguration": {
             "configurationType": [
-                90
+                111
             ],
             "__typename": [
                 1
@@ -2562,7 +2895,7 @@ export default {
         },
         "ViewConfiguration": {
             "configurationType": [
-                90
+                111
             ],
             "__typename": [
                 1
@@ -2570,13 +2903,13 @@ export default {
         },
         "RecordTableConfiguration": {
             "configurationType": [
-                90
+                111
             ],
             "viewId": [
                 1
             ],
             "recordLimit": [
-                28
+                31
             ],
             "isUIEditable": [
                 8
@@ -2587,7 +2920,7 @@ export default {
         },
         "WorkflowConfiguration": {
             "configurationType": [
-                90
+                111
             ],
             "__typename": [
                 1
@@ -2595,7 +2928,7 @@ export default {
         },
         "WorkflowRunConfiguration": {
             "configurationType": [
-                90
+                111
             ],
             "__typename": [
                 1
@@ -2603,7 +2936,7 @@ export default {
         },
         "WorkflowVersionConfiguration": {
             "configurationType": [
-                90
+                111
             ],
             "__typename": [
                 1
@@ -2632,13 +2965,13 @@ export default {
                 3
             ],
             "widgets": [
-                81
+                101
             ],
             "icon": [
                 1
             ],
             "layoutMode": [
-                85
+                105
             ],
             "createdAt": [
                 4
@@ -2667,13 +3000,13 @@ export default {
                 1
             ],
             "type": [
-                126
+                149
             ],
             "objectMetadataId": [
                 3
             ],
             "tabs": [
-                124
+                147
             ],
             "defaultTabToFocusOnMobileAndSidePanelId": [
                 3
@@ -2732,7 +3065,7 @@ export default {
                 1
             ],
             "oauth": [
-                127
+                150
             ],
             "logoUrl": [
                 1
@@ -2741,218 +3074,6 @@ export default {
                 1
             ]
         },
-        "BillingSubscriptionSchedulePhaseItem": {
-            "price": [
-                1
-            ],
-            "quantity": [
-                15
-            ],
-            "__typename": [
-                1
-            ]
-        },
-        "BillingSubscriptionSchedulePhase": {
-            "start_date": [
-                15
-            ],
-            "end_date": [
-                15
-            ],
-            "items": [
-                129
-            ],
-            "__typename": [
-                1
-            ]
-        },
-        "BillingProductMetadata": {
-            "planKey": [
-                132
-            ],
-            "priceUsageBased": [
-                133
-            ],
-            "productKey": [
-                134
-            ],
-            "__typename": [
-                1
-            ]
-        },
-        "BillingPlanKey": {},
-        "BillingUsageType": {},
-        "BillingProductKey": {},
-        "BillingPriceLicensed": {
-            "recurringInterval": [
-                136
-            ],
-            "unitAmount": [
-                15
-            ],
-            "stripePriceId": [
-                1
-            ],
-            "priceUsageType": [
-                133
-            ],
-            "creditAmount": [
-                15
-            ],
-            "__typename": [
-                1
-            ]
-        },
-        "SubscriptionInterval": {},
-        "BillingPriceTier": {
-            "upTo": [
-                15
-            ],
-            "flatAmount": [
-                15
-            ],
-            "unitAmount": [
-                15
-            ],
-            "__typename": [
-                1
-            ]
-        },
-        "BillingPriceMetered": {
-            "tiers": [
-                137
-            ],
-            "recurringInterval": [
-                136
-            ],
-            "stripePriceId": [
-                1
-            ],
-            "priceUsageType": [
-                133
-            ],
-            "__typename": [
-                1
-            ]
-        },
-        "BillingProduct": {
-            "name": [
-                1
-            ],
-            "description": [
-                1
-            ],
-            "images": [
-                1
-            ],
-            "metadata": [
-                131
-            ],
-            "__typename": [
-                1
-            ]
-        },
-        "BillingLicensedProduct": {
-            "name": [
-                1
-            ],
-            "description": [
-                1
-            ],
-            "images": [
-                1
-            ],
-            "metadata": [
-                131
-            ],
-            "prices": [
-                135
-            ],
-            "__typename": [
-                1
-            ]
-        },
-        "BillingMeteredProduct": {
-            "name": [
-                1
-            ],
-            "description": [
-                1
-            ],
-            "images": [
-                1
-            ],
-            "metadata": [
-                131
-            ],
-            "prices": [
-                138
-            ],
-            "__typename": [
-                1
-            ]
-        },
-        "BillingSubscriptionItem": {
-            "id": [
-                3
-            ],
-            "hasReachedCurrentPeriodCap": [
-                8
-            ],
-            "quantity": [
-                15
-            ],
-            "stripePriceId": [
-                1
-            ],
-            "billingProduct": [
-                0
-            ],
-            "__typename": [
-                1
-            ]
-        },
-        "BillingCustomer": {
-            "id": [
-                3
-            ],
-            "hasPaymentMethod": [
-                8
-            ],
-            "__typename": [
-                1
-            ]
-        },
-        "BillingSubscription": {
-            "id": [
-                3
-            ],
-            "status": [
-                145
-            ],
-            "interval": [
-                136
-            ],
-            "billingSubscriptionItems": [
-                142
-            ],
-            "currentPeriodEnd": [
-                4
-            ],
-            "metadata": [
-                9
-            ],
-            "phases": [
-                130
-            ],
-            "cancelAt": [
-                4
-            ],
-            "__typename": [
-                1
-            ]
-        },
-        "SubscriptionStatus": {},
         "LogicFunctionExecutionResult": {
             "data": [
                 9
@@ -2964,7 +3085,7 @@ export default {
                 15
             ],
             "status": [
-                147
+                153
             ],
             "error": [
                 9
@@ -3009,6 +3130,148 @@ export default {
             ],
             "isCancellationScheduled": [
                 8
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "UsageQuotaDefinition": {
+            "resourceType": [
+                157
+            ],
+            "limitKind": [
+                1
+            ],
+            "allowedOperationTypes": [
+                158
+            ],
+            "allowedSpenderTypes": [
+                1
+            ],
+            "allowedMeters": [
+                1
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "UsageResourceType": {},
+        "UsageOperationType": {},
+        "UsageQuotaDefinitions": {
+            "definitions": [
+                156
+            ],
+            "isIntraWorkspaceLimitEntitled": [
+                8
+            ],
+            "hasAllowancePeriod": [
+                8
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "UsageQuotaWithConsumption": {
+            "id": [
+                3
+            ],
+            "resourceType": [
+                157
+            ],
+            "operationType": [
+                158
+            ],
+            "spenderType": [
+                1
+            ],
+            "spenderId": [
+                1
+            ],
+            "spenderLabel": [
+                1
+            ],
+            "periodUnit": [
+                1
+            ],
+            "meter": [
+                1
+            ],
+            "limitValue": [
+                161
+            ],
+            "isEnforced": [
+                8
+            ],
+            "consumedValue": [
+                161
+            ],
+            "remainingValue": [
+                161
+            ],
+            "periodStart": [
+                4
+            ],
+            "periodEnd": [
+                4
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "BigInt": {},
+        "UsageQuotaScopeConsumption": {
+            "consumedValue": [
+                161
+            ],
+            "periodStart": [
+                4
+            ],
+            "periodEnd": [
+                4
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "UsageLimit": {
+            "id": [
+                3
+            ],
+            "resourceType": [
+                157
+            ],
+            "operationType": [
+                158
+            ],
+            "spenderType": [
+                1
+            ],
+            "spenderId": [
+                1
+            ],
+            "limitKind": [
+                1
+            ],
+            "periodCount": [
+                31
+            ],
+            "periodUnit": [
+                1
+            ],
+            "meter": [
+                1
+            ],
+            "limitValue": [
+                161
+            ],
+            "burstValue": [
+                161
+            ],
+            "createdAt": [
+                4
+            ],
+            "updatedAt": [
+                4
             ],
             "__typename": [
                 1
@@ -3082,7 +3345,7 @@ export default {
                 3
             ],
             "type": [
-                154
+                168
             ],
             "name": [
                 1
@@ -3115,22 +3378,113 @@ export default {
                 4
             ],
             "targetRecordIdentifier": [
-                152
+                166
             ],
             "__typename": [
                 1
             ]
         },
         "NavigationMenuItemType": {},
+        "RecordPermissionsDTO": {
+            "canRead": [
+                8
+            ],
+            "canUpdate": [
+                8
+            ],
+            "canDelete": [
+                8
+            ],
+            "canSoftDelete": [
+                8
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "RecordSharingGrantDTO": {
+            "id": [
+                171
+            ],
+            "principalType": [
+                1
+            ],
+            "principalId": [
+                3
+            ],
+            "accessLevel": [
+                172
+            ],
+            "rowCause": [
+                1
+            ],
+            "canRoleRead": [
+                8
+            ],
+            "canRoleUpdate": [
+                8
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "ID": {},
+        "RecordShareAccessLevel": {},
+        "RecordSharingRoleDTO": {
+            "id": [
+                3
+            ],
+            "label": [
+                1
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "RecordSharingDTO": {
+            "viewerAccessLevel": [
+                172
+            ],
+            "permissions": [
+                169
+            ],
+            "isEnabled": [
+                8
+            ],
+            "hasInheritedAccess": [
+                8
+            ],
+            "isOpenByDefault": [
+                8
+            ],
+            "generalAccessLevel": [
+                172
+            ],
+            "isGeneralAccessDefault": [
+                8
+            ],
+            "sharingReach": [
+                28
+            ],
+            "roles": [
+                173
+            ],
+            "shares": [
+                170
+            ],
+            "__typename": [
+                1
+            ]
+        },
         "JobStatus": {
             "jobId": [
                 1
             ],
             "state": [
-                156
+                176
             ],
             "attemptsMade": [
-                28
+                31
             ],
             "failedReason": [
                 1
@@ -3168,7 +3522,7 @@ export default {
         },
         "MetadataEvent": {
             "type": [
-                159
+                179
             ],
             "metadataName": [
                 1
@@ -3177,7 +3531,7 @@ export default {
                 1
             ],
             "properties": [
-                157
+                177
             ],
             "updatedCollectionHash": [
                 1
@@ -3189,7 +3543,7 @@ export default {
         "MetadataEventAction": {},
         "ObjectRecordEvent": {
             "action": [
-                161
+                181
             ],
             "objectNameSingular": [
                 1
@@ -3204,7 +3558,7 @@ export default {
                 1
             ],
             "properties": [
-                157
+                177
             ],
             "__typename": [
                 1
@@ -3216,7 +3570,7 @@ export default {
                 1
             ],
             "objectRecordEvent": [
-                160
+                180
             ],
             "__typename": [
                 1
@@ -3227,13 +3581,13 @@ export default {
                 1
             ],
             "objectRecordEventsWithQueryIds": [
-                162
+                182
             ],
             "metadataEvents": [
-                158
+                178
             ],
             "queueJobEvents": [
-                155
+                175
             ],
             "__typename": [
                 1
@@ -3276,7 +3630,7 @@ export default {
         },
         "BillingEndTrialPeriod": {
             "status": [
-                145
+                95
             ],
             "hasPaymentMethod": [
                 8
@@ -3285,10 +3639,10 @@ export default {
                 1
             ],
             "currentBillingSubscription": [
-                144
+                94
             ],
             "billingSubscriptions": [
-                144
+                94
             ],
             "__typename": [
                 1
@@ -3296,7 +3650,7 @@ export default {
         },
         "BillingResourceCreditUsage": {
             "productKey": [
-                134
+                85
             ],
             "periodStart": [
                 4
@@ -3325,16 +3679,16 @@ export default {
         },
         "BillingPlan": {
             "planKey": [
-                132
+                83
             ],
             "baseProducts": [
-                140
+                91
             ],
             "resourceCreditProducts": [
-                140
+                91
             ],
             "meteredProducts": [
-                141
+                92
             ],
             "__typename": [
                 1
@@ -3361,10 +3715,10 @@ export default {
         },
         "BillingUpdate": {
             "currentBillingSubscription": [
-                144
+                94
             ],
             "billingSubscriptions": [
-                144
+                94
             ],
             "__typename": [
                 1
@@ -3400,7 +3754,7 @@ export default {
                 1
             ],
             "dailyUsage": [
-                172
+                192
             ],
             "__typename": [
                 1
@@ -3408,19 +3762,19 @@ export default {
         },
         "UsageAnalytics": {
             "usageByUser": [
-                171
+                191
             ],
             "usageByOperationType": [
-                171
+                191
             ],
             "usageByApplication": [
-                171
+                191
             ],
             "usageByModel": [
-                171
+                191
             ],
             "timeSeries": [
-                172
+                192
             ],
             "periodStart": [
                 4
@@ -3429,59 +3783,12 @@ export default {
                 4
             ],
             "userDailyUsage": [
-                173
+                193
             ],
             "__typename": [
                 1
             ]
         },
-        "UsageLimit": {
-            "id": [
-                3
-            ],
-            "resourceType": [
-                176
-            ],
-            "operationType": [
-                177
-            ],
-            "spenderType": [
-                1
-            ],
-            "spenderId": [
-                1
-            ],
-            "limitKind": [
-                1
-            ],
-            "periodCount": [
-                28
-            ],
-            "periodUnit": [
-                1
-            ],
-            "meter": [
-                1
-            ],
-            "limitValue": [
-                178
-            ],
-            "burstValue": [
-                178
-            ],
-            "createdAt": [
-                4
-            ],
-            "updatedAt": [
-                4
-            ],
-            "__typename": [
-                1
-            ]
-        },
-        "UsageResourceType": {},
-        "UsageOperationType": {},
-        "BigInt": {},
         "ApprovedAccessDomain": {
             "id": [
                 3
@@ -3512,10 +3819,10 @@ export default {
         },
         "OnboardingStepNavigation": {
             "onboardingStatus": [
-                74
+                77
             ],
             "previousOnboardingStatus": [
-                74
+                77
             ],
             "__typename": [
                 1
@@ -3554,7 +3861,7 @@ export default {
                 1
             ],
             "result": [
-                183
+                199
             ],
             "__typename": [
                 1
@@ -3571,7 +3878,7 @@ export default {
                 1
             ],
             "connectionSecurity": [
-                186
+                202
             ],
             "__typename": [
                 1
@@ -3580,13 +3887,13 @@ export default {
         "EmailConnectionSecurity": {},
         "PublicImapSmtpCaldavConnectionParameters": {
             "IMAP": [
-                185
+                201
             ],
             "SMTP": [
-                185
+                201
             ],
             "CALDAV": [
-                185
+                201
             ],
             "__typename": [
                 1
@@ -3607,6 +3914,9 @@ export default {
             ],
             "authFailedAt": [
                 4
+            ],
+            "authFailedReason": [
+                1
             ],
             "archivedAt": [
                 4
@@ -3642,7 +3952,69 @@ export default {
                 4
             ],
             "connectionParameters": [
-                187
+                203
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "ApplicationConnectedAccountDTO": {
+            "id": [
+                3
+            ],
+            "handle": [
+                1
+            ],
+            "provider": [
+                1
+            ],
+            "lastCredentialsRefreshedAt": [
+                4
+            ],
+            "authFailedAt": [
+                4
+            ],
+            "authFailedReason": [
+                1
+            ],
+            "archivedAt": [
+                4
+            ],
+            "handleAliases": [
+                1
+            ],
+            "scopes": [
+                1
+            ],
+            "lastSignedInAt": [
+                4
+            ],
+            "userWorkspaceId": [
+                3
+            ],
+            "connectionProviderId": [
+                3
+            ],
+            "applicationId": [
+                3
+            ],
+            "name": [
+                1
+            ],
+            "visibility": [
+                1
+            ],
+            "createdAt": [
+                4
+            ],
+            "updatedAt": [
+                4
+            ],
+            "connectionParameters": [
+                203
+            ],
+            "isOwnedByCurrentUser": [
+                8
             ],
             "__typename": [
                 1
@@ -3650,7 +4022,7 @@ export default {
         },
         "FeatureFlag": {
             "key": [
-                190
+                207
             ],
             "value": [
                 8
@@ -3717,7 +4089,7 @@ export default {
                 1
             ],
             "count": [
-                28
+                31
             ],
             "__typename": [
                 1
@@ -3725,16 +4097,16 @@ export default {
         },
         "ApplicationRegistrationStats": {
             "activeInstalls": [
-                28
+                31
             ],
             "suspendedInstalls": [
-                28
+                31
             ],
             "mostInstalledVersion": [
                 1
             ],
             "versionDistribution": [
-                193
+                210
             ],
             "__typename": [
                 1
@@ -3759,10 +4131,10 @@ export default {
                 1
             ],
             "type": [
-                197
+                214
             ],
             "status": [
-                198
+                215
             ],
             "issuer": [
                 1
@@ -3775,7 +4147,7 @@ export default {
         "SSOIdentityProviderStatus": {},
         "AuthProviders": {
             "sso": [
-                196
+                213
             ],
             "google": [
                 8
@@ -3812,10 +4184,10 @@ export default {
                 3
             ],
             "authProviders": [
-                199
+                216
             ],
             "authBypassProviders": [
-                200
+                217
             ],
             "logo": [
                 1
@@ -3824,7 +4196,7 @@ export default {
                 1
             ],
             "workspaceUrls": [
-                191
+                208
             ],
             "__typename": [
                 1
@@ -3863,7 +4235,7 @@ export default {
                 1
             ],
             "modelFamily": [
-                205
+                222
             ],
             "modelFamilyLabel": [
                 1
@@ -3878,12 +4250,9 @@ export default {
                 15
             ],
             "nativeCapabilities": [
-                203
+                220
             ],
             "isDeprecated": [
-                8
-            ],
-            "isRecommended": [
                 8
             ],
             "providerName": [
@@ -3901,11 +4270,81 @@ export default {
             "dataResidency": [
                 1
             ],
+            "intelligenceIndex": [
+                15
+            ],
+            "outputTokensPerSecond": [
+                15
+            ],
+            "costPerTask": [
+                15
+            ],
+            "efforts": [
+                1
+            ],
+            "effort": [
+                1
+            ],
+            "isBenchmarkInherited": [
+                8
+            ],
             "__typename": [
                 1
             ]
         },
         "ModelFamily": {},
+        "ClientAiEvaluationModelConfig": {
+            "modelId": [
+                1
+            ],
+            "label": [
+                1
+            ],
+            "description": [
+                1
+            ],
+            "providerLabel": [
+                1
+            ],
+            "isAvailable": [
+                8
+            ],
+            "supportedQuestionTypes": [
+                1
+            ],
+            "maxCriteriaPerQuestion": [
+                15
+            ],
+            "maxScoreLevels": [
+                15
+            ],
+            "medianLatencyMs": [
+                15
+            ],
+            "inputCostPerMillionTokens": [
+                15
+            ],
+            "outputCostPerMillionTokens": [
+                15
+            ],
+            "isDeprecated": [
+                8
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "ClientAiModelTierConfig": {
+            "tier": [
+                75
+            ],
+            "modelId": [
+                1
+            ],
+            "__typename": [
+                1
+            ]
+        },
         "Billing": {
             "isBillingEnabled": [
                 8
@@ -3917,7 +4356,7 @@ export default {
                 1
             ],
             "trialPeriods": [
-                195
+                212
             ],
             "__typename": [
                 1
@@ -3925,7 +4364,7 @@ export default {
         },
         "Support": {
             "supportDriver": [
-                208
+                227
             ],
             "supportFrontChatId": [
                 1
@@ -3954,7 +4393,7 @@ export default {
         },
         "Captcha": {
             "provider": [
-                211
+                230
             ],
             "siteKey": [
                 1
@@ -3991,10 +4430,10 @@ export default {
         },
         "PublicFeatureFlag": {
             "key": [
-                190
+                207
             ],
             "metadata": [
-                213
+                232
             ],
             "__typename": [
                 1
@@ -4019,13 +4458,19 @@ export default {
                 1
             ],
             "authProviders": [
-                199
+                216
             ],
             "billing": [
-                206
+                225
             ],
             "aiModels": [
-                204
+                221
+            ],
+            "aiEvaluationModels": [
+                223
+            ],
+            "aiModelTiers": [
+                224
             ],
             "signInPrefilled": [
                 8
@@ -4049,25 +4494,25 @@ export default {
                 8
             ],
             "support": [
-                207
+                226
             ],
             "isAttachmentPreviewEnabled": [
                 8
             ],
             "sentry": [
-                209
+                228
             ],
             "captcha": [
-                210
+                229
             ],
             "api": [
-                212
+                231
             ],
             "canManageFeatureFlags": [
                 8
             ],
             "publicFeatureFlags": [
-                214
+                233
             ],
             "isCookieSessionEnabled": [
                 8
@@ -4121,7 +4566,7 @@ export default {
                 1
             ],
             "maintenance": [
-                215
+                234
             ],
             "__typename": [
                 1
@@ -4158,7 +4603,7 @@ export default {
         },
         "CreateApplicationRegistration": {
             "applicationRegistration": [
-                76
+                79
             ],
             "clientSecret": [
                 1
@@ -4197,7 +4642,7 @@ export default {
         },
         "AppConnection": {
             "id": [
-                222
+                171
             ],
             "providerName": [
                 1
@@ -4226,11 +4671,13 @@ export default {
             "authFailedAt": [
                 1
             ],
+            "authFailedReason": [
+                1
+            ],
             "__typename": [
                 1
             ]
         },
-        "ID": {},
         "ResendEmailVerificationToken": {
             "success": [
                 8
@@ -4252,7 +4699,7 @@ export default {
                 3
             ],
             "type": [
-                197
+                214
             ],
             "issuer": [
                 1
@@ -4261,7 +4708,7 @@ export default {
                 1
             ],
             "status": [
-                198
+                215
             ],
             "__typename": [
                 1
@@ -4280,7 +4727,7 @@ export default {
         },
         "FindAvailableSSOIDP": {
             "type": [
-                197
+                214
             ],
             "id": [
                 3
@@ -4292,10 +4739,10 @@ export default {
                 1
             ],
             "status": [
-                198
+                215
             ],
             "workspace": [
-                226
+                244
             ],
             "__typename": [
                 1
@@ -4306,7 +4753,7 @@ export default {
                 3
             ],
             "type": [
-                197
+                214
             ],
             "issuer": [
                 1
@@ -4315,7 +4762,7 @@ export default {
                 1
             ],
             "status": [
-                198
+                215
             ],
             "__typename": [
                 1
@@ -4323,7 +4770,7 @@ export default {
         },
         "SSOConnection": {
             "type": [
-                197
+                214
             ],
             "id": [
                 3
@@ -4335,7 +4782,7 @@ export default {
                 1
             ],
             "status": [
-                198
+                215
             ],
             "__typename": [
                 1
@@ -4358,13 +4805,13 @@ export default {
                 1
             ],
             "workspaceUrls": [
-                191
+                208
             ],
             "logo": [
                 1
             ],
             "sso": [
-                229
+                247
             ],
             "__typename": [
                 1
@@ -4372,10 +4819,10 @@ export default {
         },
         "AvailableWorkspaces": {
             "availableWorkspacesForSignIn": [
-                230
+                248
             ],
             "availableWorkspacesForSignUp": [
-                230
+                248
             ],
             "__typename": [
                 1
@@ -4386,7 +4833,7 @@ export default {
                 3
             ],
             "name": [
-                34
+                37
             ],
             "userEmail": [
                 1
@@ -4401,6 +4848,35 @@ export default {
                 1
             ]
         },
+        "ApplicationHealthCheckAction": {
+            "label": [
+                1
+            ],
+            "location": [
+                1
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "ApplicationHealthCheckResult": {
+            "status": [
+                253
+            ],
+            "title": [
+                1
+            ],
+            "description": [
+                1
+            ],
+            "action": [
+                251
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "ApplicationHealthStatus": {},
         "MarketplaceApp": {
             "id": [
                 1
@@ -4508,10 +4984,10 @@ export default {
                 1
             ],
             "objectPermissions": [
-                234
+                255
             ],
             "fieldPermissions": [
-                235
+                256
             ],
             "__typename": [
                 1
@@ -4578,11 +5054,17 @@ export default {
             "galleryImages": [
                 1
             ],
+            "installCount": [
+                31
+            ],
             "defaultRoleUniversalIdentifier": [
                 1
             ],
             "roles": [
-                236
+                257
+            ],
+            "requestedCapabilities": [
+                1
             ],
             "manifest": [
                 9
@@ -4591,15 +5073,42 @@ export default {
                 1
             ]
         },
+        "TriggerInstallApplicationJobResult": {
+            "jobId": [
+                1
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "TriggerUninstallApplicationJobResult": {
+            "jobId": [
+                1
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "ApplicationCapabilityGrant": {
+            "id": [
+                3
+            ],
+            "grantedCapabilities": [
+                1
+            ],
+            "__typename": [
+                1
+            ]
+        },
         "WorkspaceCompanyEnrichmentResult": {
             "outcome": [
-                239
+                263
             ],
             "enrichment": [
                 9
             ],
             "personOutcome": [
-                240
+                264
             ],
             "personEnrichment": [
                 9
@@ -4621,7 +5130,7 @@ export default {
                 1
             ],
             "type": [
-                242
+                266
             ],
             "name": [
                 1
@@ -4645,7 +5154,7 @@ export default {
                 8
             ],
             "writability": [
-                26
+                29
             ],
             "isUIReadOnly": [
                 8
@@ -4654,6 +5163,12 @@ export default {
                 8
             ],
             "isUnique": [
+                8
+            ],
+            "isSearchable": [
+                8
+            ],
+            "isAuditLogged": [
                 8
             ],
             "defaultValue": [
@@ -4684,13 +5199,13 @@ export default {
                 3
             ],
             "object": [
-                23
+                25
             ],
             "relation": [
-                246
+                270
             ],
             "morphRelations": [
-                246
+                270
             ],
             "__typename": [
                 1
@@ -4705,10 +5220,10 @@ export default {
                 8
             ],
             "startCursor": [
-                29
+                32
             ],
             "endCursor": [
-                29
+                32
             ],
             "__typename": [
                 1
@@ -4716,10 +5231,10 @@ export default {
         },
         "FieldEdge": {
             "node": [
-                241
+                265
             ],
             "cursor": [
-                29
+                32
             ],
             "__typename": [
                 1
@@ -4727,10 +5242,10 @@ export default {
         },
         "FieldConnection": {
             "pageInfo": [
-                243
+                267
             ],
             "edges": [
-                244
+                268
             ],
             "__typename": [
                 1
@@ -4738,19 +5253,19 @@ export default {
         },
         "Relation": {
             "type": [
-                247
+                271
             ],
             "sourceObjectMetadata": [
-                23
+                25
             ],
             "targetObjectMetadata": [
-                23
+                25
             ],
             "sourceFieldMetadata": [
-                241
+                265
             ],
             "targetFieldMetadata": [
-                241
+                265
             ],
             "__typename": [
                 1
@@ -4797,7 +5312,7 @@ export default {
                 1
             ],
             "indexType": [
-                250
+                274
             ],
             "createdAt": [
                 4
@@ -4806,7 +5321,7 @@ export default {
                 4
             ],
             "indexFieldMetadataList": [
-                248
+                272
             ],
             "__typename": [
                 1
@@ -4815,10 +5330,10 @@ export default {
         "IndexType": {},
         "IndexEdge": {
             "node": [
-                249
+                273
             ],
             "cursor": [
-                29
+                32
             ],
             "__typename": [
                 1
@@ -4826,10 +5341,10 @@ export default {
         },
         "ObjectEdge": {
             "node": [
-                23
+                25
             ],
             "cursor": [
-                29
+                32
             ],
             "__typename": [
                 1
@@ -4837,10 +5352,10 @@ export default {
         },
         "ObjectConnection": {
             "pageInfo": [
-                243
+                267
             ],
             "edges": [
-                252
+                276
             ],
             "__typename": [
                 1
@@ -4848,10 +5363,10 @@ export default {
         },
         "ObjectFieldsConnection": {
             "pageInfo": [
-                243
+                267
             ],
             "edges": [
-                244
+                268
             ],
             "__typename": [
                 1
@@ -4859,10 +5374,10 @@ export default {
         },
         "ObjectIndexMetadatasConnection": {
             "pageInfo": [
-                243
+                267
             ],
             "edges": [
-                251
+                275
             ],
             "__typename": [
                 1
@@ -4873,7 +5388,7 @@ export default {
                 1
             ],
             "totalCount": [
-                28
+                31
             ],
             "__typename": [
                 1
@@ -4904,7 +5419,7 @@ export default {
         },
         "BillingEntitlement": {
             "key": [
-                259
+                283
             ],
             "value": [
                 8
@@ -4942,7 +5457,7 @@ export default {
                 1
             ],
             "records": [
-                260
+                284
             ],
             "isCustomDomainEnabled": [
                 8
@@ -4953,10 +5468,10 @@ export default {
         },
         "UpsertRowLevelPermissionPredicatesResult": {
             "predicates": [
-                43
+                46
             ],
             "predicateGroups": [
-                41
+                44
             ],
             "__typename": [
                 1
@@ -4965,6 +5480,12 @@ export default {
         "LogicFunctionLogs": {
             "logs": [
                 1
+            ],
+            "name": [
+                1
+            ],
+            "universalIdentifier": [
+                3
             ],
             "__typename": [
                 1
@@ -5015,10 +5536,10 @@ export default {
         },
         "AvailableWorkspacesAndAccessTokens": {
             "tokens": [
-                268
+                292
             ],
             "availableWorkspaces": [
-                231
+                249
             ],
             "__typename": [
                 1
@@ -5056,7 +5577,7 @@ export default {
         },
         "WorkspaceUrlsAndId": {
             "workspaceUrls": [
-                191
+                208
             ],
             "id": [
                 3
@@ -5070,7 +5591,7 @@ export default {
                 11
             ],
             "workspace": [
-                273
+                297
             ],
             "__typename": [
                 1
@@ -5103,7 +5624,7 @@ export default {
                 11
             ],
             "workspaceUrls": [
-                191
+                208
             ],
             "__typename": [
                 1
@@ -5147,7 +5668,7 @@ export default {
         },
         "AuthTokens": {
             "tokens": [
-                268
+                292
             ],
             "__typename": [
                 1
@@ -5188,7 +5709,7 @@ export default {
                 11
             ],
             "workspace": [
-                273
+                297
             ],
             "__typename": [
                 1
@@ -5234,69 +5755,6 @@ export default {
                 1
             ]
         },
-        "ApplicationExportApplication": {
-            "universalIdentifier": [
-                1
-            ],
-            "displayName": [
-                1
-            ],
-            "sourceType": [
-                6
-            ],
-            "__typename": [
-                1
-            ]
-        },
-        "ApplicationExportCoverageEntry": {
-            "metadataName": [
-                1
-            ],
-            "universalIdentifier": [
-                1
-            ],
-            "status": [
-                290
-            ],
-            "reason": [
-                1
-            ],
-            "__typename": [
-                1
-            ]
-        },
-        "ApplicationExportCoverageStatus": {},
-        "ApplicationExportFile": {
-            "folder": [
-                1
-            ],
-            "path": [
-                1
-            ],
-            "content": [
-                1
-            ],
-            "__typename": [
-                1
-            ]
-        },
-        "ApplicationExport": {
-            "application": [
-                288
-            ],
-            "manifest": [
-                9
-            ],
-            "coverage": [
-                289
-            ],
-            "files": [
-                291
-            ],
-            "__typename": [
-                1
-            ]
-        },
         "File": {
             "id": [
                 3
@@ -5327,10 +5785,10 @@ export default {
         },
         "CompleteApplicationFileUploadsResult": {
             "files": [
-                293
+                312
             ],
             "errors": [
-                294
+                313
             ],
             "__typename": [
                 1
@@ -5341,7 +5799,7 @@ export default {
                 3
             ],
             "fileFolder": [
-                297
+                316
             ],
             "filePath": [
                 1
@@ -5362,7 +5820,7 @@ export default {
         "FileFolder": {},
         "ApplicationFileUploadError": {
             "fileFolder": [
-                297
+                316
             ],
             "filePath": [
                 1
@@ -5376,10 +5834,10 @@ export default {
         },
         "CreateApplicationFileUploadsResult": {
             "targets": [
-                296
+                315
             ],
             "errors": [
-                298
+                317
             ],
             "__typename": [
                 1
@@ -5402,6 +5860,69 @@ export default {
             ],
             "actions": [
                 9
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "ApplicationExportApplication": {
+            "universalIdentifier": [
+                1
+            ],
+            "displayName": [
+                1
+            ],
+            "sourceType": [
+                6
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "ApplicationExportCoverageEntry": {
+            "metadataName": [
+                1
+            ],
+            "universalIdentifier": [
+                1
+            ],
+            "status": [
+                323
+            ],
+            "reason": [
+                1
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "ApplicationExportCoverageStatus": {},
+        "ApplicationExportFile": {
+            "folder": [
+                1
+            ],
+            "path": [
+                1
+            ],
+            "content": [
+                1
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "ApplicationExport": {
+            "application": [
+                321
+            ],
+            "manifest": [
+                9
+            ],
+            "coverage": [
+                322
+            ],
+            "files": [
+                324
             ],
             "__typename": [
                 1
@@ -5461,16 +5982,16 @@ export default {
                 1
             ],
             "status": [
-                305
+                329
             ],
             "tenantStatus": [
-                306
+                330
             ],
             "unsubscribeHostnameStatus": [
-                307
+                331
             ],
             "verificationRecords": [
-                303
+                327
             ],
             "verifiedAt": [
                 4
@@ -5487,7 +6008,7 @@ export default {
                 3
             ],
             "visibility": [
-                309
+                333
             ],
             "handle": [
                 1
@@ -5496,16 +6017,16 @@ export default {
                 1
             ],
             "type": [
-                310
+                334
             ],
             "isContactAutoCreationEnabled": [
                 8
             ],
             "contactAutoCreationPolicy": [
-                311
+                335
             ],
             "messageFolderImportPolicy": [
-                312
+                336
             ],
             "excludeNonProfessionalEmails": [
                 8
@@ -5514,7 +6035,7 @@ export default {
                 8
             ],
             "pendingGroupEmailsAction": [
-                313
+                337
             ],
             "isSyncEnabled": [
                 8
@@ -5523,10 +6044,10 @@ export default {
                 4
             ],
             "syncStatus": [
-                314
+                338
             ],
             "syncStage": [
-                315
+                339
             ],
             "syncStageStartedAt": [
                 4
@@ -5547,7 +6068,7 @@ export default {
                 4
             ],
             "connectedAccount": [
-                188
+                204
             ],
             "__typename": [
                 1
@@ -5560,9 +6081,31 @@ export default {
         "MessageChannelPendingGroupEmailsAction": {},
         "MessageChannelSyncStatus": {},
         "MessageChannelSyncStage": {},
+        "IngestedAppMessage": {
+            "externalId": [
+                1
+            ],
+            "messageId": [
+                3
+            ],
+            "messageThreadId": [
+                3
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "IngestAppMessagesOutput": {
+            "messages": [
+                340
+            ],
+            "__typename": [
+                1
+            ]
+        },
         "CreateEmailGroupChannelOutput": {
             "messageChannel": [
-                308
+                332
             ],
             "forwardingAddress": [
                 1
@@ -5573,28 +6116,28 @@ export default {
         },
         "CampaignAudiencePreviewDTO": {
             "totalMembers": [
-                28
+                31
             ],
             "withoutEmail": [
-                28
+                31
             ],
             "duplicateEmails": [
-                28
-            ],
-            "overCap": [
-                28
+                31
             ],
             "hardSuppressed": [
-                28
+                31
             ],
             "globallyUnsubscribed": [
-                28
+                31
             ],
             "topicUnsubscribed": [
-                28
+                31
+            ],
+            "trackingRefused": [
+                31
             ],
             "sendable": [
-                28
+                31
             ],
             "__typename": [
                 1
@@ -5605,7 +6148,7 @@ export default {
                 1
             ],
             "canceledMessageCount": [
-                28
+                31
             ],
             "__typename": [
                 1
@@ -5624,10 +6167,10 @@ export default {
                 1
             ],
             "queuedCount": [
-                28
+                31
             ],
             "audience": [
-                317
+                343
             ],
             "__typename": [
                 1
@@ -5670,10 +6213,10 @@ export default {
                 1
             ],
             "reason": [
-                323
+                349
             ],
             "source": [
-                324
+                350
             ],
             "unsubscribeTopicId": [
                 3
@@ -5686,10 +6229,10 @@ export default {
         "MessageSuppressionSource": {},
         "MessageSuppressionList": {
             "records": [
-                322
+                348
             ],
             "totalCount": [
-                28
+                31
             ],
             "__typename": [
                 1
@@ -5712,7 +6255,7 @@ export default {
                 1
             ],
             "visibility": [
-                327
+                353
             ],
             "__typename": [
                 1
@@ -5758,7 +6301,7 @@ export default {
                 1
             ],
             "location": [
-                329
+                355
             ],
             "__typename": [
                 1
@@ -5775,7 +6318,7 @@ export default {
                 1
             ],
             "connectionSecurity": [
-                186
+                202
             ],
             "__typename": [
                 1
@@ -5786,13 +6329,13 @@ export default {
                 1
             ],
             "IMAP": [
-                331
+                357
             ],
             "SMTP": [
-                331
+                357
             ],
             "CALDAV": [
-                331
+                357
             ],
             "__typename": [
                 1
@@ -5812,7 +6355,7 @@ export default {
                 3
             ],
             "connectionParameters": [
-                332
+                358
             ],
             "__typename": [
                 1
@@ -5829,64 +6372,6 @@ export default {
                 1
             ]
         },
-        "Webhook": {
-            "id": [
-                3
-            ],
-            "targetUrl": [
-                1
-            ],
-            "operations": [
-                1
-            ],
-            "description": [
-                1
-            ],
-            "secret": [
-                1
-            ],
-            "applicationId": [
-                3
-            ],
-            "createdAt": [
-                4
-            ],
-            "updatedAt": [
-                4
-            ],
-            "deletedAt": [
-                4
-            ],
-            "__typename": [
-                1
-            ]
-        },
-        "ToolIndexEntry": {
-            "name": [
-                1
-            ],
-            "label": [
-                1
-            ],
-            "description": [
-                1
-            ],
-            "category": [
-                1
-            ],
-            "objectName": [
-                1
-            ],
-            "icon": [
-                1
-            ],
-            "inputSchema": [
-                9
-            ],
-            "__typename": [
-                1
-            ]
-        },
         "AgentMessagePart": {
             "id": [
                 3
@@ -5895,7 +6380,7 @@ export default {
                 3
             ],
             "orderIndex": [
-                28
+                31
             ],
             "type": [
                 1
@@ -5973,6 +6458,105 @@ export default {
                 1
             ]
         },
+        "AgentMessage": {
+            "id": [
+                3
+            ],
+            "threadId": [
+                3
+            ],
+            "turnId": [
+                3
+            ],
+            "agentId": [
+                3
+            ],
+            "senderUserWorkspaceId": [
+                3
+            ],
+            "role": [
+                1
+            ],
+            "status": [
+                1
+            ],
+            "parts": [
+                361
+            ],
+            "processedAt": [
+                4
+            ],
+            "createdAt": [
+                4
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "Webhook": {
+            "id": [
+                3
+            ],
+            "targetUrl": [
+                1
+            ],
+            "operations": [
+                1
+            ],
+            "description": [
+                1
+            ],
+            "secret": [
+                1
+            ],
+            "applicationId": [
+                3
+            ],
+            "createdAt": [
+                4
+            ],
+            "updatedAt": [
+                4
+            ],
+            "deletedAt": [
+                4
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "ToolIndexEntry": {
+            "name": [
+                1
+            ],
+            "label": [
+                1
+            ],
+            "description": [
+                1
+            ],
+            "category": [
+                1
+            ],
+            "objectName": [
+                1
+            ],
+            "icon": [
+                1
+            ],
+            "widgetName": [
+                1
+            ],
+            "frontComponentId": [
+                1
+            ],
+            "inputSchema": [
+                9
+            ],
+            "__typename": [
+                1
+            ]
+        },
         "RunAgentResult": {
             "result": [
                 9
@@ -6037,7 +6621,7 @@ export default {
                 1
             ],
             "series": [
-                341
+                368
             ],
             "xAxisLabel": [
                 1
@@ -6052,10 +6636,10 @@ export default {
                 8
             ],
             "layout": [
-                101
+                122
             ],
             "groupMode": [
-                100
+                121
             ],
             "hasTooManyGroups": [
                 8
@@ -6086,7 +6670,7 @@ export default {
                 1
             ],
             "data": [
-                343
+                370
             ],
             "__typename": [
                 1
@@ -6094,7 +6678,7 @@ export default {
         },
         "LineChartData": {
             "series": [
-                344
+                371
             ],
             "xAxisLabel": [
                 1
@@ -6131,7 +6715,7 @@ export default {
         },
         "PieChartData": {
             "data": [
-                346
+                373
             ],
             "showLegend": [
                 8
@@ -6175,6 +6759,200 @@ export default {
                 1
             ]
         },
+        "AiChatUsage": {
+            "limitValue": [
+                161
+            ],
+            "consumedValue": [
+                161
+            ],
+            "periodEnd": [
+                4
+            ],
+            "kind": [
+                1
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "Skill": {
+            "id": [
+                3
+            ],
+            "name": [
+                1
+            ],
+            "label": [
+                1
+            ],
+            "icon": [
+                1
+            ],
+            "description": [
+                1
+            ],
+            "content": [
+                1
+            ],
+            "isCustom": [
+                8
+            ],
+            "isSystem": [
+                8
+            ],
+            "isActive": [
+                8
+            ],
+            "applicationId": [
+                3
+            ],
+            "createdAt": [
+                4
+            ],
+            "updatedAt": [
+                4
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "AgentChatThread": {
+            "id": [
+                171
+            ],
+            "title": [
+                1
+            ],
+            "totalCacheReadTokens": [
+                31
+            ],
+            "totalInputTokens": [
+                31
+            ],
+            "totalOutputTokens": [
+                31
+            ],
+            "contextWindowTokens": [
+                31
+            ],
+            "conversationSize": [
+                31
+            ],
+            "totalInputCredits": [
+                15
+            ],
+            "totalOutputCredits": [
+                15
+            ],
+            "createdAt": [
+                4
+            ],
+            "updatedAt": [
+                4
+            ],
+            "deletedAt": [
+                4
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "AiSystemPromptSection": {
+            "title": [
+                1
+            ],
+            "content": [
+                1
+            ],
+            "estimatedTokenCount": [
+                31
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "AiSystemPromptPreview": {
+            "sections": [
+                379
+            ],
+            "estimatedTokenCount": [
+                31
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "ChatStreamError": {
+            "code": [
+                1
+            ],
+            "message": [
+                1
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "ChatStreamCatchupChunks": {
+            "chunks": [
+                9
+            ],
+            "maxSeq": [
+                31
+            ],
+            "error": [
+                381
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "SendChatMessageResult": {
+            "messageId": [
+                1
+            ],
+            "queued": [
+                8
+            ],
+            "streamId": [
+                1
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "AgentChatEvent": {
+            "threadId": [
+                1
+            ],
+            "event": [
+                9
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "SendInboxMessageResult": {
+            "threadId": [
+                3
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "StartWorkspaceSetupChatResult": {
+            "outcome": [
+                387
+            ],
+            "thread": [
+                378
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "WorkspaceSetupChatOutcome": {},
         "SendEmailOutput": {
             "success": [
                 8
@@ -6236,216 +7014,52 @@ export default {
         },
         "EventLogQueryResult": {
             "records": [
-                351
+                390
             ],
             "totalCount": [
-                28
+                31
             ],
             "pageInfo": [
-                352
+                391
             ],
             "__typename": [
                 1
             ]
         },
-        "Skill": {
+        "RecordExport": {
             "id": [
                 3
             ],
-            "name": [
+            "filename": [
                 1
             ],
-            "label": [
+            "progress": [
+                31
+            ],
+            "errorMessage": [
                 1
             ],
-            "icon": [
+            "downloadPath": [
                 1
             ],
-            "description": [
+            "__typename": [
                 1
-            ],
-            "content": [
-                1
-            ],
-            "isCustom": [
-                8
-            ],
-            "isActive": [
-                8
-            ],
-            "applicationId": [
+            ]
+        },
+        "RecordPermissionsResult": {
+            "objectMetadataId": [
                 3
             ],
-            "createdAt": [
-                4
-            ],
-            "updatedAt": [
-                4
-            ],
-            "__typename": [
-                1
-            ]
-        },
-        "AgentMessage": {
-            "id": [
+            "recordId": [
                 3
             ],
-            "threadId": [
-                3
-            ],
-            "turnId": [
-                3
-            ],
-            "agentId": [
-                3
-            ],
-            "role": [
-                1
-            ],
-            "status": [
-                1
-            ],
-            "parts": [
-                337
-            ],
-            "processedAt": [
-                4
-            ],
-            "createdAt": [
-                4
+            "permissions": [
+                169
             ],
             "__typename": [
                 1
             ]
         },
-        "AgentChatThread": {
-            "id": [
-                222
-            ],
-            "title": [
-                1
-            ],
-            "totalInputTokens": [
-                28
-            ],
-            "totalOutputTokens": [
-                28
-            ],
-            "contextWindowTokens": [
-                28
-            ],
-            "conversationSize": [
-                28
-            ],
-            "totalInputCredits": [
-                15
-            ],
-            "totalOutputCredits": [
-                15
-            ],
-            "createdAt": [
-                4
-            ],
-            "updatedAt": [
-                4
-            ],
-            "deletedAt": [
-                4
-            ],
-            "lastMessageAt": [
-                4
-            ],
-            "__typename": [
-                1
-            ]
-        },
-        "AiSystemPromptSection": {
-            "title": [
-                1
-            ],
-            "content": [
-                1
-            ],
-            "estimatedTokenCount": [
-                28
-            ],
-            "__typename": [
-                1
-            ]
-        },
-        "AiSystemPromptPreview": {
-            "sections": [
-                357
-            ],
-            "estimatedTokenCount": [
-                28
-            ],
-            "__typename": [
-                1
-            ]
-        },
-        "ChatStreamError": {
-            "code": [
-                1
-            ],
-            "message": [
-                1
-            ],
-            "__typename": [
-                1
-            ]
-        },
-        "ChatStreamCatchupChunks": {
-            "chunks": [
-                9
-            ],
-            "maxSeq": [
-                28
-            ],
-            "error": [
-                359
-            ],
-            "__typename": [
-                1
-            ]
-        },
-        "SendChatMessageResult": {
-            "messageId": [
-                1
-            ],
-            "queued": [
-                8
-            ],
-            "streamId": [
-                1
-            ],
-            "__typename": [
-                1
-            ]
-        },
-        "AgentChatEvent": {
-            "threadId": [
-                1
-            ],
-            "event": [
-                9
-            ],
-            "__typename": [
-                1
-            ]
-        },
-        "StartWorkspaceSetupChatResult": {
-            "outcome": [
-                364
-            ],
-            "thread": [
-                356
-            ],
-            "__typename": [
-                1
-            ]
-        },
-        "WorkspaceSetupChatOutcome": {},
         "AgentTurnEvaluation": {
             "id": [
                 3
@@ -6454,7 +7068,7 @@ export default {
                 3
             ],
             "score": [
-                28
+                31
             ],
             "comment": [
                 1
@@ -6477,10 +7091,10 @@ export default {
                 3
             ],
             "evaluations": [
-                365
+                395
             ],
             "messages": [
-                355
+                362
             ],
             "createdAt": [
                 4
@@ -6491,13 +7105,13 @@ export default {
         },
         "WorkspaceAiStats": {
             "conversationsCount": [
-                28
+                31
             ],
             "skillsCount": [
-                28
+                31
             ],
             "toolsCount": [
-                28
+                31
             ],
             "__typename": [
                 1
@@ -6525,7 +7139,7 @@ export default {
                 1
             ],
             "enqueuedJobsCount": [
-                28
+                31
             ],
             "jobIds": [
                 1
@@ -6542,7 +7156,7 @@ export default {
                 9
             ],
             "scope": [
-                371
+                401
             ],
             "__typename": [
                 1
@@ -6557,19 +7171,19 @@ export default {
                 1
             ],
             "syncStatus": [
-                373
+                403
             ],
             "syncStage": [
-                374
+                404
             ],
             "visibility": [
-                375
+                405
             ],
             "isContactAutoCreationEnabled": [
                 8
             ],
             "contactAutoCreationPolicy": [
-                376
+                406
             ],
             "isSyncEnabled": [
                 8
@@ -6620,7 +7234,7 @@ export default {
                 1
             ],
             "pendingSyncAction": [
-                378
+                408
             ],
             "messageChannelId": [
                 3
@@ -6662,7 +7276,7 @@ export default {
                 1
             ],
             "provenance": [
-                380
+                410
             ],
             "__typename": [
                 1
@@ -6691,7 +7305,7 @@ export default {
                 3
             ],
             "through": [
-                381
+                411
             ],
             "__typename": [
                 1
@@ -6711,7 +7325,7 @@ export default {
                 1
             ],
             "emit": [
-                382
+                412
             ],
             "action": [
                 1
@@ -6744,9 +7358,76 @@ export default {
                 1
             ]
         },
+        "ValidationRule": {
+            "id": [
+                3
+            ],
+            "objectMetadataId": [
+                3
+            ],
+            "errorFieldMetadataId": [
+                3
+            ],
+            "name": [
+                1
+            ],
+            "description": [
+                1
+            ],
+            "icon": [
+                1
+            ],
+            "expression": [
+                1
+            ],
+            "message": [
+                1
+            ],
+            "isActive": [
+                8
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "PermissionFlag": {
+            "id": [
+                3
+            ],
+            "universalIdentifier": [
+                3
+            ],
+            "key": [
+                1
+            ],
+            "label": [
+                1
+            ],
+            "description": [
+                1
+            ],
+            "icon": [
+                1
+            ],
+            "permissionType": [
+                1
+            ],
+            "applicationId": [
+                3
+            ],
+            "createdAt": [
+                4
+            ],
+            "updatedAt": [
+                4
+            ],
+            "__typename": [
+                1
+            ]
+        },
         "CollectionHash": {
             "collectionName": [
-                385
+                417
             ],
             "hash": [
                 1
@@ -6796,10 +7477,10 @@ export default {
                 3
             ],
             "type": [
-                65
+                67
             ],
             "key": [
-                66
+                68
             ],
             "objectMetadataId": [
                 3
@@ -6810,46 +7491,37 @@ export default {
         },
         "MinimalMetadata": {
             "objectMetadataItems": [
-                386
+                418
             ],
             "views": [
-                387
+                419
             ],
             "collectionHashes": [
-                384
+                416
             ],
             "__typename": [
                 1
             ]
         },
         "Query": {
+            "recordSharing": [
+                174,
+                {
+                    "target": [
+                        422,
+                        "RecordSharingTargetInput!"
+                    ]
+                }
+            ],
             "navigationMenuItems": [
-                153
+                167
             ],
             "navigationMenuItem": [
-                153,
+                167,
                 {
                     "id": [
                         3,
                         "UUID!"
-                    ]
-                }
-            ],
-            "applicationSdkClientChecksums": [
-                77,
-                {
-                    "applicationId": [
-                        3,
-                        "UUID!"
-                    ]
-                }
-            ],
-            "isApplicationStopped": [
-                8,
-                {
-                    "applicationUniversalIdentifier": [
-                        1,
-                        "String!"
                     ]
                 }
             ],
@@ -6870,150 +7542,10 @@ export default {
                 }
             ],
             "enterpriseSubscriptionStatus": [
-                149
+                155
             ],
-            "getUsageAnalytics": [
-                174,
-                {
-                    "input": [
-                        390
-                    ]
-                }
-            ],
-            "usageLimits": [
-                175
-            ],
-            "getViewFilterGroups": [
-                56,
-                {
-                    "viewId": [
-                        1
-                    ]
-                }
-            ],
-            "getViewFilterGroup": [
-                56,
-                {
-                    "id": [
-                        1,
-                        "String!"
-                    ]
-                }
-            ],
-            "getViewFilters": [
-                58,
-                {
-                    "viewId": [
-                        1
-                    ]
-                }
-            ],
-            "getViewFilter": [
-                58,
-                {
-                    "id": [
-                        1,
-                        "String!"
-                    ]
-                }
-            ],
-            "getViews": [
-                64,
-                {
-                    "objectMetadataId": [
-                        1
-                    ],
-                    "viewTypes": [
-                        65,
-                        "[ViewType!]"
-                    ]
-                }
-            ],
-            "getView": [
-                64,
-                {
-                    "id": [
-                        1,
-                        "String!"
-                    ]
-                }
-            ],
-            "getViewSorts": [
-                61,
-                {
-                    "viewId": [
-                        1
-                    ]
-                }
-            ],
-            "getViewSort": [
-                61,
-                {
-                    "id": [
-                        1,
-                        "String!"
-                    ]
-                }
-            ],
-            "getViewFields": [
-                54,
-                {
-                    "viewId": [
-                        1,
-                        "String!"
-                    ]
-                }
-            ],
-            "getViewField": [
-                54,
-                {
-                    "id": [
-                        1,
-                        "String!"
-                    ]
-                }
-            ],
-            "getViewFieldGroups": [
-                63,
-                {
-                    "viewId": [
-                        1,
-                        "String!"
-                    ]
-                }
-            ],
-            "getViewFieldGroup": [
-                63,
-                {
-                    "id": [
-                        1,
-                        "String!"
-                    ]
-                }
-            ],
-            "apiKeys": [
-                2
-            ],
-            "getApiKeyRoles": [
-                48
-            ],
-            "apiKey": [
-                2,
-                {
-                    "input": [
-                        391,
-                        "GetApiKeyInput!"
-                    ]
-                }
-            ],
-            "currentUserSessions": [
-                164
-            ],
-            "myConnectedAccounts": [
-                188
-            ],
-            "applicationConnectionProviders": [
-                128,
+            "applicationSdkClientChecksums": [
+                97,
                 {
                     "applicationId": [
                         3,
@@ -7021,72 +7553,35 @@ export default {
                     ]
                 }
             ],
-            "billingPortalSession": [
-                169,
+            "isApplicationStopped": [
+                8,
                 {
-                    "returnUrlPath": [
-                        1
-                    ],
-                    "forPaymentMethodUpdate": [
-                        8
-                    ]
-                }
-            ],
-            "listPlans": [
-                167
-            ],
-            "getResourceCreditUsage": [
-                166
-            ],
-            "getInviteSuggestions": [
-                180
-            ],
-            "findWorkspaceInvitations": [
-                183
-            ],
-            "getApprovedAccessDomains": [
-                179
-            ],
-            "getPageLayoutTabs": [
-                124,
-                {
-                    "pageLayoutId": [
+                    "applicationUniversalIdentifier": [
                         1,
                         "String!"
                     ]
                 }
             ],
-            "getPageLayoutTab": [
-                124,
-                {
-                    "id": [
-                        1,
-                        "String!"
-                    ]
-                }
+            "usageLimits": [
+                163
             ],
-            "getPageLayouts": [
-                125,
-                {
-                    "objectMetadataId": [
-                        1
-                    ],
-                    "pageLayoutType": [
-                        126
-                    ]
-                }
+            "usageQuotasWithConsumption": [
+                160
             ],
-            "getPageLayout": [
-                125,
+            "usageQuotaDefinitions": [
+                159
+            ],
+            "usageQuotaScopeConsumption": [
+                162,
                 {
-                    "id": [
-                        1,
-                        "String!"
+                    "input": [
+                        423,
+                        "UsageQuotaScopeInput!"
                     ]
                 }
             ],
             "getPageLayoutWidgets": [
-                81,
+                101,
                 {
                     "pageLayoutTabId": [
                         1,
@@ -7095,7 +7590,136 @@ export default {
                 }
             ],
             "getPageLayoutWidget": [
-                81,
+                101,
+                {
+                    "id": [
+                        1,
+                        "String!"
+                    ]
+                }
+            ],
+            "getPageLayoutTabs": [
+                147,
+                {
+                    "pageLayoutId": [
+                        1,
+                        "String!"
+                    ]
+                }
+            ],
+            "getPageLayoutTab": [
+                147,
+                {
+                    "id": [
+                        1,
+                        "String!"
+                    ]
+                }
+            ],
+            "getPageLayouts": [
+                148,
+                {
+                    "objectMetadataId": [
+                        1
+                    ],
+                    "pageLayoutType": [
+                        149
+                    ]
+                }
+            ],
+            "getPageLayout": [
+                148,
+                {
+                    "id": [
+                        1,
+                        "String!"
+                    ]
+                }
+            ],
+            "getViews": [
+                66,
+                {
+                    "objectMetadataId": [
+                        1
+                    ],
+                    "viewTypes": [
+                        67,
+                        "[ViewType!]"
+                    ]
+                }
+            ],
+            "getView": [
+                66,
+                {
+                    "id": [
+                        1,
+                        "String!"
+                    ]
+                }
+            ],
+            "getViewSorts": [
+                63,
+                {
+                    "viewId": [
+                        1
+                    ]
+                }
+            ],
+            "getViewSort": [
+                63,
+                {
+                    "id": [
+                        1,
+                        "String!"
+                    ]
+                }
+            ],
+            "getViewFilters": [
+                60,
+                {
+                    "viewId": [
+                        1
+                    ]
+                }
+            ],
+            "getViewFilter": [
+                60,
+                {
+                    "id": [
+                        1,
+                        "String!"
+                    ]
+                }
+            ],
+            "getViewFields": [
+                56,
+                {
+                    "viewId": [
+                        1,
+                        "String!"
+                    ]
+                }
+            ],
+            "getViewField": [
+                56,
+                {
+                    "id": [
+                        1,
+                        "String!"
+                    ]
+                }
+            ],
+            "getViewFieldGroups": [
+                65,
+                {
+                    "viewId": [
+                        1,
+                        "String!"
+                    ]
+                }
+            ],
+            "getViewFieldGroup": [
+                65,
                 {
                     "id": [
                         1,
@@ -7110,26 +7734,26 @@ export default {
                 10,
                 {
                     "input": [
-                        392,
+                        424,
                         "AgentIdInput!"
                     ]
                 }
             ],
             "objects": [
-                253,
+                277,
                 {
                     "paging": [
-                        27,
+                        30,
                         "CursorPaging!"
                     ],
                     "filter": [
-                        393,
+                        425,
                         "ObjectFilter!"
                     ]
                 }
             ],
             "object": [
-                23,
+                25,
                 {
                     "id": [
                         3,
@@ -7138,7 +7762,7 @@ export default {
                 }
             ],
             "objectRecordCounts": [
-                256
+                280
             ],
             "mostlyEmptyFieldMetadataIds": [
                 3,
@@ -7149,23 +7773,26 @@ export default {
                     ]
                 }
             ],
+            "currentUserSessions": [
+                184
+            ],
             "findOneLogicFunction": [
-                21,
+                23,
                 {
                     "input": [
-                        394,
+                        426,
                         "LogicFunctionIdInput!"
                     ]
                 }
             ],
             "findManyLogicFunctions": [
-                21
+                23
             ],
             "getAvailablePackages": [
                 9,
                 {
                     "input": [
-                        394,
+                        426,
                         "LogicFunctionIdInput!"
                     ]
                 }
@@ -7174,7 +7801,7 @@ export default {
                 1,
                 {
                     "input": [
-                        394,
+                        426,
                         "LogicFunctionIdInput!"
                     ]
                 }
@@ -7203,11 +7830,101 @@ export default {
                     ]
                 }
             ],
+            "getInviteSuggestions": [
+                196
+            ],
+            "applicationConnectionProviders": [
+                151,
+                {
+                    "applicationId": [
+                        3,
+                        "UUID!"
+                    ]
+                }
+            ],
+            "getUsageAnalytics": [
+                194,
+                {
+                    "input": [
+                        427
+                    ]
+                }
+            ],
+            "billingPortalSession": [
+                189,
+                {
+                    "returnUrlPath": [
+                        1
+                    ],
+                    "forPaymentMethodUpdate": [
+                        8
+                    ]
+                }
+            ],
+            "listPlans": [
+                187
+            ],
+            "getResourceCreditUsage": [
+                186
+            ],
+            "findWorkspaceInvitations": [
+                199
+            ],
+            "getApprovedAccessDomains": [
+                195
+            ],
+            "getRoles": [
+                51
+            ],
+            "apiKeys": [
+                2
+            ],
+            "getApiKeyRoles": [
+                51
+            ],
+            "apiKey": [
+                2,
+                {
+                    "input": [
+                        428,
+                        "GetApiKeyInput!"
+                    ]
+                }
+            ],
+            "getViewFilterGroups": [
+                58,
+                {
+                    "viewId": [
+                        1
+                    ]
+                }
+            ],
+            "getViewFilterGroup": [
+                58,
+                {
+                    "id": [
+                        1,
+                        "String!"
+                    ]
+                }
+            ],
+            "myConnectedAccounts": [
+                204
+            ],
+            "applicationConnectedAccounts": [
+                205,
+                {
+                    "applicationId": [
+                        3,
+                        "UUID!"
+                    ]
+                }
+            ],
             "currentWorkspace": [
-                70
+                72
             ],
             "getPublicWorkspaceDataByDomain": [
-                201,
+                218,
                 {
                     "origin": [
                         1
@@ -7215,7 +7932,7 @@ export default {
                 }
             ],
             "getPublicWorkspaceDataById": [
-                202,
+                219,
                 {
                     "id": [
                         3,
@@ -7224,7 +7941,7 @@ export default {
                 }
             ],
             "findApplicationRegistrationByClientId": [
-                219,
+                238,
                 {
                     "clientId": [
                         1,
@@ -7233,7 +7950,7 @@ export default {
                 }
             ],
             "findApplicationRegistrationByUniversalIdentifier": [
-                76,
+                79,
                 {
                     "universalIdentifier": [
                         1,
@@ -7242,10 +7959,10 @@ export default {
                 }
             ],
             "findManyApplicationRegistrations": [
-                76
+                79
             ],
             "findOneApplicationRegistration": [
-                76,
+                79,
                 {
                     "id": [
                         1,
@@ -7254,7 +7971,7 @@ export default {
                 }
             ],
             "findApplicationRegistrationStats": [
-                194,
+                211,
                 {
                     "id": [
                         1,
@@ -7263,7 +7980,7 @@ export default {
                 }
             ],
             "findApplicationRegistrationVariables": [
-                192,
+                209,
                 {
                     "applicationRegistrationId": [
                         1,
@@ -7281,7 +7998,7 @@ export default {
                 }
             ],
             "findClaimableApplicationRegistration": [
-                217,
+                236,
                 {
                     "sourcePackage": [
                         1
@@ -7301,10 +8018,10 @@ export default {
                 }
             ],
             "findManyApplications": [
-                49
+                52
             ],
             "findOneApplication": [
-                49,
+                52,
                 {
                     "id": [
                         3
@@ -7314,8 +8031,26 @@ export default {
                     ]
                 }
             ],
+            "findInstallApplicationJobStatus": [
+                175,
+                {
+                    "universalIdentifier": [
+                        1,
+                        "String!"
+                    ]
+                }
+            ],
+            "findUninstallApplicationJobStatus": [
+                175,
+                {
+                    "universalIdentifier": [
+                        1,
+                        "String!"
+                    ]
+                }
+            ],
             "findManyMarketplaceApps": [
-                233,
+                254,
                 {
                     "universalIdentifiers": [
                         1,
@@ -7324,7 +8059,7 @@ export default {
                 }
             ],
             "findMarketplaceAppDetail": [
-                237,
+                258,
                 {
                     "universalIdentifier": [
                         1,
@@ -7333,7 +8068,7 @@ export default {
                 }
             ],
             "publicMarketplaceApps": [
-                233,
+                254,
                 {
                     "isVetted": [
                         8,
@@ -7342,7 +8077,7 @@ export default {
                 }
             ],
             "publicMarketplaceAppDetail": [
-                237,
+                258,
                 {
                     "universalIdentifier": [
                         1,
@@ -7351,20 +8086,20 @@ export default {
                 }
             ],
             "fields": [
-                245,
+                269,
                 {
                     "paging": [
-                        27,
+                        30,
                         "CursorPaging!"
                     ],
                     "filter": [
-                        30,
+                        33,
                         "FieldFilter!"
                     ]
                 }
             ],
             "field": [
-                241,
+                265,
                 {
                     "id": [
                         3,
@@ -7373,7 +8108,7 @@ export default {
                 }
             ],
             "getViewGroups": [
-                60,
+                62,
                 {
                     "viewId": [
                         1
@@ -7381,7 +8116,7 @@ export default {
                 }
             ],
             "getViewGroup": [
-                60,
+                62,
                 {
                     "id": [
                         1,
@@ -7389,43 +8124,48 @@ export default {
                     ]
                 }
             ],
-            "getRoles": [
-                48
-            ],
             "previewMessageCampaignAudience": [
-                317,
+                343,
                 {
                     "input": [
-                        395,
+                        429,
                         "PreviewMessageCampaignAudienceInput!"
                     ]
                 }
             ],
             "messageSuppressions": [
-                325,
+                351,
                 {
                     "input": [
-                        396,
+                        430,
                         "FindMessageSuppressionsInput!"
                     ]
                 }
             ],
             "unsubscribeTopics": [
-                326
+                352
             ],
             "myMessageChannels": [
-                308,
+                332,
                 {
                     "connectedAccountId": [
                         3
                     ]
                 }
             ],
+            "appMessageChannels": [
+                332,
+                {
+                    "filter": [
+                        431
+                    ]
+                }
+            ],
             "getEmailingDomains": [
-                304
+                328
             ],
             "getToolIndex": [
-                336
+                364
             ],
             "getToolInputSchema": [
                 9,
@@ -7437,10 +8177,10 @@ export default {
                 }
             ],
             "webhooks": [
-                335
+                363
             ],
             "webhook": [
-                335,
+                363,
                 {
                     "id": [
                         3,
@@ -7449,7 +8189,7 @@ export default {
                 }
             ],
             "myMessageFolders": [
-                377,
+                407,
                 {
                     "messageChannelId": [
                         3
@@ -7457,30 +8197,33 @@ export default {
                 }
             ],
             "myCalendarChannels": [
-                372,
+                402,
                 {
                     "connectedAccountId": [
                         3
                     ]
                 }
             ],
+            "getPermissionFlags": [
+                415
+            ],
             "minimalMetadata": [
-                388
+                420
             ],
             "appKeyValue": [
-                370,
+                400,
                 {
                     "key": [
                         1,
                         "String!"
                     ],
                     "scope": [
-                        371
+                        401
                     ]
                 }
             ],
             "getJobs": [
-                155,
+                175,
                 {
                     "jobIds": [
                         1,
@@ -7489,30 +8232,30 @@ export default {
                 }
             ],
             "appConnections": [
-                221,
+                240,
                 {
                     "filter": [
-                        397
+                        432
                     ]
                 }
             ],
             "appConnection": [
-                221,
+                240,
                 {
                     "id": [
-                        222,
+                        171,
                         "ID!"
                     ]
                 }
             ],
             "findWorkspaceAiStats": [
-                367
+                397
             ],
-            "chatThreads": [
-                356
+            "aiChatUsage": [
+                376
             ],
             "chatThread": [
-                356,
+                378,
                 {
                     "id": [
                         3,
@@ -7521,7 +8264,7 @@ export default {
                 }
             ],
             "chatMessages": [
-                355,
+                362,
                 {
                     "threadId": [
                         3,
@@ -7530,7 +8273,7 @@ export default {
                 }
             ],
             "chatStreamCatchupChunks": [
-                360,
+                382,
                 {
                     "threadId": [
                         3,
@@ -7539,13 +8282,13 @@ export default {
                 }
             ],
             "getAiSystemPromptPreview": [
-                358
+                380
             ],
             "skills": [
-                354
+                377
             ],
             "skill": [
-                354,
+                377,
                 {
                     "id": [
                         3,
@@ -7554,7 +8297,7 @@ export default {
                 }
             ],
             "agentTurns": [
-                366,
+                396,
                 {
                     "agentId": [
                         3,
@@ -7562,20 +8305,38 @@ export default {
                     ]
                 }
             ],
+            "validationRules": [
+                414,
+                {
+                    "objectMetadataId": [
+                        3,
+                        "UUID!"
+                    ]
+                }
+            ],
             "timelineActivityTypes": [
-                383
+                413
             ],
             "metadataTranslations": [
-                379,
+                409,
                 {
                     "input": [
-                        398,
+                        433,
                         "MetadataTranslationsInput!"
                     ]
                 }
             ],
+            "recordPermissions": [
+                394,
+                {
+                    "targets": [
+                        434,
+                        "[RecordPermissionsTargetInput!]!"
+                    ]
+                }
+            ],
             "checkUserExists": [
-                283,
+                307,
                 {
                     "email": [
                         1,
@@ -7587,7 +8348,7 @@ export default {
                 }
             ],
             "checkWorkspaceInviteHashIsValid": [
-                284,
+                308,
                 {
                     "inviteHash": [
                         1,
@@ -7596,7 +8357,7 @@ export default {
                 }
             ],
             "findWorkspaceFromInviteHash": [
-                70,
+                72,
                 {
                     "inviteHash": [
                         1,
@@ -7605,7 +8366,7 @@ export default {
                 }
             ],
             "checkWorkspaceSubdomainAvailability": [
-                278,
+                302,
                 {
                     "subdomain": [
                         1,
@@ -7614,10 +8375,10 @@ export default {
                 }
             ],
             "getWorkspaceCreationDefaults": [
-                279
+                303
             ],
             "validatePasswordResetToken": [
-                276,
+                300,
                 {
                     "passwordResetToken": [
                         1,
@@ -7626,43 +8387,43 @@ export default {
                 }
             ],
             "currentUser": [
-                73
+                76
             ],
             "getSSOIdentityProviders": [
-                227
+                245
             ],
             "eventLogs": [
-                353,
+                392,
                 {
                     "input": [
-                        399,
+                        435,
                         "EventLogQueryInput!"
                     ]
                 }
             ],
             "pieChartData": [
-                347,
+                374,
                 {
                     "input": [
-                        403,
+                        441,
                         "PieChartDataInput!"
                     ]
                 }
             ],
             "lineChartData": [
-                345,
+                372,
                 {
                     "input": [
-                        404,
+                        442,
                         "LineChartDataInput!"
                     ]
                 }
             ],
             "barChartData": [
-                342,
+                369,
                 {
                     "input": [
-                        405,
+                        443,
                         "BarChartDataInput!"
                     ]
                 }
@@ -7677,7 +8438,7 @@ export default {
                 }
             ],
             "getConnectedImapSmtpCaldavAccount": [
-                333,
+                359,
                 {
                     "id": [
                         3,
@@ -7686,7 +8447,7 @@ export default {
                 }
             ],
             "getAutoCompleteAddress": [
-                328,
+                354,
                 {
                     "address": [
                         1,
@@ -7705,7 +8466,7 @@ export default {
                 }
             ],
             "getAddressDetails": [
-                330,
+                356,
                 {
                     "placeId": [
                         1,
@@ -7718,10 +8479,10 @@ export default {
                 }
             ],
             "findManyPublicDomains": [
-                302
+                326
             ],
             "exportApplication": [
-                292,
+                325,
                 {
                     "universalIdentifier": [
                         3,
@@ -7729,8 +8490,105 @@ export default {
                     ]
                 }
             ],
+            "applicationCoreGraphqlSchema": [
+                1,
+                {
+                    "applicationUniversalIdentifier": [
+                        1,
+                        "String!"
+                    ]
+                }
+            ],
             "currentUserApplicationAuthorizations": [
-                287
+                311
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "RecordSharingTargetInput": {
+            "objectMetadataId": [
+                3
+            ],
+            "recordId": [
+                3
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "UsageQuotaScopeInput": {
+            "resourceType": [
+                157
+            ],
+            "operationType": [
+                158
+            ],
+            "spenderType": [
+                1
+            ],
+            "spenderId": [
+                1
+            ],
+            "periodUnit": [
+                1
+            ],
+            "meter": [
+                1
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "AgentIdInput": {
+            "id": [
+                3
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "ObjectFilter": {
+            "and": [
+                425
+            ],
+            "or": [
+                425
+            ],
+            "id": [
+                34
+            ],
+            "universalIdentifier": [
+                34
+            ],
+            "isActive": [
+                35
+            ],
+            "isRemote": [
+                35
+            ],
+            "isSearchable": [
+                35
+            ],
+            "isSystem": [
+                35
+            ],
+            "isUICreatable": [
+                35
+            ],
+            "isUIEditable": [
+                35
+            ],
+            "isUIReadOnly": [
+                35
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "LogicFunctionIdInput": {
+            "id": [
+                171
             ],
             "__typename": [
                 1
@@ -7747,7 +8605,7 @@ export default {
                 1
             ],
             "operationTypes": [
-                177
+                158
             ],
             "__typename": [
                 1
@@ -7756,60 +8614,6 @@ export default {
         "GetApiKeyInput": {
             "id": [
                 3
-            ],
-            "__typename": [
-                1
-            ]
-        },
-        "AgentIdInput": {
-            "id": [
-                3
-            ],
-            "__typename": [
-                1
-            ]
-        },
-        "ObjectFilter": {
-            "and": [
-                393
-            ],
-            "or": [
-                393
-            ],
-            "id": [
-                31
-            ],
-            "universalIdentifier": [
-                31
-            ],
-            "isActive": [
-                32
-            ],
-            "isRemote": [
-                32
-            ],
-            "isSearchable": [
-                32
-            ],
-            "isSystem": [
-                32
-            ],
-            "isUICreatable": [
-                32
-            ],
-            "isUIEditable": [
-                32
-            ],
-            "isUIReadOnly": [
-                32
-            ],
-            "__typename": [
-                1
-            ]
-        },
-        "LogicFunctionIdInput": {
-            "id": [
-                222
             ],
             "__typename": [
                 1
@@ -7828,7 +8632,7 @@ export default {
         },
         "FindMessageSuppressionsInput": {
             "reason": [
-                323
+                349
             ],
             "searchTerm": [
                 1
@@ -7837,10 +8641,18 @@ export default {
                 3
             ],
             "limit": [
-                28
+                31
             ],
             "offset": [
-                28
+                31
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "ListAppMessageChannelsInput": {
+            "connectedAccountId": [
+                3
             ],
             "__typename": [
                 1
@@ -7874,15 +8686,26 @@ export default {
                 1
             ]
         },
+        "RecordPermissionsTargetInput": {
+            "objectMetadataId": [
+                3
+            ],
+            "recordId": [
+                3
+            ],
+            "__typename": [
+                1
+            ]
+        },
         "EventLogQueryInput": {
             "table": [
-                400
+                436
             ],
             "filters": [
-                401
+                437
             ],
             "first": [
-                28
+                31
             ],
             "after": [
                 1
@@ -7900,13 +8723,16 @@ export default {
                 1
             ],
             "dateRange": [
-                402
+                438
             ],
             "recordId": [
                 1
             ],
             "objectMetadataId": [
                 1
+            ],
+            "fieldFilters": [
+                439
             ],
             "__typename": [
                 1
@@ -7923,6 +8749,21 @@ export default {
                 1
             ]
         },
+        "EventLogFieldFilterInput": {
+            "field": [
+                1
+            ],
+            "operand": [
+                440
+            ],
+            "values": [
+                1
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "EventLogFilterOperand": {},
         "PieChartDataInput": {
             "objectMetadataId": [
                 3
@@ -7961,7 +8802,7 @@ export default {
                 8,
                 {
                     "input": [
-                        407,
+                        445,
                         "AddQuerySubscriptionInput!"
                     ]
                 }
@@ -7970,49 +8811,69 @@ export default {
                 8,
                 {
                     "input": [
-                        408,
+                        446,
                         "RemoveQueryFromEventStreamInput!"
                     ]
                 }
             ],
+            "setRecordShare": [
+                174,
+                {
+                    "target": [
+                        422,
+                        "RecordSharingTargetInput!"
+                    ],
+                    "principal": [
+                        447,
+                        "RecordSharePrincipalInput!"
+                    ],
+                    "enabled": [
+                        8,
+                        "Boolean!"
+                    ],
+                    "accessLevel": [
+                        172
+                    ]
+                }
+            ],
             "createManyNavigationMenuItems": [
-                153,
+                167,
                 {
                     "inputs": [
-                        409,
+                        448,
                         "[CreateNavigationMenuItemInput!]!"
                     ]
                 }
             ],
             "createNavigationMenuItem": [
-                153,
+                167,
                 {
                     "input": [
-                        409,
+                        448,
                         "CreateNavigationMenuItemInput!"
                     ]
                 }
             ],
             "updateManyNavigationMenuItems": [
-                153,
+                167,
                 {
                     "inputs": [
-                        410,
+                        449,
                         "[UpdateOneNavigationMenuItemInput!]!"
                     ]
                 }
             ],
             "updateNavigationMenuItem": [
-                153,
+                167,
                 {
                     "input": [
-                        410,
+                        449,
                         "UpdateOneNavigationMenuItemInput!"
                     ]
                 }
             ],
             "deleteManyNavigationMenuItems": [
-                153,
+                167,
                 {
                     "ids": [
                         3,
@@ -8021,7 +8882,7 @@ export default {
                 }
             ],
             "deleteNavigationMenuItem": [
-                153,
+                167,
                 {
                     "id": [
                         3,
@@ -8030,7 +8891,7 @@ export default {
                 }
             ],
             "createFileUpload": [
-                151,
+                165,
                 {
                     "filename": [
                         1,
@@ -8041,7 +8902,7 @@ export default {
                         "Float!"
                     ],
                     "fileFolder": [
-                        297,
+                        316,
                         "FileFolder!"
                     ],
                     "fieldMetadataId": [
@@ -8053,7 +8914,7 @@ export default {
                 }
             ],
             "completeFileUpload": [
-                150,
+                164,
                 {
                     "fileId": [
                         1,
@@ -8065,10 +8926,10 @@ export default {
                 8
             ],
             "releaseEnterpriseServerBinding": [
-                148
+                154
             ],
             "setEnterpriseKey": [
-                148,
+                154,
                 {
                     "enterpriseKey": [
                         1,
@@ -8077,28 +8938,46 @@ export default {
                 }
             ],
             "uploadWorkspaceLogo": [
-                150,
+                164,
                 {
                     "file": [
-                        412,
+                        451,
                         "Upload!"
                     ]
                 }
             ],
             "uploadWorkspaceMemberProfilePicture": [
-                150,
+                164,
                 {
                     "file": [
-                        412,
+                        451,
                         "Upload!"
                     ]
                 }
             ],
+            "completeWorkspaceLogoUpload": [
+                164,
+                {
+                    "fileId": [
+                        1,
+                        "String!"
+                    ]
+                }
+            ],
+            "completeWorkspaceMemberProfilePictureUpload": [
+                164,
+                {
+                    "fileId": [
+                        1,
+                        "String!"
+                    ]
+                }
+            ],
             "uploadFilesFieldFileByUniversalIdentifier": [
-                150,
+                164,
                 {
                     "file": [
-                        412,
+                        451,
                         "Upload!"
                     ],
                     "fieldMetadataUniversalIdentifier": [
@@ -8107,12 +8986,21 @@ export default {
                     ]
                 }
             ],
-            "upsertUsageLimit": [
-                175,
+            "createUsageLimit": [
+                163,
                 {
                     "input": [
-                        413,
-                        "UpsertUsageLimitInput!"
+                        452,
+                        "CreateUsageLimitInput!"
+                    ]
+                }
+            ],
+            "updateUsageLimit": [
+                163,
+                {
+                    "input": [
+                        453,
+                        "UpdateUsageLimitInput!"
                     ]
                 }
             ],
@@ -8125,29 +9013,29 @@ export default {
                     ]
                 }
             ],
-            "createViewFilterGroup": [
-                56,
+            "createPageLayoutWidget": [
+                101,
                 {
                     "input": [
-                        414,
-                        "CreateViewFilterGroupInput!"
+                        454,
+                        "CreatePageLayoutWidgetInput!"
                     ]
                 }
             ],
-            "updateViewFilterGroup": [
-                56,
+            "updatePageLayoutWidget": [
+                101,
                 {
                     "id": [
                         1,
                         "String!"
                     ],
                     "input": [
-                        415,
-                        "UpdateViewFilterGroupInput!"
+                        455,
+                        "UpdatePageLayoutWidgetInput!"
                     ]
                 }
             ],
-            "deleteViewFilterGroup": [
+            "destroyPageLayoutWidget": [
                 8,
                 {
                     "id": [
@@ -8156,7 +9044,29 @@ export default {
                     ]
                 }
             ],
-            "destroyViewFilterGroup": [
+            "createPageLayoutTab": [
+                147,
+                {
+                    "input": [
+                        456,
+                        "CreatePageLayoutTabInput!"
+                    ]
+                }
+            ],
+            "updatePageLayoutTab": [
+                147,
+                {
+                    "id": [
+                        1,
+                        "String!"
+                    ],
+                    "input": [
+                        457,
+                        "UpdatePageLayoutTabInput!"
+                    ]
+                }
+            ],
+            "destroyPageLayoutTab": [
                 8,
                 {
                     "id": [
@@ -8165,60 +9075,95 @@ export default {
                     ]
                 }
             ],
-            "createViewFilter": [
-                58,
+            "createPageLayout": [
+                148,
                 {
                     "input": [
-                        416,
-                        "CreateViewFilterInput!"
+                        458,
+                        "CreatePageLayoutInput!"
                     ]
                 }
             ],
-            "updateViewFilter": [
-                58,
+            "updatePageLayout": [
+                148,
                 {
+                    "id": [
+                        1,
+                        "String!"
+                    ],
                     "input": [
-                        417,
-                        "UpdateViewFilterInput!"
+                        459,
+                        "UpdatePageLayoutInput!"
                     ]
                 }
             ],
-            "deleteViewFilter": [
-                58,
+            "destroyPageLayout": [
+                8,
                 {
-                    "input": [
-                        419,
-                        "DeleteViewFilterInput!"
+                    "id": [
+                        1,
+                        "String!"
                     ]
                 }
             ],
-            "destroyViewFilter": [
-                58,
+            "updatePageLayoutWithTabsAndWidgets": [
+                148,
                 {
+                    "id": [
+                        1,
+                        "String!"
+                    ],
                     "input": [
-                        420,
-                        "DestroyViewFilterInput!"
+                        460,
+                        "UpdatePageLayoutWithTabsInput!"
+                    ]
+                }
+            ],
+            "resetPageLayoutToDefault": [
+                148,
+                {
+                    "id": [
+                        1,
+                        "String!"
+                    ]
+                }
+            ],
+            "resetPageLayoutWidgetToDefault": [
+                101,
+                {
+                    "id": [
+                        1,
+                        "String!"
+                    ]
+                }
+            ],
+            "resetPageLayoutTabToDefault": [
+                147,
+                {
+                    "id": [
+                        1,
+                        "String!"
                     ]
                 }
             ],
             "createView": [
-                64,
+                66,
                 {
                     "input": [
-                        421,
+                        463,
                         "CreateViewInput!"
                     ]
                 }
             ],
             "updateView": [
-                64,
+                66,
                 {
                     "id": [
                         1,
                         "String!"
                     ],
                     "input": [
-                        422,
+                        464,
                         "UpdateViewInput!"
                     ]
                 }
@@ -8242,28 +9187,28 @@ export default {
                 }
             ],
             "upsertViewWidget": [
-                64,
+                66,
                 {
                     "input": [
-                        423,
+                        465,
                         "UpsertViewWidgetInput!"
                     ]
                 }
             ],
             "createViewSort": [
-                61,
+                63,
                 {
                     "input": [
-                        429,
+                        471,
                         "CreateViewSortInput!"
                     ]
                 }
             ],
             "updateViewSort": [
-                61,
+                63,
                 {
                     "input": [
-                        430,
+                        472,
                         "UpdateViewSortInput!"
                     ]
                 }
@@ -8272,7 +9217,7 @@ export default {
                 8,
                 {
                     "input": [
-                        432,
+                        474,
                         "DeleteViewSortInput!"
                     ]
                 }
@@ -8281,147 +9226,224 @@ export default {
                 8,
                 {
                     "input": [
-                        433,
+                        475,
                         "DestroyViewSortInput!"
                     ]
                 }
             ],
-            "updateViewField": [
-                54,
+            "createViewFilter": [
+                60,
                 {
                     "input": [
-                        434,
+                        476,
+                        "CreateViewFilterInput!"
+                    ]
+                }
+            ],
+            "updateViewFilter": [
+                60,
+                {
+                    "input": [
+                        477,
+                        "UpdateViewFilterInput!"
+                    ]
+                }
+            ],
+            "deleteViewFilter": [
+                60,
+                {
+                    "input": [
+                        479,
+                        "DeleteViewFilterInput!"
+                    ]
+                }
+            ],
+            "destroyViewFilter": [
+                60,
+                {
+                    "input": [
+                        480,
+                        "DestroyViewFilterInput!"
+                    ]
+                }
+            ],
+            "updateViewField": [
+                56,
+                {
+                    "input": [
+                        481,
                         "UpdateViewFieldInput!"
                     ]
                 }
             ],
             "createViewField": [
-                54,
+                56,
                 {
                     "input": [
-                        436,
+                        483,
                         "CreateViewFieldInput!"
                     ]
                 }
             ],
             "createManyViewFields": [
-                54,
+                56,
                 {
                     "inputs": [
-                        436,
+                        483,
                         "[CreateViewFieldInput!]!"
                     ]
                 }
             ],
             "deleteViewField": [
-                54,
+                56,
                 {
                     "input": [
-                        437,
+                        484,
                         "DeleteViewFieldInput!"
                     ]
                 }
             ],
             "destroyViewField": [
-                54,
+                56,
                 {
                     "input": [
-                        438,
+                        485,
                         "DestroyViewFieldInput!"
                     ]
                 }
             ],
             "updateViewFieldGroup": [
-                63,
+                65,
                 {
                     "input": [
-                        439,
+                        486,
                         "UpdateViewFieldGroupInput!"
                     ]
                 }
             ],
             "createViewFieldGroup": [
-                63,
+                65,
                 {
                     "input": [
-                        441,
+                        488,
                         "CreateViewFieldGroupInput!"
                     ]
                 }
             ],
             "createManyViewFieldGroups": [
-                63,
+                65,
                 {
                     "inputs": [
-                        441,
+                        488,
                         "[CreateViewFieldGroupInput!]!"
                     ]
                 }
             ],
             "deleteViewFieldGroup": [
-                63,
+                65,
                 {
                     "input": [
-                        442,
+                        489,
                         "DeleteViewFieldGroupInput!"
                     ]
                 }
             ],
             "destroyViewFieldGroup": [
-                63,
+                65,
                 {
                     "input": [
-                        443,
+                        490,
                         "DestroyViewFieldGroupInput!"
                     ]
                 }
             ],
             "upsertFieldsWidget": [
-                64,
+                66,
                 {
                     "input": [
-                        444,
+                        491,
                         "UpsertFieldsWidgetInput!"
                     ]
                 }
             ],
-            "createApiKey": [
-                2,
+            "createOneAgent": [
+                10,
                 {
                     "input": [
-                        447,
-                        "CreateApiKeyInput!"
+                        494,
+                        "CreateAgentInput!"
                     ]
                 }
             ],
-            "updateApiKey": [
-                2,
+            "updateOneAgent": [
+                10,
                 {
                     "input": [
-                        448,
-                        "UpdateApiKeyInput!"
+                        495,
+                        "UpdateAgentInput!"
                     ]
                 }
             ],
-            "revokeApiKey": [
-                2,
+            "deleteOneAgent": [
+                10,
                 {
                     "input": [
-                        449,
-                        "RevokeApiKeyInput!"
+                        424,
+                        "AgentIdInput!"
                     ]
                 }
             ],
-            "assignRoleToApiKey": [
-                8,
+            "createOneObject": [
+                25,
                 {
-                    "apiKeyId": [
-                        3,
-                        "UUID!"
-                    ],
-                    "roleId": [
-                        3,
-                        "UUID!"
+                    "input": [
+                        496,
+                        "CreateOneObjectInput!"
+                    ]
+                }
+            ],
+            "deleteOneObject": [
+                25,
+                {
+                    "input": [
+                        498,
+                        "DeleteOneObjectInput!"
+                    ]
+                }
+            ],
+            "updateOneObject": [
+                25,
+                {
+                    "input": [
+                        499,
+                        "UpdateOneObjectInput!"
+                    ]
+                }
+            ],
+            "updateManyObjects": [
+                25,
+                {
+                    "inputs": [
+                        499,
+                        "[UpdateOneObjectInput!]!"
+                    ]
+                }
+            ],
+            "createOneIndex": [
+                273,
+                {
+                    "input": [
+                        502,
+                        "CreateOneIndexInput!"
+                    ]
+                }
+            ],
+            "deleteOneIndex": [
+                273,
+                {
+                    "input": [
+                        505,
+                        "DeleteOneIndexInput!"
                     ]
                 }
             ],
@@ -8435,431 +9457,31 @@ export default {
                 }
             ],
             "revokeAllOtherUserSessions": [
-                28
-            ],
-            "deleteConnectedAccount": [
-                188,
-                {
-                    "id": [
-                        3,
-                        "UUID!"
-                    ]
-                }
-            ],
-            "updateOneApplicationVariable": [
-                8,
-                {
-                    "key": [
-                        1,
-                        "String!"
-                    ],
-                    "value": [
-                        1,
-                        "String!"
-                    ],
-                    "applicationId": [
-                        3,
-                        "UUID!"
-                    ]
-                }
-            ],
-            "checkoutSession": [
-                169,
-                {
-                    "recurringInterval": [
-                        136,
-                        "SubscriptionInterval!"
-                    ],
-                    "plan": [
-                        132,
-                        "BillingPlanKey!"
-                    ],
-                    "requirePaymentMethod": [
-                        8,
-                        "Boolean!"
-                    ],
-                    "successUrlPath": [
-                        1
-                    ]
-                }
-            ],
-            "createSubscriptionPaymentIntent": [
-                168,
-                {
-                    "recurringInterval": [
-                        136,
-                        "SubscriptionInterval!"
-                    ],
-                    "plan": [
-                        132,
-                        "BillingPlanKey!"
-                    ],
-                    "requirePaymentMethod": [
-                        8,
-                        "Boolean!"
-                    ],
-                    "successUrlPath": [
-                        1
-                    ],
-                    "idempotencyKey": [
-                        1,
-                        "String!"
-                    ]
-                }
-            ],
-            "createBillingPaymentMethodSetupIntent": [
-                168
-            ],
-            "switchSubscriptionInterval": [
-                170
-            ],
-            "switchBillingPlan": [
-                170
-            ],
-            "cancelSwitchBillingPlan": [
-                170
-            ],
-            "cancelSwitchBillingInterval": [
-                170
-            ],
-            "setResourceCreditSubscriptionPrice": [
-                170,
-                {
-                    "priceId": [
-                        1,
-                        "String!"
-                    ]
-                }
-            ],
-            "endSubscriptionTrialPeriod": [
-                165
-            ],
-            "cancelSwitchResourceCreditPrice": [
-                170
-            ],
-            "skipSyncEmailOnboardingStep": [
-                182,
-                {
-                    "isAutoSkipped": [
-                        8,
-                        "Boolean!"
-                    ]
-                }
-            ],
-            "completeBookCallOnboardingStep": [
-                182,
-                {
-                    "hasBookedCall": [
-                        8,
-                        "Boolean!"
-                    ],
-                    "isAutoSkipped": [
-                        8,
-                        "Boolean!"
-                    ]
-                }
-            ],
-            "triggerInstallAppsOnboardingStep": [
-                182,
-                {
-                    "universalIdentifiers": [
-                        1,
-                        "[String!]!"
-                    ],
-                    "isAutoSkipped": [
-                        8,
-                        "Boolean!"
-                    ]
-                }
-            ],
-            "goBackToPreviousOnboardingStep": [
-                181
-            ],
-            "deleteWorkspaceInvitation": [
-                1,
-                {
-                    "appTokenId": [
-                        1,
-                        "String!"
-                    ]
-                }
-            ],
-            "resendWorkspaceInvitation": [
-                184,
-                {
-                    "appTokenId": [
-                        1,
-                        "String!"
-                    ]
-                }
-            ],
-            "sendInvitations": [
-                184,
-                {
-                    "emails": [
-                        1,
-                        "[String!]!"
-                    ],
-                    "roleId": [
-                        3
-                    ]
-                }
-            ],
-            "createApprovedAccessDomain": [
-                179,
-                {
-                    "input": [
-                        450,
-                        "CreateApprovedAccessDomainInput!"
-                    ]
-                }
-            ],
-            "deleteApprovedAccessDomain": [
-                8,
-                {
-                    "input": [
-                        451,
-                        "DeleteApprovedAccessDomainInput!"
-                    ]
-                }
-            ],
-            "validateApprovedAccessDomain": [
-                179,
-                {
-                    "input": [
-                        452,
-                        "ValidateApprovedAccessDomainInput!"
-                    ]
-                }
-            ],
-            "createPageLayoutTab": [
-                124,
-                {
-                    "input": [
-                        453,
-                        "CreatePageLayoutTabInput!"
-                    ]
-                }
-            ],
-            "updatePageLayoutTab": [
-                124,
-                {
-                    "id": [
-                        1,
-                        "String!"
-                    ],
-                    "input": [
-                        454,
-                        "UpdatePageLayoutTabInput!"
-                    ]
-                }
-            ],
-            "destroyPageLayoutTab": [
-                8,
-                {
-                    "id": [
-                        1,
-                        "String!"
-                    ]
-                }
-            ],
-            "createPageLayout": [
-                125,
-                {
-                    "input": [
-                        455,
-                        "CreatePageLayoutInput!"
-                    ]
-                }
-            ],
-            "updatePageLayout": [
-                125,
-                {
-                    "id": [
-                        1,
-                        "String!"
-                    ],
-                    "input": [
-                        456,
-                        "UpdatePageLayoutInput!"
-                    ]
-                }
-            ],
-            "destroyPageLayout": [
-                8,
-                {
-                    "id": [
-                        1,
-                        "String!"
-                    ]
-                }
-            ],
-            "updatePageLayoutWithTabsAndWidgets": [
-                125,
-                {
-                    "id": [
-                        1,
-                        "String!"
-                    ],
-                    "input": [
-                        457,
-                        "UpdatePageLayoutWithTabsInput!"
-                    ]
-                }
-            ],
-            "resetPageLayoutToDefault": [
-                125,
-                {
-                    "id": [
-                        1,
-                        "String!"
-                    ]
-                }
-            ],
-            "resetPageLayoutWidgetToDefault": [
-                81,
-                {
-                    "id": [
-                        1,
-                        "String!"
-                    ]
-                }
-            ],
-            "resetPageLayoutTabToDefault": [
-                124,
-                {
-                    "id": [
-                        1,
-                        "String!"
-                    ]
-                }
-            ],
-            "createPageLayoutWidget": [
-                81,
-                {
-                    "input": [
-                        460,
-                        "CreatePageLayoutWidgetInput!"
-                    ]
-                }
-            ],
-            "updatePageLayoutWidget": [
-                81,
-                {
-                    "id": [
-                        1,
-                        "String!"
-                    ],
-                    "input": [
-                        461,
-                        "UpdatePageLayoutWidgetInput!"
-                    ]
-                }
-            ],
-            "destroyPageLayoutWidget": [
-                8,
-                {
-                    "id": [
-                        1,
-                        "String!"
-                    ]
-                }
-            ],
-            "createOneAgent": [
-                10,
-                {
-                    "input": [
-                        462,
-                        "CreateAgentInput!"
-                    ]
-                }
-            ],
-            "updateOneAgent": [
-                10,
-                {
-                    "input": [
-                        463,
-                        "UpdateAgentInput!"
-                    ]
-                }
-            ],
-            "deleteOneAgent": [
-                10,
-                {
-                    "input": [
-                        392,
-                        "AgentIdInput!"
-                    ]
-                }
-            ],
-            "createOneObject": [
-                23,
-                {
-                    "input": [
-                        464,
-                        "CreateOneObjectInput!"
-                    ]
-                }
-            ],
-            "deleteOneObject": [
-                23,
-                {
-                    "input": [
-                        466,
-                        "DeleteOneObjectInput!"
-                    ]
-                }
-            ],
-            "updateOneObject": [
-                23,
-                {
-                    "input": [
-                        467,
-                        "UpdateOneObjectInput!"
-                    ]
-                }
-            ],
-            "createOneIndex": [
-                249,
-                {
-                    "input": [
-                        470,
-                        "CreateOneIndexInput!"
-                    ]
-                }
-            ],
-            "deleteOneIndex": [
-                249,
-                {
-                    "input": [
-                        473,
-                        "DeleteOneIndexInput!"
-                    ]
-                }
+                31
             ],
             "deleteOneLogicFunction": [
-                21,
+                23,
                 {
                     "input": [
-                        394,
+                        426,
                         "LogicFunctionIdInput!"
                     ]
                 }
             ],
             "createOneLogicFunction": [
-                21,
+                23,
                 {
                     "input": [
-                        474,
+                        506,
                         "CreateLogicFunctionFromSourceInput!"
                     ]
                 }
             ],
             "executeOneLogicFunction": [
-                146,
+                152,
                 {
                     "input": [
-                        475,
+                        507,
                         "ExecuteOneLogicFunctionInput!"
                     ]
                 }
@@ -8868,7 +9490,7 @@ export default {
                 8,
                 {
                     "input": [
-                        476,
+                        508,
                         "UpdateLogicFunctionFromSourceInput!"
                     ]
                 }
@@ -8877,7 +9499,7 @@ export default {
                 14,
                 {
                     "input": [
-                        478,
+                        510,
                         "CreateCommandMenuItemInput!"
                     ]
                 }
@@ -8886,7 +9508,7 @@ export default {
                 14,
                 {
                     "input": [
-                        479,
+                        511,
                         "UpdateCommandMenuItemInput!"
                     ]
                 }
@@ -8909,11 +9531,20 @@ export default {
                     ]
                 }
             ],
+            "generateFrontComponentApplicationTokenPair": [
+                12,
+                {
+                    "applicationId": [
+                        3,
+                        "UUID!"
+                    ]
+                }
+            ],
             "createFrontComponent": [
                 13,
                 {
                     "input": [
-                        480,
+                        512,
                         "CreateFrontComponentInput!"
                     ]
                 }
@@ -8922,7 +9553,7 @@ export default {
                 13,
                 {
                     "input": [
-                        481,
+                        513,
                         "UpdateFrontComponentInput!"
                     ]
                 }
@@ -8936,275 +9567,193 @@ export default {
                     ]
                 }
             ],
-            "activateWorkspace": [
-                70,
-                {
-                    "data": [
-                        483,
-                        "ActivateWorkspaceInput!"
-                    ]
-                }
-            ],
-            "updateWorkspace": [
-                70,
-                {
-                    "data": [
-                        484,
-                        "UpdateWorkspaceInput!"
-                    ]
-                }
-            ],
-            "deleteCurrentWorkspace": [
-                70
-            ],
-            "checkCustomDomainValidRecords": [
-                261
-            ],
-            "enrichWorkspaceCompany": [
-                238
-            ],
-            "upgradeApplication": [
+            "updateOneApplicationVariable": [
                 8,
                 {
-                    "appRegistrationId": [
+                    "key": [
                         1,
                         "String!"
                     ],
-                    "targetVersion": [
+                    "value": [
                         1,
                         "String!"
-                    ]
-                }
-            ],
-            "createApplicationRegistration": [
-                218,
-                {
-                    "input": [
-                        485,
-                        "CreateApplicationRegistrationInput!"
-                    ]
-                }
-            ],
-            "updateApplicationRegistration": [
-                76,
-                {
-                    "input": [
-                        486,
-                        "UpdateApplicationRegistrationInput!"
-                    ]
-                }
-            ],
-            "deleteApplicationRegistration": [
-                8,
-                {
-                    "id": [
-                        1,
-                        "String!"
-                    ]
-                }
-            ],
-            "rotateApplicationRegistrationClientSecret": [
-                220,
-                {
-                    "id": [
-                        1,
-                        "String!"
-                    ]
-                }
-            ],
-            "createApplicationRegistrationVariable": [
-                192,
-                {
-                    "input": [
-                        488,
-                        "CreateApplicationRegistrationVariableInput!"
-                    ]
-                }
-            ],
-            "updateApplicationRegistrationVariable": [
-                192,
-                {
-                    "input": [
-                        489,
-                        "UpdateApplicationRegistrationVariableInput!"
-                    ]
-                }
-            ],
-            "deleteApplicationRegistrationVariable": [
-                8,
-                {
-                    "id": [
-                        1,
-                        "String!"
-                    ]
-                }
-            ],
-            "uploadAppTarball": [
-                76,
-                {
-                    "file": [
-                        412,
-                        "Upload!"
                     ],
-                    "universalIdentifier": [
+                    "applicationId": [
+                        3
+                    ]
+                }
+            ],
+            "skipSyncEmailOnboardingStep": [
+                198,
+                {
+                    "isAutoSkipped": [
+                        8,
+                        "Boolean!"
+                    ]
+                }
+            ],
+            "completeBookCallOnboardingStep": [
+                198,
+                {
+                    "hasBookedCall": [
+                        8,
+                        "Boolean!"
+                    ],
+                    "isAutoSkipped": [
+                        8,
+                        "Boolean!"
+                    ]
+                }
+            ],
+            "triggerInstallAppsOnboardingStep": [
+                198,
+                {
+                    "universalIdentifiers": [
+                        1,
+                        "[String!]!"
+                    ],
+                    "isAutoSkipped": [
+                        8,
+                        "Boolean!"
+                    ]
+                }
+            ],
+            "goBackToPreviousOnboardingStep": [
+                197
+            ],
+            "checkoutSession": [
+                189,
+                {
+                    "recurringInterval": [
+                        87,
+                        "SubscriptionInterval!"
+                    ],
+                    "plan": [
+                        83,
+                        "BillingPlanKey!"
+                    ],
+                    "requirePaymentMethod": [
+                        8,
+                        "Boolean!"
+                    ],
+                    "successUrlPath": [
                         1
                     ]
                 }
             ],
-            "claimApplicationRegistrationOwnership": [
-                76,
+            "createSubscriptionPaymentIntent": [
+                188,
                 {
-                    "applicationRegistrationId": [
-                        1,
-                        "String!"
-                    ]
-                }
-            ],
-            "transferApplicationRegistrationOwnership": [
-                76,
-                {
-                    "applicationRegistrationId": [
-                        1,
-                        "String!"
+                    "recurringInterval": [
+                        87,
+                        "SubscriptionInterval!"
                     ],
-                    "targetWorkspaceSubdomain": [
+                    "plan": [
+                        83,
+                        "BillingPlanKey!"
+                    ],
+                    "requirePaymentMethod": [
+                        8,
+                        "Boolean!"
+                    ],
+                    "successUrlPath": [
+                        1
+                    ],
+                    "idempotencyKey": [
                         1,
                         "String!"
                     ]
                 }
             ],
-            "installMarketplaceApp": [
+            "createBillingPaymentMethodSetupIntent": [
+                188
+            ],
+            "switchSubscriptionInterval": [
+                190
+            ],
+            "switchBillingPlan": [
+                190
+            ],
+            "cancelSwitchBillingPlan": [
+                190
+            ],
+            "cancelSwitchBillingInterval": [
+                190
+            ],
+            "setResourceCreditSubscriptionPrice": [
+                190,
+                {
+                    "priceId": [
+                        1,
+                        "String!"
+                    ]
+                }
+            ],
+            "endSubscriptionTrialPeriod": [
+                185
+            ],
+            "cancelSwitchResourceCreditPrice": [
+                190
+            ],
+            "deleteWorkspaceInvitation": [
+                1,
+                {
+                    "appTokenId": [
+                        1,
+                        "String!"
+                    ]
+                }
+            ],
+            "resendWorkspaceInvitation": [
+                200,
+                {
+                    "appTokenId": [
+                        1,
+                        "String!"
+                    ]
+                }
+            ],
+            "sendInvitations": [
+                200,
+                {
+                    "emails": [
+                        1,
+                        "[String!]!"
+                    ],
+                    "roleId": [
+                        3
+                    ]
+                }
+            ],
+            "createApprovedAccessDomain": [
+                195,
+                {
+                    "input": [
+                        515,
+                        "CreateApprovedAccessDomainInput!"
+                    ]
+                }
+            ],
+            "deleteApprovedAccessDomain": [
                 8,
                 {
-                    "universalIdentifier": [
-                        1,
-                        "String!"
-                    ],
-                    "version": [
-                        1
-                    ]
-                }
-            ],
-            "installApplication": [
-                49,
-                {
-                    "universalIdentifier": [
-                        1,
-                        "String!"
-                    ],
-                    "version": [
-                        1
-                    ]
-                }
-            ],
-            "updateApplication": [
-                49,
-                {
-                    "id": [
-                        3,
-                        "UUID!"
-                    ],
                     "input": [
-                        491,
-                        "UpdateApplicationInput!"
+                        516,
+                        "DeleteApprovedAccessDomainInput!"
                     ]
                 }
             ],
-            "uninstallApplication": [
-                8,
-                {
-                    "universalIdentifier": [
-                        1,
-                        "String!"
-                    ]
-                }
-            ],
-            "syncMarketplaceCatalog": [
-                8
-            ],
-            "createOneField": [
-                241,
+            "validateApprovedAccessDomain": [
+                195,
                 {
                     "input": [
-                        492,
-                        "CreateOneFieldMetadataInput!"
-                    ]
-                }
-            ],
-            "updateOneField": [
-                241,
-                {
-                    "input": [
-                        494,
-                        "UpdateOneFieldMetadataInput!"
-                    ]
-                }
-            ],
-            "deleteOneField": [
-                241,
-                {
-                    "input": [
-                        496,
-                        "DeleteOneFieldInput!"
-                    ]
-                }
-            ],
-            "createViewGroup": [
-                60,
-                {
-                    "input": [
-                        497,
-                        "CreateViewGroupInput!"
-                    ]
-                }
-            ],
-            "createManyViewGroups": [
-                60,
-                {
-                    "inputs": [
-                        497,
-                        "[CreateViewGroupInput!]!"
-                    ]
-                }
-            ],
-            "updateViewGroup": [
-                60,
-                {
-                    "input": [
-                        498,
-                        "UpdateViewGroupInput!"
-                    ]
-                }
-            ],
-            "updateManyViewGroups": [
-                60,
-                {
-                    "inputs": [
-                        498,
-                        "[UpdateViewGroupInput!]!"
-                    ]
-                }
-            ],
-            "deleteViewGroup": [
-                60,
-                {
-                    "input": [
-                        500,
-                        "DeleteViewGroupInput!"
-                    ]
-                }
-            ],
-            "destroyViewGroup": [
-                60,
-                {
-                    "input": [
-                        501,
-                        "DestroyViewGroupInput!"
+                        517,
+                        "ValidateApprovedAccessDomainInput!"
                     ]
                 }
             ],
             "updateWorkspaceMemberRole": [
-                35,
+                38,
                 {
                     "workspaceMemberId": [
                         3,
@@ -9217,19 +9766,19 @@ export default {
                 }
             ],
             "createOneRole": [
-                48,
+                51,
                 {
                     "createRoleInput": [
-                        502,
+                        518,
                         "CreateRoleInput!"
                     ]
                 }
             ],
             "updateOneRole": [
-                48,
+                51,
                 {
                     "updateRoleInput": [
-                        503,
+                        519,
                         "UpdateRoleInput!"
                     ]
                 }
@@ -9244,37 +9793,37 @@ export default {
                 }
             ],
             "upsertObjectPermissions": [
-                45,
+                48,
                 {
                     "upsertObjectPermissionsInput": [
-                        505,
+                        521,
                         "UpsertObjectPermissionsInput!"
                     ]
                 }
             ],
             "upsertPermissionFlags": [
-                46,
+                49,
                 {
                     "upsertPermissionFlagsInput": [
-                        507,
+                        523,
                         "UpsertPermissionFlagsInput!"
                     ]
                 }
             ],
             "upsertFieldPermissions": [
-                40,
+                43,
                 {
                     "upsertFieldPermissionsInput": [
-                        508,
+                        524,
                         "UpsertFieldPermissionsInput!"
                     ]
                 }
             ],
             "upsertRowLevelPermissionPredicates": [
-                262,
+                286,
                 {
                     "input": [
-                        510,
+                        526,
                         "UpsertRowLevelPermissionPredicatesInput!"
                     ]
                 }
@@ -9301,44 +9850,436 @@ export default {
                     ]
                 }
             ],
-            "sendEmailViaEmailingDomain": [
-                319,
+            "createApiKey": [
+                2,
                 {
                     "input": [
-                        513,
-                        "SendEmailViaDomainInput!"
+                        529,
+                        "CreateApiKeyInput!"
+                    ]
+                }
+            ],
+            "updateApiKey": [
+                2,
+                {
+                    "input": [
+                        530,
+                        "UpdateApiKeyInput!"
+                    ]
+                }
+            ],
+            "revokeApiKey": [
+                2,
+                {
+                    "input": [
+                        531,
+                        "RevokeApiKeyInput!"
+                    ]
+                }
+            ],
+            "assignRoleToApiKey": [
+                8,
+                {
+                    "apiKeyId": [
+                        3,
+                        "UUID!"
+                    ],
+                    "roleId": [
+                        3,
+                        "UUID!"
+                    ]
+                }
+            ],
+            "createViewFilterGroup": [
+                58,
+                {
+                    "input": [
+                        532,
+                        "CreateViewFilterGroupInput!"
+                    ]
+                }
+            ],
+            "updateViewFilterGroup": [
+                58,
+                {
+                    "id": [
+                        1,
+                        "String!"
+                    ],
+                    "input": [
+                        533,
+                        "UpdateViewFilterGroupInput!"
+                    ]
+                }
+            ],
+            "deleteViewFilterGroup": [
+                8,
+                {
+                    "id": [
+                        1,
+                        "String!"
+                    ]
+                }
+            ],
+            "destroyViewFilterGroup": [
+                8,
+                {
+                    "id": [
+                        1,
+                        "String!"
+                    ]
+                }
+            ],
+            "deleteConnectedAccount": [
+                204,
+                {
+                    "id": [
+                        3,
+                        "UUID!"
+                    ]
+                }
+            ],
+            "disconnectConnectedAccount": [
+                204,
+                {
+                    "id": [
+                        3,
+                        "UUID!"
+                    ]
+                }
+            ],
+            "activateWorkspace": [
+                72,
+                {
+                    "data": [
+                        534,
+                        "ActivateWorkspaceInput!"
+                    ]
+                }
+            ],
+            "updateWorkspace": [
+                72,
+                {
+                    "data": [
+                        535,
+                        "UpdateWorkspaceInput!"
+                    ]
+                }
+            ],
+            "updateWorkspaceAllowedIframeOrigins": [
+                72,
+                {
+                    "data": [
+                        536,
+                        "UpdateWorkspaceAllowedIframeOriginsInput!"
+                    ]
+                }
+            ],
+            "deleteCurrentWorkspace": [
+                72
+            ],
+            "checkCustomDomainValidRecords": [
+                285
+            ],
+            "enrichWorkspaceCompany": [
+                262
+            ],
+            "upgradeApplication": [
+                8,
+                {
+                    "appRegistrationId": [
+                        1,
+                        "String!"
+                    ],
+                    "targetVersion": [
+                        1,
+                        "String!"
+                    ]
+                }
+            ],
+            "createApplicationRegistration": [
+                237,
+                {
+                    "input": [
+                        537,
+                        "CreateApplicationRegistrationInput!"
+                    ]
+                }
+            ],
+            "updateApplicationRegistration": [
+                79,
+                {
+                    "input": [
+                        538,
+                        "UpdateApplicationRegistrationInput!"
+                    ]
+                }
+            ],
+            "deleteApplicationRegistration": [
+                8,
+                {
+                    "id": [
+                        1,
+                        "String!"
+                    ]
+                }
+            ],
+            "rotateApplicationRegistrationClientSecret": [
+                239,
+                {
+                    "id": [
+                        1,
+                        "String!"
+                    ]
+                }
+            ],
+            "updateApplicationRegistrationVariable": [
+                209,
+                {
+                    "input": [
+                        540,
+                        "UpdateApplicationRegistrationVariableInput!"
+                    ]
+                }
+            ],
+            "completeAppTarballUpload": [
+                79,
+                {
+                    "fileId": [
+                        3,
+                        "UUID!"
+                    ]
+                }
+            ],
+            "uploadAppTarball": [
+                79,
+                {
+                    "file": [
+                        451,
+                        "Upload!"
+                    ],
+                    "universalIdentifier": [
+                        1
+                    ]
+                }
+            ],
+            "claimApplicationRegistrationOwnership": [
+                79,
+                {
+                    "applicationRegistrationId": [
+                        1,
+                        "String!"
+                    ]
+                }
+            ],
+            "transferApplicationRegistrationOwnership": [
+                79,
+                {
+                    "applicationRegistrationId": [
+                        1,
+                        "String!"
+                    ],
+                    "targetWorkspaceSubdomain": [
+                        1,
+                        "String!"
+                    ]
+                }
+            ],
+            "grantApplicationCapabilities": [
+                261,
+                {
+                    "input": [
+                        542,
+                        "GrantApplicationCapabilitiesInput!"
+                    ]
+                }
+            ],
+            "installMarketplaceApp": [
+                8,
+                {
+                    "universalIdentifier": [
+                        1,
+                        "String!"
+                    ],
+                    "version": [
+                        1
+                    ]
+                }
+            ],
+            "installApplication": [
+                52,
+                {
+                    "universalIdentifier": [
+                        1,
+                        "String!"
+                    ],
+                    "version": [
+                        1
+                    ]
+                }
+            ],
+            "triggerInstallApplicationJob": [
+                259,
+                {
+                    "input": [
+                        543,
+                        "TriggerInstallApplicationJobInput!"
+                    ]
+                }
+            ],
+            "triggerUninstallApplicationJob": [
+                260,
+                {
+                    "input": [
+                        544,
+                        "TriggerUninstallApplicationJobInput!"
+                    ]
+                }
+            ],
+            "updateApplication": [
+                52,
+                {
+                    "id": [
+                        3,
+                        "UUID!"
+                    ],
+                    "input": [
+                        545,
+                        "UpdateApplicationInput!"
+                    ]
+                }
+            ],
+            "uninstallApplication": [
+                8,
+                {
+                    "universalIdentifier": [
+                        1,
+                        "String!"
+                    ]
+                }
+            ],
+            "syncMarketplaceCatalog": [
+                8
+            ],
+            "runApplicationHealthCheck": [
+                252,
+                {
+                    "applicationId": [
+                        3,
+                        "UUID!"
+                    ]
+                }
+            ],
+            "createOneField": [
+                265,
+                {
+                    "input": [
+                        546,
+                        "CreateOneFieldMetadataInput!"
+                    ]
+                }
+            ],
+            "updateOneField": [
+                265,
+                {
+                    "input": [
+                        548,
+                        "UpdateOneFieldMetadataInput!"
+                    ]
+                }
+            ],
+            "deleteOneField": [
+                265,
+                {
+                    "input": [
+                        550,
+                        "DeleteOneFieldInput!"
+                    ]
+                }
+            ],
+            "createViewGroup": [
+                62,
+                {
+                    "input": [
+                        551,
+                        "CreateViewGroupInput!"
+                    ]
+                }
+            ],
+            "createManyViewGroups": [
+                62,
+                {
+                    "inputs": [
+                        551,
+                        "[CreateViewGroupInput!]!"
+                    ]
+                }
+            ],
+            "updateViewGroup": [
+                62,
+                {
+                    "input": [
+                        552,
+                        "UpdateViewGroupInput!"
+                    ]
+                }
+            ],
+            "updateManyViewGroups": [
+                62,
+                {
+                    "inputs": [
+                        552,
+                        "[UpdateViewGroupInput!]!"
+                    ]
+                }
+            ],
+            "deleteViewGroup": [
+                62,
+                {
+                    "input": [
+                        554,
+                        "DeleteViewGroupInput!"
+                    ]
+                }
+            ],
+            "destroyViewGroup": [
+                62,
+                {
+                    "input": [
+                        555,
+                        "DestroyViewGroupInput!"
                     ]
                 }
             ],
             "sendMessageCampaign": [
-                320,
+                346,
                 {
                     "input": [
-                        514,
+                        556,
                         "SendMessageCampaignInput!"
                     ]
                 }
             ],
             "cancelMessageCampaign": [
-                318,
+                344,
                 {
                     "input": [
-                        515,
+                        557,
                         "CancelMessageCampaignInput!"
                     ]
                 }
             ],
             "sendMessageCampaignTest": [
-                319,
+                345,
                 {
                     "input": [
-                        516,
+                        558,
                         "SendMessageCampaignTestInput!"
                     ]
                 }
             ],
             "duplicateMessageList": [
-                321,
+                347,
                 {
                     "id": [
                         3,
@@ -9347,10 +10288,10 @@ export default {
                 }
             ],
             "createMessageSuppression": [
-                322,
+                348,
                 {
                     "input": [
-                        517,
+                        559,
                         "CreateMessageSuppressionInput!"
                     ]
                 }
@@ -9365,19 +10306,19 @@ export default {
                 }
             ],
             "createUnsubscribeTopic": [
-                326,
+                352,
                 {
                     "input": [
-                        518,
+                        560,
                         "CreateUnsubscribeTopicInput!"
                     ]
                 }
             ],
             "updateUnsubscribeTopic": [
-                326,
+                352,
                 {
                     "input": [
-                        519,
+                        561,
                         "UpdateUnsubscribeTopicInput!"
                     ]
                 }
@@ -9392,34 +10333,34 @@ export default {
                 }
             ],
             "updateMessageChannel": [
-                308,
+                332,
                 {
                     "input": [
-                        520,
+                        562,
                         "UpdateMessageChannelInput!"
                     ]
                 }
             ],
             "createEmailGroupChannel": [
-                316,
+                342,
                 {
                     "input": [
-                        522,
+                        564,
                         "CreateEmailGroupChannelInput!"
                     ]
                 }
             ],
             "updateEmailGroupChannel": [
-                308,
+                332,
                 {
                     "input": [
-                        523,
+                        565,
                         "UpdateEmailGroupChannelInput!"
                     ]
                 }
             ],
             "deleteEmailGroupChannel": [
-                308,
+                332,
                 {
                     "id": [
                         3,
@@ -9427,11 +10368,47 @@ export default {
                     ]
                 }
             ],
-            "createEmailingDomain": [
-                304,
+            "createAppMessageChannel": [
+                332,
                 {
                     "input": [
-                        524,
+                        566,
+                        "CreateAppMessageChannelInput!"
+                    ]
+                }
+            ],
+            "updateAppMessageChannel": [
+                332,
+                {
+                    "input": [
+                        567,
+                        "UpdateAppMessageChannelInput!"
+                    ]
+                }
+            ],
+            "deleteAppMessageChannel": [
+                332,
+                {
+                    "id": [
+                        3,
+                        "UUID!"
+                    ]
+                }
+            ],
+            "ingestAppMessages": [
+                341,
+                {
+                    "input": [
+                        568,
+                        "IngestAppMessagesInput!"
+                    ]
+                }
+            ],
+            "createEmailingDomain": [
+                328,
+                {
+                    "input": [
+                        572,
                         "CreateEmailingDomainInput!"
                     ]
                 }
@@ -9446,7 +10423,7 @@ export default {
                 }
             ],
             "verifyEmailingDomain": [
-                304,
+                328,
                 {
                     "id": [
                         1,
@@ -9455,34 +10432,34 @@ export default {
                 }
             ],
             "runAgent": [
-                338,
+                365,
                 {
                     "input": [
-                        525,
+                        573,
                         "RunAgentInput!"
                     ]
                 }
             ],
             "createWebhook": [
-                335,
+                363,
                 {
                     "input": [
-                        528,
+                        577,
                         "CreateWebhookInput!"
                     ]
                 }
             ],
             "updateWebhook": [
-                335,
+                363,
                 {
                     "input": [
-                        529,
+                        578,
                         "UpdateWebhookInput!"
                     ]
                 }
             ],
             "deleteWebhook": [
-                335,
+                363,
                 {
                     "id": [
                         3,
@@ -9491,37 +10468,37 @@ export default {
                 }
             ],
             "updateMessageFolder": [
-                377,
+                407,
                 {
                     "input": [
-                        531,
+                        580,
                         "UpdateMessageFolderInput!"
                     ]
                 }
             ],
             "updateMessageFolders": [
-                377,
+                407,
                 {
                     "input": [
-                        533,
+                        582,
                         "UpdateMessageFoldersInput!"
                     ]
                 }
             ],
             "updateCalendarChannel": [
-                372,
+                402,
                 {
                     "input": [
-                        534,
+                        583,
                         "UpdateCalendarChannelInput!"
                     ]
                 }
             ],
             "setAppKeyValue": [
-                370,
+                400,
                 {
                     "input": [
-                        536,
+                        585,
                         "SetAppKeyValueInput!"
                     ]
                 }
@@ -9534,33 +10511,42 @@ export default {
                         "String!"
                     ],
                     "scope": [
-                        371
+                        401
                     ]
                 }
             ],
             "enqueueJob": [
-                368,
+                398,
                 {
                     "input": [
-                        537,
+                        586,
                         "EnqueueJobInput!"
                     ]
                 }
             ],
             "enqueueJobs": [
-                369,
+                399,
                 {
                     "input": [
-                        538,
+                        587,
                         "EnqueueJobsInput!"
                     ]
                 }
             ],
+            "reportAppConnectionAuthFailure": [
+                8,
+                {
+                    "input": [
+                        589,
+                        "ReportAppConnectionAuthFailureInput!"
+                    ]
+                }
+            ],
             "createChatThread": [
-                356
+                378
             ],
             "sendChatMessage": [
-                361,
+                383,
                 {
                     "threadId": [
                         3,
@@ -9581,13 +10567,13 @@ export default {
                         1
                     ],
                     "fileAttachments": [
-                        540,
+                        590,
                         "[FileAttachmentInput!]"
                     ]
                 }
             ],
             "retryChatMessage": [
-                361,
+                383,
                 {
                     "threadId": [
                         3,
@@ -9595,30 +10581,6 @@ export default {
                     ],
                     "modelId": [
                         1
-                    ]
-                }
-            ],
-            "answerAgentChatQuestion": [
-                361,
-                {
-                    "threadId": [
-                        3,
-                        "UUID!"
-                    ],
-                    "messageId": [
-                        3,
-                        "UUID!"
-                    ],
-                    "answers": [
-                        541,
-                        "[AgentChatQuestionAnswerInput!]!"
-                    ],
-                    "modelId": [
-                        1
-                    ],
-                    "fileAttachments": [
-                        540,
-                        "[FileAttachmentInput!]"
                     ]
                 }
             ],
@@ -9626,46 +10588,6 @@ export default {
                 8,
                 {
                     "threadId": [
-                        3,
-                        "UUID!"
-                    ]
-                }
-            ],
-            "renameChatThread": [
-                356,
-                {
-                    "id": [
-                        3,
-                        "UUID!"
-                    ],
-                    "title": [
-                        1,
-                        "String!"
-                    ]
-                }
-            ],
-            "archiveChatThread": [
-                356,
-                {
-                    "id": [
-                        3,
-                        "UUID!"
-                    ]
-                }
-            ],
-            "unarchiveChatThread": [
-                356,
-                {
-                    "id": [
-                        3,
-                        "UUID!"
-                    ]
-                }
-            ],
-            "deleteChatThread": [
-                8,
-                {
-                    "id": [
                         3,
                         "UUID!"
                     ]
@@ -9681,7 +10603,7 @@ export default {
                 }
             ],
             "startWorkspaceSetupChat": [
-                363,
+                386,
                 {
                     "companyContext": [
                         9
@@ -9691,26 +10613,35 @@ export default {
                     ]
                 }
             ],
-            "createSkill": [
-                354,
+            "sendInboxMessage": [
+                385,
                 {
                     "input": [
-                        542,
+                        591,
+                        "SendInboxMessageInput!"
+                    ]
+                }
+            ],
+            "createSkill": [
+                377,
+                {
+                    "input": [
+                        592,
                         "CreateSkillInput!"
                     ]
                 }
             ],
             "updateSkill": [
-                354,
+                377,
                 {
                     "input": [
-                        543,
+                        593,
                         "UpdateSkillInput!"
                     ]
                 }
             ],
             "deleteSkill": [
-                354,
+                377,
                 {
                     "id": [
                         3,
@@ -9719,7 +10650,7 @@ export default {
                 }
             ],
             "activateSkill": [
-                354,
+                377,
                 {
                     "id": [
                         3,
@@ -9728,7 +10659,7 @@ export default {
                 }
             ],
             "deactivateSkill": [
-                354,
+                377,
                 {
                     "id": [
                         3,
@@ -9737,7 +10668,7 @@ export default {
                 }
             ],
             "evaluateAgentTurn": [
-                365,
+                395,
                 {
                     "turnId": [
                         3,
@@ -9746,7 +10677,7 @@ export default {
                 }
             ],
             "runEvaluationInput": [
-                366,
+                396,
                 {
                     "agentId": [
                         3,
@@ -9758,17 +10689,44 @@ export default {
                     ]
                 }
             ],
-            "updateTimelineActivityType": [
-                383,
+            "createValidationRule": [
+                414,
                 {
                     "input": [
-                        544,
+                        594,
+                        "CreateValidationRuleInput!"
+                    ]
+                }
+            ],
+            "updateValidationRule": [
+                414,
+                {
+                    "input": [
+                        595,
+                        "UpdateValidationRuleInput!"
+                    ]
+                }
+            ],
+            "deleteValidationRule": [
+                414,
+                {
+                    "id": [
+                        3,
+                        "UUID!"
+                    ]
+                }
+            ],
+            "updateTimelineActivityType": [
+                413,
+                {
+                    "input": [
+                        597,
                         "UpdateTimelineActivityTypeInput!"
                     ]
                 }
             ],
             "resetTimelineActivityType": [
-                383,
+                413,
                 {
                     "id": [
                         3,
@@ -9777,16 +10735,16 @@ export default {
                 }
             ],
             "getAuthorizationUrlForSSO": [
-                271,
+                295,
                 {
                     "input": [
-                        545,
+                        598,
                         "GetAuthorizationUrlForSSOInput!"
                     ]
                 }
             ],
             "getLoginTokenFromCredentials": [
-                282,
+                306,
                 {
                     "email": [
                         1,
@@ -9812,7 +10770,7 @@ export default {
                 }
             ],
             "signIn": [
-                269,
+                293,
                 {
                     "email": [
                         1,
@@ -9834,7 +10792,7 @@ export default {
                 }
             ],
             "verifyEmailAndGetLoginToken": [
-                277,
+                301,
                 {
                     "emailVerificationToken": [
                         1,
@@ -9854,7 +10812,7 @@ export default {
                 }
             ],
             "verifyEmailAndGetWorkspaceAgnosticToken": [
-                269,
+                293,
                 {
                     "emailVerificationToken": [
                         1,
@@ -9870,7 +10828,7 @@ export default {
                 }
             ],
             "getAuthTokensFromOTP": [
-                281,
+                305,
                 {
                     "otp": [
                         1,
@@ -9890,7 +10848,7 @@ export default {
                 }
             ],
             "signUp": [
-                269,
+                293,
                 {
                     "email": [
                         1,
@@ -9912,7 +10870,7 @@ export default {
                 }
             ],
             "signUpInWorkspace": [
-                274,
+                298,
                 {
                     "email": [
                         1,
@@ -9943,31 +10901,61 @@ export default {
                 }
             ],
             "signUpInNewWorkspace": [
-                274,
+                298,
                 {
                     "input": [
-                        546
+                        599
                     ]
                 }
             ],
             "uploadNewWorkspaceLogo": [
-                150,
+                164,
                 {
                     "workspaceId": [
                         1,
                         "String!"
                     ],
                     "file": [
-                        412,
+                        451,
                         "Upload!"
                     ]
                 }
             ],
+            "createNewWorkspaceLogoUpload": [
+                165,
+                {
+                    "workspaceId": [
+                        1,
+                        "String!"
+                    ],
+                    "filename": [
+                        1,
+                        "String!"
+                    ],
+                    "size": [
+                        15,
+                        "Float!"
+                    ]
+                }
+            ],
+            "completeNewWorkspaceLogoUpload": [
+                164,
+                {
+                    "workspaceId": [
+                        1,
+                        "String!"
+                    ],
+                    "fileId": [
+                        1,
+                        "String!"
+                    ]
+                }
+            ],
             "generateTransientToken": [
-                275
+                299
             ],
             "getAuthTokensFromLoginToken": [
-                281,
+                305,
                 {
                     "loginToken": [
                         1,
@@ -9980,7 +10968,7 @@ export default {
                 }
             ],
             "getAuthTokensFromSSOExchangeToken": [
-                281,
+                305,
                 {
                     "ssoExchangeToken": [
                         1,
@@ -9989,7 +10977,7 @@ export default {
                 }
             ],
             "authorizeApp": [
-                267,
+                291,
                 {
                     "clientId": [
                         1,
@@ -10014,7 +11002,7 @@ export default {
                 }
             ],
             "renewToken": [
-                281,
+                305,
                 {
                     "appToken": [
                         1,
@@ -10031,7 +11019,7 @@ export default {
                 }
             ],
             "generateApiKeyToken": [
-                280,
+                304,
                 {
                     "apiKeyId": [
                         3,
@@ -10047,7 +11035,7 @@ export default {
                 11
             ],
             "emailPasswordResetLink": [
-                270,
+                294,
                 {
                     "email": [
                         1,
@@ -10062,7 +11050,7 @@ export default {
                 }
             ],
             "updatePasswordViaResetToken": [
-                272,
+                296,
                 {
                     "passwordResetToken": [
                         1,
@@ -10075,7 +11063,7 @@ export default {
                 }
             ],
             "initiateOTPProvisioning": [
-                265,
+                289,
                 {
                     "loginToken": [
                         1,
@@ -10088,10 +11076,10 @@ export default {
                 }
             ],
             "initiateOTPProvisioningForAuthenticatedUser": [
-                265
+                289
             ],
             "deleteTwoFactorAuthenticationMethod": [
-                264,
+                288,
                 {
                     "twoFactorAuthenticationMethodId": [
                         3,
@@ -10100,7 +11088,7 @@ export default {
                 }
             ],
             "verifyTwoFactorAuthenticationMethodForAuthenticatedUser": [
-                266,
+                290,
                 {
                     "otp": [
                         1,
@@ -10109,10 +11097,10 @@ export default {
                 }
             ],
             "deleteUser": [
-                73
+                76
             ],
             "deleteUserFromWorkspace": [
-                52,
+                54,
                 {
                     "workspaceMemberIdToDelete": [
                         1,
@@ -10124,7 +11112,7 @@ export default {
                 8,
                 {
                     "input": [
-                        547,
+                        600,
                         "UpdateWorkspaceMemberSettingsInput!"
                     ]
                 }
@@ -10142,7 +11130,7 @@ export default {
                 }
             ],
             "resendEmailVerificationToken": [
-                223,
+                241,
                 {
                     "email": [
                         1,
@@ -10155,43 +11143,43 @@ export default {
                 }
             ],
             "createOIDCIdentityProvider": [
-                228,
+                246,
                 {
                     "input": [
-                        548,
+                        601,
                         "SetupOIDCSsoInput!"
                     ]
                 }
             ],
             "createSAMLIdentityProvider": [
-                228,
+                246,
                 {
                     "input": [
-                        549,
+                        602,
                         "SetupSAMLSsoInput!"
                     ]
                 }
             ],
             "deleteSSOIdentityProvider": [
-                224,
+                242,
                 {
                     "input": [
-                        550,
+                        603,
                         "DeleteSsoInput!"
                     ]
                 }
             ],
             "editSSOIdentityProvider": [
-                225,
+                243,
                 {
                     "input": [
-                        551,
+                        604,
                         "EditSsoInput!"
                     ]
                 }
             ],
             "createObjectEvent": [
-                350,
+                389,
                 {
                     "event": [
                         1,
@@ -10211,10 +11199,10 @@ export default {
                 }
             ],
             "trackAnalytics": [
-                350,
+                389,
                 {
                     "type": [
-                        552,
+                        605,
                         "AnalyticsType!"
                     ],
                     "name": [
@@ -10229,7 +11217,7 @@ export default {
                 }
             ],
             "duplicateDashboard": [
-                348,
+                375,
                 {
                     "id": [
                         3,
@@ -10238,7 +11226,7 @@ export default {
                 }
             ],
             "impersonate": [
-                285,
+                309,
                 {
                     "userId": [
                         3,
@@ -10251,28 +11239,28 @@ export default {
                 }
             ],
             "stopImpersonation": [
-                286
+                310
             ],
             "createCalendarEvent": [
-                340,
+                367,
                 {
                     "input": [
-                        553,
+                        606,
                         "CreateCalendarEventInput!"
                     ]
                 }
             ],
             "sendEmail": [
-                349,
+                388,
                 {
                     "input": [
-                        554,
+                        607,
                         "SendEmailInput!"
                     ]
                 }
             ],
             "startChannelSync": [
-                339,
+                366,
                 {
                     "connectedAccountId": [
                         3,
@@ -10281,14 +11269,14 @@ export default {
                 }
             ],
             "saveImapSmtpCaldavAccount": [
-                334,
+                360,
                 {
                     "handle": [
                         1,
                         "String!"
                     ],
                     "connectionParameters": [
-                        556,
+                        609,
                         "EmailAccountConnectionParameters!"
                     ],
                     "id": [
@@ -10297,16 +11285,16 @@ export default {
                 }
             ],
             "updateLabPublicFeatureFlag": [
-                189,
+                206,
                 {
                     "input": [
-                        558,
+                        611,
                         "UpdateLabPublicFeatureFlagInput!"
                     ]
                 }
             ],
             "createPublicDomain": [
-                302,
+                326,
                 {
                     "domain": [
                         1,
@@ -10328,7 +11316,7 @@ export default {
                 }
             ],
             "checkPublicDomainValidRecords": [
-                261,
+                285,
                 {
                     "domain": [
                         1,
@@ -10337,7 +11325,7 @@ export default {
                 }
             ],
             "createDevelopmentApplication": [
-                300,
+                319,
                 {
                     "universalIdentifier": [
                         1,
@@ -10350,7 +11338,7 @@ export default {
                 }
             ],
             "syncApplication": [
-                301,
+                320,
                 {
                     "manifest": [
                         9,
@@ -10365,10 +11353,10 @@ export default {
                 }
             ],
             "uploadApplicationFile": [
-                293,
+                312,
                 {
                     "file": [
-                        412,
+                        451,
                         "Upload!"
                     ],
                     "applicationUniversalIdentifier": [
@@ -10376,7 +11364,7 @@ export default {
                         "String!"
                     ],
                     "fileFolder": [
-                        297,
+                        316,
                         "FileFolder!"
                     ],
                     "filePath": [
@@ -10386,20 +11374,20 @@ export default {
                 }
             ],
             "createApplicationFileUploads": [
-                299,
+                318,
                 {
                     "applicationUniversalIdentifier": [
                         1,
                         "String!"
                     ],
                     "files": [
-                        559,
+                        612,
                         "[ApplicationFileUploadRequestInput!]!"
                     ]
                 }
             ],
             "completeApplicationFileUploads": [
-                295,
+                314,
                 {
                     "applicationUniversalIdentifier": [
                         1,
@@ -10415,15 +11403,6 @@ export default {
                 8,
                 {
                     "applicationAuthorizationId": [
-                        3,
-                        "UUID!"
-                    ]
-                }
-            ],
-            "generateApplicationToken": [
-                12,
-                {
-                    "applicationId": [
                         3,
                         "UUID!"
                     ]
@@ -10467,6 +11446,20 @@ export default {
                 1
             ]
         },
+        "RecordSharePrincipalInput": {
+            "workspaceMemberId": [
+                3
+            ],
+            "roleId": [
+                3
+            ],
+            "everyone": [
+                8
+            ],
+            "__typename": [
+                1
+            ]
+        },
         "CreateNavigationMenuItemInput": {
             "id": [
                 3
@@ -10484,7 +11477,7 @@ export default {
                 3
             ],
             "type": [
-                154
+                168
             ],
             "name": [
                 1
@@ -10516,7 +11509,7 @@ export default {
                 3
             ],
             "update": [
-                411
+                450
             ],
             "__typename": [
                 1
@@ -10549,12 +11542,12 @@ export default {
             ]
         },
         "Upload": {},
-        "UpsertUsageLimitInput": {
+        "CreateUsageLimitInput": {
             "resourceType": [
-                176
+                157
             ],
             "operationType": [
-                177
+                158
             ],
             "spenderType": [
                 1
@@ -10566,7 +11559,7 @@ export default {
                 1
             ],
             "periodCount": [
-                28
+                31
             ],
             "periodUnit": [
                 1
@@ -10575,16 +11568,450 @@ export default {
                 1
             ],
             "limitValue": [
-                178
+                161
             ],
             "burstValue": [
-                178
+                161
             ],
             "__typename": [
                 1
             ]
         },
-        "CreateViewFilterGroupInput": {
+        "UpdateUsageLimitInput": {
+            "id": [
+                3
+            ],
+            "payload": [
+                452
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "CreatePageLayoutWidgetInput": {
+            "pageLayoutTabId": [
+                3
+            ],
+            "title": [
+                1
+            ],
+            "type": [
+                102
+            ],
+            "objectMetadataId": [
+                3
+            ],
+            "position": [
+                9
+            ],
+            "configuration": [
+                9
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "UpdatePageLayoutWidgetInput": {
+            "pageLayoutTabId": [
+                3
+            ],
+            "title": [
+                1
+            ],
+            "type": [
+                102
+            ],
+            "objectMetadataId": [
+                3
+            ],
+            "position": [
+                9
+            ],
+            "configuration": [
+                9
+            ],
+            "conditionalDisplay": [
+                9
+            ],
+            "conditionalAvailabilityExpression": [
+                1
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "CreatePageLayoutTabInput": {
+            "title": [
+                1
+            ],
+            "position": [
+                15
+            ],
+            "pageLayoutId": [
+                3
+            ],
+            "layoutMode": [
+                105
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "UpdatePageLayoutTabInput": {
+            "title": [
+                1
+            ],
+            "position": [
+                15
+            ],
+            "icon": [
+                1
+            ],
+            "layoutMode": [
+                105
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "CreatePageLayoutInput": {
+            "name": [
+                1
+            ],
+            "type": [
+                149
+            ],
+            "objectMetadataId": [
+                3
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "UpdatePageLayoutInput": {
+            "name": [
+                1
+            ],
+            "type": [
+                149
+            ],
+            "objectMetadataId": [
+                3
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "UpdatePageLayoutWithTabsInput": {
+            "name": [
+                1
+            ],
+            "type": [
+                149
+            ],
+            "objectMetadataId": [
+                3
+            ],
+            "isFirstTabPinned": [
+                8
+            ],
+            "tabs": [
+                461
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "UpdatePageLayoutTabWithWidgetsInput": {
+            "id": [
+                3
+            ],
+            "title": [
+                1
+            ],
+            "position": [
+                15
+            ],
+            "icon": [
+                1
+            ],
+            "layoutMode": [
+                105
+            ],
+            "widgets": [
+                462
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "UpdatePageLayoutWidgetWithIdInput": {
+            "id": [
+                3
+            ],
+            "pageLayoutTabId": [
+                3
+            ],
+            "title": [
+                1
+            ],
+            "type": [
+                102
+            ],
+            "objectMetadataId": [
+                3
+            ],
+            "position": [
+                9
+            ],
+            "configuration": [
+                9
+            ],
+            "conditionalDisplay": [
+                9
+            ],
+            "conditionalAvailabilityExpression": [
+                1
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "CreateViewInput": {
+            "id": [
+                3
+            ],
+            "name": [
+                1
+            ],
+            "objectMetadataId": [
+                3
+            ],
+            "type": [
+                67
+            ],
+            "key": [
+                68
+            ],
+            "icon": [
+                1
+            ],
+            "position": [
+                15
+            ],
+            "isCompact": [
+                8
+            ],
+            "shouldHideEmptyGroups": [
+                8
+            ],
+            "kanbanColumnWidth": [
+                31
+            ],
+            "groupLoadLimit": [
+                31
+            ],
+            "openRecordIn": [
+                69
+            ],
+            "kanbanAggregateOperation": [
+                57
+            ],
+            "kanbanAggregateOperationFieldMetadataId": [
+                3
+            ],
+            "anyFieldFilterValue": [
+                1
+            ],
+            "calendarLayout": [
+                70
+            ],
+            "calendarFieldMetadataId": [
+                3
+            ],
+            "calendarEndFieldMetadataId": [
+                3
+            ],
+            "mainGroupByFieldMetadataId": [
+                3
+            ],
+            "visibility": [
+                71
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "UpdateViewInput": {
+            "id": [
+                3
+            ],
+            "name": [
+                1
+            ],
+            "type": [
+                67
+            ],
+            "icon": [
+                1
+            ],
+            "position": [
+                15
+            ],
+            "isCompact": [
+                8
+            ],
+            "openRecordIn": [
+                69
+            ],
+            "kanbanAggregateOperation": [
+                57
+            ],
+            "kanbanAggregateOperationFieldMetadataId": [
+                3
+            ],
+            "anyFieldFilterValue": [
+                1
+            ],
+            "calendarLayout": [
+                70
+            ],
+            "calendarFieldMetadataId": [
+                3
+            ],
+            "calendarEndFieldMetadataId": [
+                3
+            ],
+            "visibility": [
+                71
+            ],
+            "mainGroupByFieldMetadataId": [
+                3
+            ],
+            "shouldHideEmptyGroups": [
+                8
+            ],
+            "kanbanColumnWidth": [
+                31
+            ],
+            "groupLoadLimit": [
+                31
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "UpsertViewWidgetInput": {
+            "widgetId": [
+                3
+            ],
+            "view": [
+                466
+            ],
+            "viewFields": [
+                467
+            ],
+            "viewFilters": [
+                468
+            ],
+            "viewFilterGroups": [
+                469
+            ],
+            "viewSorts": [
+                470
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "UpsertViewWidgetViewSettingsInput": {
+            "type": [
+                67
+            ],
+            "mainGroupByFieldMetadataId": [
+                3
+            ],
+            "shouldHideEmptyGroups": [
+                8
+            ],
+            "openRecordIn": [
+                69
+            ],
+            "kanbanAggregateOperation": [
+                57
+            ],
+            "kanbanAggregateOperationFieldMetadataId": [
+                3
+            ],
+            "kanbanColumnWidth": [
+                31
+            ],
+            "calendarLayout": [
+                70
+            ],
+            "calendarFieldMetadataId": [
+                3
+            ],
+            "calendarEndFieldMetadataId": [
+                3
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "UpsertViewWidgetViewFieldInput": {
+            "viewFieldId": [
+                3
+            ],
+            "fieldMetadataId": [
+                3
+            ],
+            "isVisible": [
+                8
+            ],
+            "position": [
+                15
+            ],
+            "size": [
+                15
+            ],
+            "aggregateOperation": [
+                57
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "UpsertViewWidgetViewFilterInput": {
+            "id": [
+                3
+            ],
+            "fieldMetadataId": [
+                3
+            ],
+            "operand": [
+                61
+            ],
+            "value": [
+                9
+            ],
+            "viewFilterGroupId": [
+                3
+            ],
+            "positionInViewFilterGroup": [
+                15
+            ],
+            "subFieldName": [
+                1
+            ],
+            "relationTargetFieldMetadataId": [
+                3
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "UpsertViewWidgetViewFilterGroupInput": {
             "id": [
                 3
             ],
@@ -10592,10 +12019,41 @@ export default {
                 3
             ],
             "logicalOperator": [
-                57
+                59
             ],
             "positionInViewFilterGroup": [
                 15
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "UpsertViewWidgetViewSortInput": {
+            "id": [
+                3
+            ],
+            "fieldMetadataId": [
+                3
+            ],
+            "direction": [
+                64
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "CreateViewSortInput": {
+            "id": [
+                3
+            ],
+            "fieldMetadataId": [
+                3
+            ],
+            "direction": [
+                64
+            ],
+            "subFieldName": [
+                1
             ],
             "viewId": [
                 3
@@ -10604,20 +12062,38 @@ export default {
                 1
             ]
         },
-        "UpdateViewFilterGroupInput": {
+        "UpdateViewSortInput": {
             "id": [
                 3
             ],
-            "parentViewFilterGroupId": [
+            "update": [
+                473
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "UpdateViewSortInputUpdates": {
+            "direction": [
+                64
+            ],
+            "subFieldName": [
+                1
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "DeleteViewSortInput": {
+            "id": [
                 3
             ],
-            "logicalOperator": [
-                57
-            ],
-            "positionInViewFilterGroup": [
-                15
-            ],
-            "viewId": [
+            "__typename": [
+                1
+            ]
+        },
+        "DestroyViewSortInput": {
+            "id": [
                 3
             ],
             "__typename": [
@@ -10632,7 +12108,7 @@ export default {
                 3
             ],
             "operand": [
-                59
+                61
             ],
             "value": [
                 9
@@ -10661,7 +12137,7 @@ export default {
                 3
             ],
             "update": [
-                418
+                478
             ],
             "__typename": [
                 1
@@ -10672,7 +12148,7 @@ export default {
                 3
             ],
             "operand": [
-                59
+                61
             ],
             "value": [
                 9
@@ -10709,329 +12185,12 @@ export default {
                 1
             ]
         },
-        "CreateViewInput": {
-            "id": [
-                3
-            ],
-            "name": [
-                1
-            ],
-            "objectMetadataId": [
-                3
-            ],
-            "type": [
-                65
-            ],
-            "key": [
-                66
-            ],
-            "icon": [
-                1
-            ],
-            "position": [
-                15
-            ],
-            "isCompact": [
-                8
-            ],
-            "shouldHideEmptyGroups": [
-                8
-            ],
-            "kanbanColumnWidth": [
-                28
-            ],
-            "openRecordIn": [
-                67
-            ],
-            "kanbanAggregateOperation": [
-                55
-            ],
-            "kanbanAggregateOperationFieldMetadataId": [
-                3
-            ],
-            "anyFieldFilterValue": [
-                1
-            ],
-            "calendarLayout": [
-                68
-            ],
-            "calendarFieldMetadataId": [
-                3
-            ],
-            "calendarEndFieldMetadataId": [
-                3
-            ],
-            "mainGroupByFieldMetadataId": [
-                3
-            ],
-            "visibility": [
-                69
-            ],
-            "__typename": [
-                1
-            ]
-        },
-        "UpdateViewInput": {
-            "id": [
-                3
-            ],
-            "name": [
-                1
-            ],
-            "type": [
-                65
-            ],
-            "icon": [
-                1
-            ],
-            "position": [
-                15
-            ],
-            "isCompact": [
-                8
-            ],
-            "openRecordIn": [
-                67
-            ],
-            "kanbanAggregateOperation": [
-                55
-            ],
-            "kanbanAggregateOperationFieldMetadataId": [
-                3
-            ],
-            "anyFieldFilterValue": [
-                1
-            ],
-            "calendarLayout": [
-                68
-            ],
-            "calendarFieldMetadataId": [
-                3
-            ],
-            "calendarEndFieldMetadataId": [
-                3
-            ],
-            "visibility": [
-                69
-            ],
-            "mainGroupByFieldMetadataId": [
-                3
-            ],
-            "shouldHideEmptyGroups": [
-                8
-            ],
-            "kanbanColumnWidth": [
-                28
-            ],
-            "__typename": [
-                1
-            ]
-        },
-        "UpsertViewWidgetInput": {
-            "widgetId": [
-                3
-            ],
-            "view": [
-                424
-            ],
-            "viewFields": [
-                425
-            ],
-            "viewFilters": [
-                426
-            ],
-            "viewFilterGroups": [
-                427
-            ],
-            "viewSorts": [
-                428
-            ],
-            "__typename": [
-                1
-            ]
-        },
-        "UpsertViewWidgetViewSettingsInput": {
-            "type": [
-                65
-            ],
-            "mainGroupByFieldMetadataId": [
-                3
-            ],
-            "shouldHideEmptyGroups": [
-                8
-            ],
-            "openRecordIn": [
-                67
-            ],
-            "kanbanAggregateOperation": [
-                55
-            ],
-            "kanbanAggregateOperationFieldMetadataId": [
-                3
-            ],
-            "kanbanColumnWidth": [
-                28
-            ],
-            "calendarLayout": [
-                68
-            ],
-            "calendarFieldMetadataId": [
-                3
-            ],
-            "calendarEndFieldMetadataId": [
-                3
-            ],
-            "__typename": [
-                1
-            ]
-        },
-        "UpsertViewWidgetViewFieldInput": {
-            "viewFieldId": [
-                3
-            ],
-            "fieldMetadataId": [
-                3
-            ],
-            "isVisible": [
-                8
-            ],
-            "position": [
-                15
-            ],
-            "size": [
-                15
-            ],
-            "aggregateOperation": [
-                55
-            ],
-            "__typename": [
-                1
-            ]
-        },
-        "UpsertViewWidgetViewFilterInput": {
-            "id": [
-                3
-            ],
-            "fieldMetadataId": [
-                3
-            ],
-            "operand": [
-                59
-            ],
-            "value": [
-                9
-            ],
-            "viewFilterGroupId": [
-                3
-            ],
-            "positionInViewFilterGroup": [
-                15
-            ],
-            "subFieldName": [
-                1
-            ],
-            "relationTargetFieldMetadataId": [
-                3
-            ],
-            "__typename": [
-                1
-            ]
-        },
-        "UpsertViewWidgetViewFilterGroupInput": {
-            "id": [
-                3
-            ],
-            "parentViewFilterGroupId": [
-                3
-            ],
-            "logicalOperator": [
-                57
-            ],
-            "positionInViewFilterGroup": [
-                15
-            ],
-            "__typename": [
-                1
-            ]
-        },
-        "UpsertViewWidgetViewSortInput": {
-            "id": [
-                3
-            ],
-            "fieldMetadataId": [
-                3
-            ],
-            "direction": [
-                62
-            ],
-            "__typename": [
-                1
-            ]
-        },
-        "CreateViewSortInput": {
-            "id": [
-                3
-            ],
-            "fieldMetadataId": [
-                3
-            ],
-            "direction": [
-                62
-            ],
-            "subFieldName": [
-                1
-            ],
-            "viewId": [
-                3
-            ],
-            "__typename": [
-                1
-            ]
-        },
-        "UpdateViewSortInput": {
-            "id": [
-                3
-            ],
-            "update": [
-                431
-            ],
-            "__typename": [
-                1
-            ]
-        },
-        "UpdateViewSortInputUpdates": {
-            "direction": [
-                62
-            ],
-            "subFieldName": [
-                1
-            ],
-            "__typename": [
-                1
-            ]
-        },
-        "DeleteViewSortInput": {
-            "id": [
-                3
-            ],
-            "__typename": [
-                1
-            ]
-        },
-        "DestroyViewSortInput": {
-            "id": [
-                3
-            ],
-            "__typename": [
-                1
-            ]
-        },
         "UpdateViewFieldInput": {
             "id": [
                 3
             ],
             "update": [
-                435
+                482
             ],
             "__typename": [
                 1
@@ -11048,7 +12207,7 @@ export default {
                 15
             ],
             "aggregateOperation": [
-                55
+                57
             ],
             "viewFieldGroupId": [
                 3
@@ -11077,7 +12236,7 @@ export default {
                 15
             ],
             "aggregateOperation": [
-                55
+                57
             ],
             "viewFieldGroupId": [
                 3
@@ -11107,7 +12266,7 @@ export default {
                 3
             ],
             "update": [
-                440
+                487
             ],
             "__typename": [
                 1
@@ -11171,10 +12330,10 @@ export default {
                 3
             ],
             "groups": [
-                445
+                492
             ],
             "fields": [
-                446
+                493
             ],
             "__typename": [
                 1
@@ -11194,7 +12353,7 @@ export default {
                 8
             ],
             "fields": [
-                446
+                493
             ],
             "__typename": [
                 1
@@ -11212,267 +12371,6 @@ export default {
             ],
             "position": [
                 15
-            ],
-            "__typename": [
-                1
-            ]
-        },
-        "CreateApiKeyInput": {
-            "name": [
-                1
-            ],
-            "expiresAt": [
-                1
-            ],
-            "revokedAt": [
-                1
-            ],
-            "roleId": [
-                3
-            ],
-            "__typename": [
-                1
-            ]
-        },
-        "UpdateApiKeyInput": {
-            "id": [
-                3
-            ],
-            "name": [
-                1
-            ],
-            "expiresAt": [
-                1
-            ],
-            "revokedAt": [
-                1
-            ],
-            "__typename": [
-                1
-            ]
-        },
-        "RevokeApiKeyInput": {
-            "id": [
-                3
-            ],
-            "__typename": [
-                1
-            ]
-        },
-        "CreateApprovedAccessDomainInput": {
-            "domain": [
-                1
-            ],
-            "email": [
-                1
-            ],
-            "__typename": [
-                1
-            ]
-        },
-        "DeleteApprovedAccessDomainInput": {
-            "id": [
-                3
-            ],
-            "__typename": [
-                1
-            ]
-        },
-        "ValidateApprovedAccessDomainInput": {
-            "validationToken": [
-                1
-            ],
-            "approvedAccessDomainId": [
-                3
-            ],
-            "__typename": [
-                1
-            ]
-        },
-        "CreatePageLayoutTabInput": {
-            "title": [
-                1
-            ],
-            "position": [
-                15
-            ],
-            "pageLayoutId": [
-                3
-            ],
-            "layoutMode": [
-                85
-            ],
-            "__typename": [
-                1
-            ]
-        },
-        "UpdatePageLayoutTabInput": {
-            "title": [
-                1
-            ],
-            "position": [
-                15
-            ],
-            "icon": [
-                1
-            ],
-            "layoutMode": [
-                85
-            ],
-            "__typename": [
-                1
-            ]
-        },
-        "CreatePageLayoutInput": {
-            "name": [
-                1
-            ],
-            "type": [
-                126
-            ],
-            "objectMetadataId": [
-                3
-            ],
-            "__typename": [
-                1
-            ]
-        },
-        "UpdatePageLayoutInput": {
-            "name": [
-                1
-            ],
-            "type": [
-                126
-            ],
-            "objectMetadataId": [
-                3
-            ],
-            "__typename": [
-                1
-            ]
-        },
-        "UpdatePageLayoutWithTabsInput": {
-            "name": [
-                1
-            ],
-            "type": [
-                126
-            ],
-            "objectMetadataId": [
-                3
-            ],
-            "isFirstTabPinned": [
-                8
-            ],
-            "tabs": [
-                458
-            ],
-            "__typename": [
-                1
-            ]
-        },
-        "UpdatePageLayoutTabWithWidgetsInput": {
-            "id": [
-                3
-            ],
-            "title": [
-                1
-            ],
-            "position": [
-                15
-            ],
-            "icon": [
-                1
-            ],
-            "layoutMode": [
-                85
-            ],
-            "widgets": [
-                459
-            ],
-            "__typename": [
-                1
-            ]
-        },
-        "UpdatePageLayoutWidgetWithIdInput": {
-            "id": [
-                3
-            ],
-            "pageLayoutTabId": [
-                3
-            ],
-            "title": [
-                1
-            ],
-            "type": [
-                82
-            ],
-            "objectMetadataId": [
-                3
-            ],
-            "position": [
-                9
-            ],
-            "configuration": [
-                9
-            ],
-            "conditionalDisplay": [
-                9
-            ],
-            "conditionalAvailabilityExpression": [
-                1
-            ],
-            "__typename": [
-                1
-            ]
-        },
-        "CreatePageLayoutWidgetInput": {
-            "pageLayoutTabId": [
-                3
-            ],
-            "title": [
-                1
-            ],
-            "type": [
-                82
-            ],
-            "objectMetadataId": [
-                3
-            ],
-            "position": [
-                9
-            ],
-            "configuration": [
-                9
-            ],
-            "__typename": [
-                1
-            ]
-        },
-        "UpdatePageLayoutWidgetInput": {
-            "pageLayoutTabId": [
-                3
-            ],
-            "title": [
-                1
-            ],
-            "type": [
-                82
-            ],
-            "objectMetadataId": [
-                3
-            ],
-            "position": [
-                9
-            ],
-            "configuration": [
-                9
-            ],
-            "conditionalDisplay": [
-                9
-            ],
-            "conditionalAvailabilityExpression": [
-                1
             ],
             "__typename": [
                 1
@@ -11553,7 +12451,7 @@ export default {
         },
         "CreateOneObjectInput": {
             "object": [
-                465
+                497
             ],
             "__typename": [
                 1
@@ -11613,7 +12511,7 @@ export default {
         },
         "UpdateOneObjectInput": {
             "update": [
-                468
+                500
             ],
             "id": [
                 3
@@ -11663,10 +12561,16 @@ export default {
                 8
             ],
             "openRecordIn": [
-                24
+                26
+            ],
+            "readability": [
+                27
+            ],
+            "sharingReach": [
+                28
             ],
             "translations": [
-                469
+                501
             ],
             "__typename": [
                 1
@@ -11688,7 +12592,7 @@ export default {
         },
         "CreateOneIndexInput": {
             "index": [
-                471
+                503
             ],
             "__typename": [
                 1
@@ -11699,10 +12603,10 @@ export default {
                 3
             ],
             "fields": [
-                472
+                504
             ],
             "indexType": [
-                250
+                274
             ],
             "__typename": [
                 1
@@ -11784,7 +12688,7 @@ export default {
                 3
             ],
             "update": [
-                477
+                509
             ],
             "__typename": [
                 1
@@ -11830,6 +12734,9 @@ export default {
         },
         "CreateCommandMenuItemInput": {
             "workflowVersionId": [
+                3
+            ],
+            "coreWorkflowVersionId": [
                 3
             ],
             "frontComponentId": [
@@ -11950,7 +12857,7 @@ export default {
                 3
             ],
             "update": [
-                482
+                514
             ],
             "__typename": [
                 1
@@ -11967,339 +12874,18 @@ export default {
                 1
             ]
         },
-        "ActivateWorkspaceInput": {
-            "displayName": [
+        "CreateApprovedAccessDomainInput": {
+            "domain": [
+                1
+            ],
+            "email": [
                 1
             ],
             "__typename": [
                 1
             ]
         },
-        "UpdateWorkspaceInput": {
-            "subdomain": [
-                1
-            ],
-            "customDomain": [
-                1
-            ],
-            "displayName": [
-                1
-            ],
-            "logo": [
-                1
-            ],
-            "inviteHash": [
-                1
-            ],
-            "isPublicInviteLinkEnabled": [
-                8
-            ],
-            "workspaceDiscoverability": [
-                71
-            ],
-            "allowImpersonation": [
-                8
-            ],
-            "isGoogleAuthEnabled": [
-                8
-            ],
-            "isMicrosoftAuthEnabled": [
-                8
-            ],
-            "isPasswordAuthEnabled": [
-                8
-            ],
-            "isGoogleAuthBypassEnabled": [
-                8
-            ],
-            "isMicrosoftAuthBypassEnabled": [
-                8
-            ],
-            "isPasswordAuthBypassEnabled": [
-                8
-            ],
-            "defaultRoleId": [
-                3
-            ],
-            "isTwoFactorAuthenticationEnforced": [
-                8
-            ],
-            "trashRetentionDays": [
-                15
-            ],
-            "eventLogRetentionDays": [
-                15
-            ],
-            "fastModel": [
-                1
-            ],
-            "smartModel": [
-                1
-            ],
-            "aiAdditionalInstructions": [
-                1
-            ],
-            "editableProfileFields": [
-                1
-            ],
-            "enabledAiModelIds": [
-                1
-            ],
-            "useRecommendedModels": [
-                8
-            ],
-            "isInternalMessagesImportEnabled": [
-                8
-            ],
-            "__typename": [
-                1
-            ]
-        },
-        "CreateApplicationRegistrationInput": {
-            "name": [
-                1
-            ],
-            "universalIdentifier": [
-                1
-            ],
-            "oAuthRedirectUris": [
-                1
-            ],
-            "oAuthScopes": [
-                1
-            ],
-            "__typename": [
-                1
-            ]
-        },
-        "UpdateApplicationRegistrationInput": {
-            "id": [
-                1
-            ],
-            "update": [
-                487
-            ],
-            "__typename": [
-                1
-            ]
-        },
-        "UpdateApplicationRegistrationPayload": {
-            "name": [
-                1
-            ],
-            "oAuthRedirectUris": [
-                1
-            ],
-            "oAuthScopes": [
-                1
-            ],
-            "isListed": [
-                8
-            ],
-            "isPreInstalled": [
-                8
-            ],
-            "isVetted": [
-                8
-            ],
-            "__typename": [
-                1
-            ]
-        },
-        "CreateApplicationRegistrationVariableInput": {
-            "applicationRegistrationId": [
-                1
-            ],
-            "key": [
-                1
-            ],
-            "value": [
-                1
-            ],
-            "description": [
-                1
-            ],
-            "isSecret": [
-                8
-            ],
-            "__typename": [
-                1
-            ]
-        },
-        "UpdateApplicationRegistrationVariableInput": {
-            "id": [
-                1
-            ],
-            "update": [
-                490
-            ],
-            "__typename": [
-                1
-            ]
-        },
-        "UpdateApplicationRegistrationVariablePayload": {
-            "value": [
-                1
-            ],
-            "resetValue": [
-                8
-            ],
-            "description": [
-                1
-            ],
-            "__typename": [
-                1
-            ]
-        },
-        "UpdateApplicationInput": {
-            "autoUpgrade": [
-                8
-            ],
-            "__typename": [
-                1
-            ]
-        },
-        "CreateOneFieldMetadataInput": {
-            "field": [
-                493
-            ],
-            "__typename": [
-                1
-            ]
-        },
-        "CreateFieldInput": {
-            "type": [
-                242
-            ],
-            "name": [
-                1
-            ],
-            "label": [
-                1
-            ],
-            "description": [
-                1
-            ],
-            "icon": [
-                1
-            ],
-            "isActive": [
-                8
-            ],
-            "isSystem": [
-                8
-            ],
-            "isUIEditable": [
-                8
-            ],
-            "isUIReadOnly": [
-                8
-            ],
-            "isNullable": [
-                8
-            ],
-            "isUnique": [
-                8
-            ],
-            "defaultValue": [
-                9
-            ],
-            "options": [
-                9
-            ],
-            "settings": [
-                9
-            ],
-            "objectMetadataId": [
-                3
-            ],
-            "isLabelSyncedWithName": [
-                8
-            ],
-            "isRemoteCreation": [
-                8
-            ],
-            "relationCreationPayload": [
-                9
-            ],
-            "morphRelationsCreationPayload": [
-                9
-            ],
-            "__typename": [
-                1
-            ]
-        },
-        "UpdateOneFieldMetadataInput": {
-            "id": [
-                3
-            ],
-            "update": [
-                495
-            ],
-            "__typename": [
-                1
-            ]
-        },
-        "UpdateFieldInput": {
-            "universalIdentifier": [
-                1
-            ],
-            "name": [
-                1
-            ],
-            "label": [
-                1
-            ],
-            "description": [
-                1
-            ],
-            "icon": [
-                1
-            ],
-            "isActive": [
-                8
-            ],
-            "isSystem": [
-                8
-            ],
-            "isUIEditable": [
-                8
-            ],
-            "isUIReadOnly": [
-                8
-            ],
-            "isNullable": [
-                8
-            ],
-            "isUnique": [
-                8
-            ],
-            "defaultValue": [
-                9
-            ],
-            "options": [
-                9
-            ],
-            "settings": [
-                9
-            ],
-            "objectMetadataId": [
-                3
-            ],
-            "isLabelSyncedWithName": [
-                8
-            ],
-            "morphRelationsUpdatePayload": [
-                9
-            ],
-            "translations": [
-                469
-            ],
-            "__typename": [
-                1
-            ]
-        },
-        "DeleteOneFieldInput": {
+        "DeleteApprovedAccessDomainInput": {
             "id": [
                 3
             ],
@@ -12307,64 +12893,11 @@ export default {
                 1
             ]
         },
-        "CreateViewGroupInput": {
-            "id": [
-                3
-            ],
-            "isVisible": [
-                8
-            ],
-            "fieldValue": [
+        "ValidateApprovedAccessDomainInput": {
+            "validationToken": [
                 1
             ],
-            "position": [
-                15
-            ],
-            "viewId": [
-                3
-            ],
-            "__typename": [
-                1
-            ]
-        },
-        "UpdateViewGroupInput": {
-            "id": [
-                3
-            ],
-            "update": [
-                499
-            ],
-            "__typename": [
-                1
-            ]
-        },
-        "UpdateViewGroupInputUpdates": {
-            "fieldMetadataId": [
-                3
-            ],
-            "isVisible": [
-                8
-            ],
-            "fieldValue": [
-                1
-            ],
-            "position": [
-                15
-            ],
-            "__typename": [
-                1
-            ]
-        },
-        "DeleteViewGroupInput": {
-            "id": [
-                3
-            ],
-            "__typename": [
-                1
-            ]
-        },
-        "DestroyViewGroupInput": {
-            "id": [
+            "approvedAccessDomainId": [
                 3
             ],
             "__typename": [
@@ -12417,7 +12950,7 @@ export default {
         },
         "UpdateRoleInput": {
             "update": [
-                504
+                520
             ],
             "id": [
                 3
@@ -12472,7 +13005,7 @@ export default {
                 3
             ],
             "objectPermissions": [
-                506
+                522
             ],
             "__typename": [
                 1
@@ -12514,7 +13047,7 @@ export default {
                 3
             ],
             "fieldPermissions": [
-                509
+                525
             ],
             "__typename": [
                 1
@@ -12545,10 +13078,10 @@ export default {
                 3
             ],
             "predicates": [
-                511
+                527
             ],
             "predicateGroups": [
-                512
+                528
             ],
             "__typename": [
                 1
@@ -12562,7 +13095,7 @@ export default {
                 3
             ],
             "operand": [
-                44
+                47
             ],
             "value": [
                 9
@@ -12597,7 +13130,7 @@ export default {
                 3
             ],
             "logicalOperator": [
-                42
+                45
             ],
             "positionInRowLevelPermissionPredicateGroup": [
                 15
@@ -12606,33 +13139,514 @@ export default {
                 1
             ]
         },
-        "SendEmailViaDomainInput": {
-            "emailingDomainId": [
+        "CreateApiKeyInput": {
+            "name": [
                 1
             ],
-            "to": [
+            "expiresAt": [
                 1
             ],
-            "cc": [
+            "revokedAt": [
                 1
             ],
-            "bcc": [
+            "roleId": [
+                3
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "UpdateApiKeyInput": {
+            "id": [
+                3
+            ],
+            "name": [
                 1
             ],
-            "subject": [
+            "expiresAt": [
                 1
             ],
-            "text": [
+            "revokedAt": [
                 1
             ],
-            "html": [
+            "__typename": [
+                1
+            ]
+        },
+        "RevokeApiKeyInput": {
+            "id": [
+                3
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "CreateViewFilterGroupInput": {
+            "id": [
+                3
+            ],
+            "parentViewFilterGroupId": [
+                3
+            ],
+            "logicalOperator": [
+                59
+            ],
+            "positionInViewFilterGroup": [
+                15
+            ],
+            "viewId": [
+                3
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "UpdateViewFilterGroupInput": {
+            "id": [
+                3
+            ],
+            "parentViewFilterGroupId": [
+                3
+            ],
+            "logicalOperator": [
+                59
+            ],
+            "positionInViewFilterGroup": [
+                15
+            ],
+            "viewId": [
+                3
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "ActivateWorkspaceInput": {
+            "displayName": [
                 1
             ],
-            "from": [
+            "__typename": [
+                1
+            ]
+        },
+        "UpdateWorkspaceInput": {
+            "subdomain": [
                 1
             ],
-            "replyTo": [
+            "customDomain": [
                 1
+            ],
+            "displayName": [
+                1
+            ],
+            "logo": [
+                1
+            ],
+            "inviteHash": [
+                1
+            ],
+            "isPublicInviteLinkEnabled": [
+                8
+            ],
+            "isCampaignClickTrackingEnabled": [
+                8
+            ],
+            "workspaceDiscoverability": [
+                73
+            ],
+            "allowImpersonation": [
+                8
+            ],
+            "isGoogleAuthEnabled": [
+                8
+            ],
+            "isMicrosoftAuthEnabled": [
+                8
+            ],
+            "isPasswordAuthEnabled": [
+                8
+            ],
+            "isGoogleAuthBypassEnabled": [
+                8
+            ],
+            "isMicrosoftAuthBypassEnabled": [
+                8
+            ],
+            "isPasswordAuthBypassEnabled": [
+                8
+            ],
+            "defaultRoleId": [
+                3
+            ],
+            "isTwoFactorAuthenticationEnforced": [
+                8
+            ],
+            "trashRetentionDays": [
+                15
+            ],
+            "eventLogRetentionDays": [
+                15
+            ],
+            "aiChatModelTier": [
+                75
+            ],
+            "aiAgentModelTier": [
+                75
+            ],
+            "isAutoModelSelectionEnabled": [
+                8
+            ],
+            "aiModelIdByTier": [
+                9
+            ],
+            "aiEvaluationModelId": [
+                1
+            ],
+            "aiAdditionalInstructions": [
+                1
+            ],
+            "editableProfileFields": [
+                1
+            ],
+            "isInternalMessagesImportEnabled": [
+                8
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "UpdateWorkspaceAllowedIframeOriginsInput": {
+            "operation": [
+                1
+            ],
+            "origin": [
+                1
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "CreateApplicationRegistrationInput": {
+            "name": [
+                1
+            ],
+            "universalIdentifier": [
+                1
+            ],
+            "oAuthRedirectUris": [
+                1
+            ],
+            "oAuthScopes": [
+                1
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "UpdateApplicationRegistrationInput": {
+            "id": [
+                1
+            ],
+            "update": [
+                539
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "UpdateApplicationRegistrationPayload": {
+            "name": [
+                1
+            ],
+            "oAuthRedirectUris": [
+                1
+            ],
+            "oAuthScopes": [
+                1
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "UpdateApplicationRegistrationVariableInput": {
+            "id": [
+                1
+            ],
+            "update": [
+                541
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "UpdateApplicationRegistrationVariablePayload": {
+            "value": [
+                1
+            ],
+            "resetValue": [
+                8
+            ],
+            "description": [
+                1
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "GrantApplicationCapabilitiesInput": {
+            "applicationId": [
+                3
+            ],
+            "capabilities": [
+                1
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "TriggerInstallApplicationJobInput": {
+            "universalIdentifier": [
+                1
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "TriggerUninstallApplicationJobInput": {
+            "universalIdentifier": [
+                1
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "UpdateApplicationInput": {
+            "autoUpgrade": [
+                8
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "CreateOneFieldMetadataInput": {
+            "field": [
+                547
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "CreateFieldInput": {
+            "type": [
+                266
+            ],
+            "name": [
+                1
+            ],
+            "label": [
+                1
+            ],
+            "description": [
+                1
+            ],
+            "icon": [
+                1
+            ],
+            "isActive": [
+                8
+            ],
+            "isSystem": [
+                8
+            ],
+            "isUIEditable": [
+                8
+            ],
+            "isUIReadOnly": [
+                8
+            ],
+            "isNullable": [
+                8
+            ],
+            "isUnique": [
+                8
+            ],
+            "isSearchable": [
+                8
+            ],
+            "isAuditLogged": [
+                8
+            ],
+            "defaultValue": [
+                9
+            ],
+            "options": [
+                9
+            ],
+            "settings": [
+                9
+            ],
+            "objectMetadataId": [
+                3
+            ],
+            "isLabelSyncedWithName": [
+                8
+            ],
+            "isRemoteCreation": [
+                8
+            ],
+            "relationCreationPayload": [
+                9
+            ],
+            "morphRelationsCreationPayload": [
+                9
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "UpdateOneFieldMetadataInput": {
+            "id": [
+                3
+            ],
+            "update": [
+                549
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "UpdateFieldInput": {
+            "universalIdentifier": [
+                1
+            ],
+            "name": [
+                1
+            ],
+            "label": [
+                1
+            ],
+            "description": [
+                1
+            ],
+            "icon": [
+                1
+            ],
+            "isActive": [
+                8
+            ],
+            "isSystem": [
+                8
+            ],
+            "isUIEditable": [
+                8
+            ],
+            "isUIReadOnly": [
+                8
+            ],
+            "isNullable": [
+                8
+            ],
+            "isUnique": [
+                8
+            ],
+            "isSearchable": [
+                8
+            ],
+            "isAuditLogged": [
+                8
+            ],
+            "defaultValue": [
+                9
+            ],
+            "options": [
+                9
+            ],
+            "settings": [
+                9
+            ],
+            "objectMetadataId": [
+                3
+            ],
+            "isLabelSyncedWithName": [
+                8
+            ],
+            "morphRelationsUpdatePayload": [
+                9
+            ],
+            "translations": [
+                501
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "DeleteOneFieldInput": {
+            "id": [
+                3
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "CreateViewGroupInput": {
+            "id": [
+                3
+            ],
+            "isVisible": [
+                8
+            ],
+            "fieldValue": [
+                1
+            ],
+            "position": [
+                15
+            ],
+            "viewId": [
+                3
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "UpdateViewGroupInput": {
+            "id": [
+                3
+            ],
+            "update": [
+                553
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "UpdateViewGroupInputUpdates": {
+            "fieldMetadataId": [
+                3
+            ],
+            "isVisible": [
+                8
+            ],
+            "fieldValue": [
+                1
+            ],
+            "position": [
+                15
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "DeleteViewGroupInput": {
+            "id": [
+                3
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "DestroyViewGroupInput": {
+            "id": [
+                3
             ],
             "__typename": [
                 1
@@ -12641,6 +13655,9 @@ export default {
         "SendMessageCampaignInput": {
             "campaignId": [
                 1
+            ],
+            "scheduledAt": [
+                4
             ],
             "__typename": [
                 1
@@ -12693,7 +13710,7 @@ export default {
                 1
             ],
             "visibility": [
-                327
+                353
             ],
             "__typename": [
                 1
@@ -12710,7 +13727,7 @@ export default {
                 1
             ],
             "visibility": [
-                327
+                353
             ],
             "__typename": [
                 1
@@ -12721,7 +13738,7 @@ export default {
                 3
             ],
             "update": [
-                521
+                563
             ],
             "__typename": [
                 1
@@ -12729,16 +13746,16 @@ export default {
         },
         "UpdateMessageChannelInputUpdates": {
             "visibility": [
-                309
+                333
             ],
             "isContactAutoCreationEnabled": [
                 8
             ],
             "contactAutoCreationPolicy": [
-                311
+                335
             ],
             "messageFolderImportPolicy": [
-                312
+                336
             ],
             "isSyncEnabled": [
                 8
@@ -12775,6 +13792,95 @@ export default {
                 1
             ]
         },
+        "CreateAppMessageChannelInput": {
+            "connectedAccountId": [
+                3
+            ],
+            "handle": [
+                1
+            ],
+            "displayName": [
+                1
+            ],
+            "visibility": [
+                333
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "UpdateAppMessageChannelInput": {
+            "id": [
+                3
+            ],
+            "displayName": [
+                1
+            ],
+            "visibility": [
+                333
+            ],
+            "isSyncEnabled": [
+                8
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "IngestAppMessagesInput": {
+            "messageChannelId": [
+                3
+            ],
+            "messages": [
+                569
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "AppMessageInput": {
+            "externalId": [
+                1
+            ],
+            "threadExternalId": [
+                1
+            ],
+            "subject": [
+                1
+            ],
+            "text": [
+                1
+            ],
+            "receivedAt": [
+                4
+            ],
+            "participants": [
+                570
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "AppMessageParticipantInput": {
+            "role": [
+                571
+            ],
+            "handle": [
+                1
+            ],
+            "displayName": [
+                1
+            ],
+            "personId": [
+                3
+            ],
+            "workspaceMemberId": [
+                3
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "MessageParticipantRole": {},
         "CreateEmailingDomainInput": {
             "domain": [
                 1
@@ -12794,7 +13900,7 @@ export default {
                 3
             ],
             "messages": [
-                526
+                574
             ],
             "__typename": [
                 1
@@ -12802,16 +13908,30 @@ export default {
         },
         "RunAgentMessageInput": {
             "role": [
-                527
+                575
             ],
             "content": [
                 1
+            ],
+            "attachments": [
+                576
             ],
             "__typename": [
                 1
             ]
         },
         "RunAgentMessageRole": {},
+        "RunAgentMessageAttachmentInput": {
+            "fileId": [
+                3
+            ],
+            "filename": [
+                1
+            ],
+            "__typename": [
+                1
+            ]
+        },
         "CreateWebhookInput": {
             "id": [
                 3
@@ -12837,7 +13957,7 @@ export default {
                 3
             ],
             "update": [
-                530
+                579
             ],
             "__typename": [
                 1
@@ -12865,7 +13985,7 @@ export default {
                 3
             ],
             "update": [
-                532
+                581
             ],
             "__typename": [
                 1
@@ -12884,7 +14004,7 @@ export default {
                 3
             ],
             "update": [
-                532
+                581
             ],
             "__typename": [
                 1
@@ -12895,7 +14015,7 @@ export default {
                 3
             ],
             "update": [
-                535
+                584
             ],
             "__typename": [
                 1
@@ -12903,13 +14023,13 @@ export default {
         },
         "UpdateCalendarChannelInputUpdates": {
             "visibility": [
-                375
+                405
             ],
             "isContactAutoCreationEnabled": [
                 8
             ],
             "contactAutoCreationPolicy": [
-                376
+                406
             ],
             "isSyncEnabled": [
                 8
@@ -12926,7 +14046,7 @@ export default {
                 9
             ],
             "scope": [
-                371
+                401
             ],
             "__typename": [
                 1
@@ -12943,10 +14063,10 @@ export default {
                 1
             ],
             "retryLimit": [
-                28
+                31
             ],
             "delayMs": [
-                28
+                31
             ],
             "__typename": [
                 1
@@ -12960,13 +14080,13 @@ export default {
                 9
             ],
             "jobs": [
-                539
+                588
             ],
             "retryLimit": [
-                28
+                31
             ],
             "delayMs": [
-                28
+                31
             ],
             "__typename": [
                 1
@@ -12977,6 +14097,17 @@ export default {
                 9
             ],
             "jobId": [
+                1
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "ReportAppConnectionAuthFailureInput": {
+            "id": [
+                171
+            ],
+            "reason": [
                 1
             ],
             "__typename": [
@@ -12994,15 +14125,24 @@ export default {
                 1
             ]
         },
-        "AgentChatQuestionAnswerInput": {
-            "questionIndex": [
-                28
+        "SendInboxMessageInput": {
+            "workspaceMemberId": [
+                3
             ],
-            "selectedOptionIndices": [
-                28
-            ],
-            "freeText": [
+            "threadKey": [
                 1
+            ],
+            "idempotencyKey": [
+                1
+            ],
+            "title": [
+                1
+            ],
+            "text": [
+                1
+            ],
+            "toolCall": [
+                9
             ],
             "__typename": [
                 1
@@ -13057,6 +14197,72 @@ export default {
                 1
             ]
         },
+        "CreateValidationRuleInput": {
+            "objectMetadataId": [
+                3
+            ],
+            "errorFieldMetadataId": [
+                3
+            ],
+            "name": [
+                1
+            ],
+            "description": [
+                1
+            ],
+            "icon": [
+                1
+            ],
+            "expression": [
+                1
+            ],
+            "message": [
+                1
+            ],
+            "isActive": [
+                8
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "UpdateValidationRuleInput": {
+            "id": [
+                3
+            ],
+            "update": [
+                596
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "UpdateValidationRuleInputUpdates": {
+            "errorFieldMetadataId": [
+                3
+            ],
+            "name": [
+                1
+            ],
+            "description": [
+                1
+            ],
+            "icon": [
+                1
+            ],
+            "expression": [
+                1
+            ],
+            "message": [
+                1
+            ],
+            "isActive": [
+                8
+            ],
+            "__typename": [
+                1
+            ]
+        },
         "UpdateTimelineActivityTypeInput": {
             "id": [
                 3
@@ -13071,7 +14277,7 @@ export default {
                 8
             ],
             "translations": [
-                469
+                501
             ],
             "__typename": [
                 1
@@ -13163,7 +14369,7 @@ export default {
                 3
             ],
             "status": [
-                198
+                215
             ],
             "__typename": [
                 1
@@ -13237,7 +14443,7 @@ export default {
                 1
             ],
             "files": [
-                555
+                608
             ],
             "__typename": [
                 1
@@ -13259,13 +14465,13 @@ export default {
                 1
             ],
             "IMAP": [
-                557
+                610
             ],
             "SMTP": [
-                557
+                610
             ],
             "CALDAV": [
-                557
+                610
             ],
             "__typename": [
                 1
@@ -13285,7 +14491,7 @@ export default {
                 1
             ],
             "connectionSecurity": [
-                186
+                202
             ],
             "__typename": [
                 1
@@ -13304,13 +14510,13 @@ export default {
         },
         "ApplicationFileUploadRequestInput": {
             "fileFolder": [
-                297
+                316
             ],
             "filePath": [
                 1
             ],
             "size": [
-                28
+                31
             ],
             "__typename": [
                 1
@@ -13318,7 +14524,7 @@ export default {
         },
         "Subscription": {
             "onEventSubscription": [
-                163,
+                183,
                 {
                     "eventStreamId": [
                         1,
@@ -13327,16 +14533,16 @@ export default {
                 }
             ],
             "logicFunctionLogs": [
-                263,
+                287,
                 {
                     "input": [
-                        561,
+                        614,
                         "LogicFunctionLogsInput!"
                     ]
                 }
             ],
             "onAgentChatEvent": [
-                362,
+                384,
                 {
                     "threadId": [
                         3,
@@ -13345,11 +14551,24 @@ export default {
                 }
             ],
             "eventLogsLive": [
-                351,
+                390,
                 {
                     "table": [
-                        400,
+                        436,
                         "EventLogTable!"
+                    ],
+                    "fieldFilters": [
+                        439,
+                        "[EventLogFieldFilterInput!]"
+                    ]
+                }
+            ],
+            "exportRecords": [
+                393,
+                {
+                    "input": [
+                        615,
+                        "CreateRecordExportInput!"
                     ]
                 }
             ],
@@ -13372,6 +14591,23 @@ export default {
             ],
             "universalIdentifier": [
                 3
+            ],
+            "__typename": [
+                1
+            ]
+        },
+        "CreateRecordExportInput": {
+            "objectMetadataId": [
+                3
+            ],
+            "fieldMetadataIds": [
+                3
+            ],
+            "filter": [
+                9
+            ],
+            "orderBy": [
+                9
             ],
             "__typename": [
                 1

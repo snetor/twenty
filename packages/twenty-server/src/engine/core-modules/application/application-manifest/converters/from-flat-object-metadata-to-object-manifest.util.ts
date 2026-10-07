@@ -33,6 +33,9 @@ export const fromFlatObjectMetadataToObjectManifest = ({
   isUIEditable: flatObjectMetadata.isUIEditable,
   writability: flatObjectMetadata.writability,
   readability: flatObjectMetadata.readability,
+  readabilityParentFieldUniversalIdentifiers:
+    flatObjectMetadata.readabilityParentFieldUniversalIdentifiers,
+  sharingReach: flatObjectMetadata.sharingReach,
   openRecordIn: flatObjectMetadata.openRecordIn,
   labelIdentifierFieldMetadataUniversalIdentifier,
   imageIdentifierFieldMetadataUniversalIdentifier:

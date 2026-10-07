@@ -12,12 +12,12 @@ import { ApplicationRegistrationEntity } from 'src/engine/core-modules/applicati
 import { ApplicationRegistrationSourceType } from 'src/engine/core-modules/application/application-registration/enums/application-registration-source-type.enum';
 import { ApplicationVariableEntity } from 'src/engine/core-modules/application/application-variable/application-variable.entity';
 import { ApplicationEntity } from 'src/engine/core-modules/application/application.entity';
+import { ApplicationLookupService } from 'src/engine/core-modules/application/application-lookup/application-lookup.service';
 import {
   ApplicationException,
   ApplicationExceptionCode,
 } from 'src/engine/core-modules/application/application.exception';
 import { WORKSPACE_CUSTOM_APPLICATION_NAME } from 'src/engine/core-modules/application/constants/workspace-custom-application.constant';
-import { ApplicationState } from 'src/engine/core-modules/application/enums/application-state.enum';
 import { type FlatApplication } from 'src/engine/core-modules/application/types/flat-application.type';
 import { FileStorageService } from 'src/engine/core-modules/file-storage/services/file-storage.service';
 import { WorkspaceEntity } from 'src/engine/core-modules/workspace/workspace.entity';
@@ -28,12 +28,14 @@ import { FrontComponentEntity } from 'src/engine/metadata-modules/front-componen
 import { LogicFunctionEntity } from 'src/engine/metadata-modules/logic-function/logic-function.entity';
 import { logicFunctionCreateHash } from 'src/engine/metadata-modules/logic-function/utils/logic-function-create-hash.utils';
 import { ObjectMetadataEntity } from 'src/engine/metadata-modules/object-metadata/object-metadata.entity';
+import { SettingsMenuItemEntity } from 'src/engine/metadata-modules/settings-menu-item/entities/settings-menu-item.entity';
 import { serializeApplicationForBroadcast } from 'src/engine/core-modules/application/utils/serialize-application-for-broadcast.util';
 import { WorkspaceEventBroadcaster } from 'src/engine/subscriptions/workspace-event-broadcaster/workspace-event-broadcaster.service';
 import { InjectWorkspaceScopedRepository } from 'src/engine/twenty-orm/workspace-scoped-repository/inject-workspace-scoped-repository.decorator';
 import { WorkspaceScopedRepository } from 'src/engine/twenty-orm/workspace-scoped-repository/workspace-scoped-repository';
 import { WorkspaceCacheService } from 'src/engine/workspace-cache/services/workspace-cache.service';
 import { TWENTY_STANDARD_APPLICATION } from 'src/engine/workspace-manager/twenty-standard-application/constants/twenty-standard-applications';
+import { type QueryDeepPartialEntity } from 'typeorm/query-builder/QueryPartialEntity';
 
 @Injectable()
 export class ApplicationService {
@@ -42,35 +44,38 @@ export class ApplicationService {
   constructor(
     @InjectDataSource()
     private readonly coreDataSource: DataSource,
-    @InjectRepository(ApplicationEntity)
-    private readonly applicationRepository: Repository<ApplicationEntity>,
+    @InjectWorkspaceScopedRepository(ApplicationEntity)
+    private readonly applicationRepository: WorkspaceScopedRepository<ApplicationEntity>,
     @InjectRepository(ApplicationRegistrationEntity)
     private readonly applicationRegistrationRepository: Repository<ApplicationRegistrationEntity>,
     private readonly workspaceCacheService: WorkspaceCacheService,
     private readonly fileStorageService: FileStorageService,
     @InjectRepository(WorkspaceEntity)
     private readonly workspaceRepository: Repository<WorkspaceEntity>,
-    @InjectRepository(LogicFunctionEntity)
-    private readonly logicFunctionRepository: Repository<LogicFunctionEntity>,
+    @InjectWorkspaceScopedRepository(LogicFunctionEntity)
+    private readonly logicFunctionRepository: WorkspaceScopedRepository<LogicFunctionEntity>,
     @InjectWorkspaceScopedRepository(AgentEntity)
     private readonly agentRepository: WorkspaceScopedRepository<AgentEntity>,
-    @InjectRepository(FrontComponentEntity)
-    private readonly frontComponentRepository: Repository<FrontComponentEntity>,
+    @InjectWorkspaceScopedRepository(FrontComponentEntity)
+    private readonly frontComponentRepository: WorkspaceScopedRepository<FrontComponentEntity>,
     @InjectWorkspaceScopedRepository(CommandMenuItemEntity)
     private readonly commandMenuItemRepository: WorkspaceScopedRepository<CommandMenuItemEntity>,
-    @InjectRepository(ObjectMetadataEntity)
-    private readonly objectMetadataRepository: Repository<ObjectMetadataEntity>,
-    @InjectRepository(ApplicationVariableEntity)
-    private readonly applicationVariableRepository: Repository<ApplicationVariableEntity>,
+    @InjectWorkspaceScopedRepository(SettingsMenuItemEntity)
+    private readonly settingsMenuItemRepository: WorkspaceScopedRepository<SettingsMenuItemEntity>,
+    @InjectWorkspaceScopedRepository(ObjectMetadataEntity)
+    private readonly objectMetadataRepository: WorkspaceScopedRepository<ObjectMetadataEntity>,
+    @InjectWorkspaceScopedRepository(ApplicationVariableEntity)
+    private readonly applicationVariableRepository: WorkspaceScopedRepository<ApplicationVariableEntity>,
     private readonly workspaceEventBroadcaster: WorkspaceEventBroadcaster,
+    private readonly applicationLookupService: ApplicationLookupService,
   ) {}
 
   async findApplicationRoleId(
     applicationId: string,
     workspaceId: string,
   ): Promise<string> {
-    const application = await this.applicationRepository.findOne({
-      where: { id: applicationId, workspaceId },
+    const application = await this.applicationRepository.findOne(workspaceId, {
+      where: { id: applicationId },
     });
 
     if (!isDefined(application) || !isDefined(application.defaultRoleId)) {
@@ -153,8 +158,7 @@ export class ApplicationService {
   async findManyApplications(
     workspaceId: string,
   ): Promise<ApplicationEntity[]> {
-    return this.applicationRepository.find({
-      where: { workspaceId },
+    return this.applicationRepository.find(workspaceId, {
       relations: ['applicationRegistration'],
     });
   }
@@ -173,7 +177,7 @@ export class ApplicationService {
     );
   }
 
-  async findOneApplication({
+  async findOneApplicationWithRelations({
     id,
     universalIdentifier,
     workspaceId,
@@ -189,13 +193,8 @@ export class ApplicationService {
       );
     }
 
-    const where = {
-      workspaceId,
-      ...(isDefined(id) ? { id } : { universalIdentifier }),
-    };
-
-    const application = await this.applicationRepository.findOne({
-      where,
+    const application = await this.applicationRepository.findOne(workspaceId, {
+      where: isDefined(id) ? { id } : { universalIdentifier },
       relations: ['packageJsonFile', 'yarnLockFile', 'applicationRegistration'],
     });
 
@@ -208,26 +207,30 @@ export class ApplicationService {
       agents,
       frontComponents,
       commandMenuItems,
+      settingsMenuItems,
       objects,
       applicationVariables,
     ] = await Promise.all([
-      this.logicFunctionRepository.find({
-        where: { applicationId: application.id, workspaceId },
+      this.logicFunctionRepository.find(workspaceId, {
+        where: { applicationId: application.id },
       }),
       this.agentRepository.find(workspaceId, {
         where: { applicationId: application.id },
       }),
-      this.frontComponentRepository.find({
-        where: { applicationId: application.id, workspaceId },
+      this.frontComponentRepository.find(workspaceId, {
+        where: { applicationId: application.id },
       }),
       this.commandMenuItemRepository.find(workspaceId, {
         where: { applicationId: application.id },
       }),
-      this.objectMetadataRepository.find({
-        where: { applicationId: application.id, workspaceId },
+      this.settingsMenuItemRepository.find(workspaceId, {
+        where: { applicationId: application.id },
       }),
-      this.applicationVariableRepository.find({
-        where: { applicationId: application.id, workspaceId },
+      this.objectMetadataRepository.find(workspaceId, {
+        where: { applicationId: application.id },
+      }),
+      this.applicationVariableRepository.find(workspaceId, {
+        where: { applicationId: application.id },
       }),
     ]);
 
@@ -235,13 +238,14 @@ export class ApplicationService {
     application.agents = agents;
     application.frontComponents = frontComponents;
     application.commandMenuItems = commandMenuItems;
+    application.settingsMenuItems = settingsMenuItems;
     application.objects = objects;
     application.applicationVariables = applicationVariables;
 
     return application;
   }
 
-  async findOneApplicationOrThrow({
+  async findOneApplicationWithRelationsOrThrow({
     id,
     universalIdentifier,
     workspaceId,
@@ -250,7 +254,7 @@ export class ApplicationService {
     universalIdentifier?: string;
     workspaceId: string;
   }): Promise<ApplicationEntity> {
-    const application = await this.findOneApplication({
+    const application = await this.findOneApplicationWithRelations({
       id,
       universalIdentifier,
       workspaceId,
@@ -266,12 +270,6 @@ export class ApplicationService {
     return application;
   }
 
-  async findById(id: string): Promise<ApplicationEntity | null> {
-    return this.applicationRepository.findOne({
-      where: { id },
-    });
-  }
-
   async findPrimaryPublicDomainName({
     applicationId,
     workspaceId,
@@ -279,27 +277,26 @@ export class ApplicationService {
     applicationId: string;
     workspaceId: string;
   }): Promise<string | null> {
-    const application = await this.applicationRepository.findOne({
-      where: { id: applicationId, workspaceId },
+    const application = await this.applicationRepository.findOne(workspaceId, {
+      where: { id: applicationId },
       relations: ['primaryPublicDomain'],
     });
 
     return application?.primaryPublicDomain?.domain ?? null;
   }
 
-  async findByUniversalIdentifier({
-    universalIdentifier,
-    workspaceId,
-  }: {
-    universalIdentifier: string;
-    workspaceId: string;
-  }) {
-    return this.applicationRepository.findOne({
-      where: {
+  async countInstalledWorkspacesForApplication(
+    universalIdentifier: string,
+  ): Promise<number> {
+    return this.applicationRepository
+      .createQueryBuilder('application')
+      .innerJoin('application.workspace', 'workspace')
+      .where('application.universalIdentifier = :universalIdentifier', {
         universalIdentifier,
-        workspaceId,
-      },
-    });
+      })
+      .andWhere('application.deletedAt IS NULL')
+      .andWhere('workspace.deletedAt IS NULL')
+      .getCount();
   }
 
   // Number of workspaces each external (non-LOCAL) application is installed in,
@@ -368,10 +365,9 @@ export class ApplicationService {
         workspace,
       });
 
-    const application = await this.applicationRepository.findOne({
+    const application = await this.applicationRepository.findOne(workspace.id, {
       where: {
         id: twentyStandardFlatApplication.id,
-        workspaceId: workspace.id,
       },
     });
 
@@ -395,10 +391,11 @@ export class ApplicationService {
     },
     queryRunner?: QueryRunner,
   ) {
-    const existingApplication = await this.findByUniversalIdentifier({
-      universalIdentifier: TWENTY_STANDARD_APPLICATION.universalIdentifier,
-      workspaceId,
-    });
+    const existingApplication =
+      await this.applicationLookupService.findByUniversalIdentifier({
+        universalIdentifier: TWENTY_STANDARD_APPLICATION.universalIdentifier,
+        workspaceId,
+      });
 
     if (isDefined(existingApplication)) {
       return existingApplication;
@@ -465,6 +462,7 @@ export class ApplicationService {
         universalIdentifier: applicationId,
         workspaceId,
         id: applicationId,
+        sourceType: applicationRegistration.sourceType,
         applicationRegistrationId: applicationRegistration.id,
         logicFunctionLayerId: null,
         canBeUninstalled: false,
@@ -624,13 +622,15 @@ export class ApplicationService {
     data: Partial<ApplicationEntity> & { workspaceId: string },
     queryRunner?: QueryRunner,
   ): Promise<ApplicationEntity> {
-    const application = this.applicationRepository.create(data);
-
     if (queryRunner) {
-      return queryRunner.manager.save(ApplicationEntity, application);
+      return queryRunner.manager.save(ApplicationEntity, data);
     }
 
-    const savedApplication = await this.applicationRepository.save(application);
+    const savedApplication =
+      await this.applicationRepository.insertAndReturnOne(
+        data.workspaceId,
+        data as QueryDeepPartialEntity<ApplicationEntity>,
+      );
 
     await this.workspaceCacheService.invalidateAndRecompute(data.workspaceId, [
       'flatApplicationMaps',
@@ -646,22 +646,22 @@ export class ApplicationService {
 
   async update(
     id: string,
-    data: Parameters<typeof this.applicationRepository.update>[1] & {
+    data: QueryDeepPartialEntity<ApplicationEntity> & {
       workspaceId: string;
     },
   ): Promise<ApplicationEntity> {
-    await this.applicationRepository.update(
-      { id, workspaceId: data.workspaceId },
-      data,
-    );
+    await this.applicationRepository.update(data.workspaceId, { id }, data);
 
     await this.workspaceCacheService.invalidateAndRecompute(data.workspaceId, [
       'flatApplicationMaps',
     ]);
 
-    const updatedApplication = await this.applicationRepository.findOne({
-      where: { id, workspaceId: data.workspaceId },
-    });
+    const updatedApplication = await this.applicationRepository.findOne(
+      data.workspaceId,
+      {
+        where: { id },
+      },
+    );
 
     if (!isDefined(updatedApplication)) {
       throw new ApplicationException(
@@ -681,32 +681,12 @@ export class ApplicationService {
     return updatedApplication;
   }
 
-  async revertStateToInstalledBestEffort({
-    applicationId,
-    universalIdentifier,
-    workspaceId,
-  }: {
-    applicationId: string;
-    universalIdentifier: string;
-    workspaceId: string;
-  }): Promise<void> {
-    try {
-      await this.update(applicationId, {
-        state: ApplicationState.INSTALLED,
+  async delete(universalIdentifier: string, workspaceId: string) {
+    const application =
+      await this.applicationLookupService.findByUniversalIdentifier({
+        universalIdentifier,
         workspaceId,
       });
-    } catch (error) {
-      this.logger.warn(
-        `State revert to INSTALLED did not complete for application ${universalIdentifier} in workspace ${workspaceId}, the row may or may not have been updated: ${error instanceof Error ? error.message : String(error)}`,
-      );
-    }
-  }
-
-  async delete(universalIdentifier: string, workspaceId: string) {
-    const application = await this.findByUniversalIdentifier({
-      universalIdentifier,
-      workspaceId,
-    });
 
     if (!isDefined(application)) {
       throw new ApplicationException(
@@ -742,6 +722,10 @@ export class ApplicationService {
     } catch (error) {
       if (queryRunner.isTransactionActive) {
         await queryRunner.rollbackTransaction();
+        await this.fileStorageService.invalidateStorageStock({
+          workspaceId,
+          applicationId: application.id,
+        });
       }
 
       throw error;

@@ -1,3 +1,4 @@
+import { isMetadataWritePermitted } from 'src/engine/twenty-orm/utils/is-metadata-write-permitted.util';
 import { MetadataWritability } from 'twenty-shared/types';
 import { isDefined } from 'twenty-shared/utils';
 
@@ -12,6 +13,7 @@ import {
   PermissionsExceptionMessage,
 } from 'src/engine/metadata-modules/permissions/permissions.exception';
 import { type OperationType } from 'src/engine/twenty-orm/repository/permissions.utils';
+import { isOwningApplicationAuthContext } from 'src/engine/twenty-orm/utils/is-owning-application-auth-context.util';
 
 const isWritePermittedByWritability = ({
   writability,
@@ -22,29 +24,13 @@ const isWritePermittedByWritability = ({
   owningApplicationId: string | undefined;
   authContext: WorkspaceAuthContext | undefined;
 }): boolean => {
-  if (!isDefined(writability) || writability === MetadataWritability.OPEN) {
-    return true;
-  }
-
-  // A system context is only ever built server-side (sync jobs, listeners,
-  // internal services); no token strategy mints one, so it is the platform
-  // itself writing and neither ownership level applies to it.
-  if (isDefined(authContext) && authContext.type === 'system') {
-    return true;
-  }
-
-  if (writability === MetadataWritability.APPLICATION) {
-    // Only APPLICATION_ACCESS tokens ever carry an application, so reading it
-    // off a user-bound context cannot let an ordinary session through.
-    return (
+  return isMetadataWritePermitted({
+    writability,
+    isSystemContext: authContext?.type === 'system',
+    isOwningApplication:
       isDefined(authContext) &&
-      isDefined(owningApplicationId) &&
-      (authContext.type === 'application' || authContext.type === 'user') &&
-      authContext.application?.id === owningApplicationId
-    );
-  }
-
-  return false;
+      isOwningApplicationAuthContext({ authContext, owningApplicationId }),
+  });
 };
 
 type ValidateWritabilityOrThrowArgs = {

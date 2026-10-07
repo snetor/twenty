@@ -1,15 +1,19 @@
+import { AiChatMessageListPreambleContext } from '@/ai/contexts/AiChatMessageListPreambleContext';
+import { useIsWorkspaceSetupChat } from '@/ai/hooks/useIsWorkspaceSetupChat';
+import { WorkspaceSetupChatPreamble } from '@/onboarding/components/WorkspaceSetupChatPreamble';
+import { WorkspaceSetupChatKickoffEffect } from '@/onboarding/effect-components/WorkspaceSetupChatKickoffEffect';
 import { styled } from '@linaria/react';
 import { type DragEvent, useState } from 'react';
-import { themeCssVariables } from 'twenty-ui/theme-constants';
+import { themeCssVariables } from 'twenty-ui/theme';
 
 import { DropZone } from '@/activities/files/components/DropZone';
 import { AgentChatHasBeenOpenedEffect } from '@/ai/components/AgentChatHasBeenOpenedEffect';
 import { AgentChatStreamingPartsDiffSyncEffect } from '@/ai/components/AgentChatStreamingPartsDiffSyncEffect';
 import { AiChatEditorSection } from '@/ai/components/AiChatEditorSection';
 import { useAiChatFileUpload } from '@/ai/hooks/useAiChatFileUpload';
+import { useIsOnNewAiChatSlot } from '@/ai/hooks/useIsOnNewAiChatSlot';
 import { AGENT_CHAT_NEW_THREAD_DRAFT_KEY } from '@/ai/states/agentChatDraftsByThreadIdState';
 import { currentAiChatThreadState } from '@/ai/states/currentAiChatThreadState';
-import { threadIdCreatedFromDraftState } from '@/ai/states/threadIdCreatedFromDraftState';
 import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
 
 import { AiChatQueuedMessages } from '@/ai/components/AiChatQueuedMessages';
@@ -26,17 +30,13 @@ const StyledContainer = styled.div<{ isDraggingFile: boolean }>`
 `;
 
 export const AiChatTab = () => {
+  const isWorkspaceSetupChat = useIsWorkspaceSetupChat();
   const [isDraggingFile, setIsDraggingFile] = useState(false);
   const currentAiChatThread = useAtomStateValue(currentAiChatThreadState);
-  const threadIdCreatedFromDraft = useAtomStateValue(
-    threadIdCreatedFromDraftState,
-  );
-  const draftKey = currentAiChatThread ?? AGENT_CHAT_NEW_THREAD_DRAFT_KEY;
-  const editorSectionKey =
-    draftKey !== AGENT_CHAT_NEW_THREAD_DRAFT_KEY &&
-    draftKey === threadIdCreatedFromDraft
-      ? AGENT_CHAT_NEW_THREAD_DRAFT_KEY
-      : draftKey;
+  const isOnNewAiChatSlot = useIsOnNewAiChatSlot();
+  const editorSectionKey = isOnNewAiChatSlot
+    ? AGENT_CHAT_NEW_THREAD_DRAFT_KEY
+    : (currentAiChatThread ?? AGENT_CHAT_NEW_THREAD_DRAFT_KEY);
 
   const { uploadFiles } = useAiChatFileUpload();
 
@@ -64,6 +64,7 @@ export const AiChatTab = () => {
       onDragOver={(event) => event.preventDefault()}
       onDrop={handleDrop}
     >
+      {isWorkspaceSetupChat && <WorkspaceSetupChatKickoffEffect />}
       <AgentChatHasBeenOpenedEffect />
       <AgentChatStreamingPartsDiffSyncEffect />
       {isDraggingFile && (
@@ -73,11 +74,13 @@ export const AiChatTab = () => {
         />
       )}
       {!isDraggingFile && (
-        <>
+        <AiChatMessageListPreambleContext.Provider
+          value={isWorkspaceSetupChat ? <WorkspaceSetupChatPreamble /> : null}
+        >
           <AiChatTabMessageList />
           <AiChatQueuedMessages />
           <AiChatEditorSection key={editorSectionKey} />
-        </>
+        </AiChatMessageListPreambleContext.Provider>
       )}
     </StyledContainer>
   );

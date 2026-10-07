@@ -32,6 +32,7 @@ export const PAGE_LAYOUT_WIDGET_FRAGMENT = gql`
       ... on PageLayoutWidgetVerticalListPosition {
         layoutMode
         index
+        heightBehavior
       }
       ... on PageLayoutWidgetCanvasPosition {
         layoutMode
@@ -162,6 +163,12 @@ export const PAGE_LAYOUT_WIDGET_FRAGMENT = gql`
         configurationType
       }
       ... on CallRecordingTranscriptConfiguration {
+        configurationType
+      }
+      ... on ChatThreadsConfiguration {
+        configurationType
+      }
+      ... on ChatConfiguration {
         configurationType
       }
       ... on MessageCampaignBodyConfiguration {

@@ -10,7 +10,7 @@ import { useFieldMetadataItemById } from '@/object-metadata/hooks/useFieldMetada
 import { findFieldMetadataItemByFieldMetadataId } from '@/object-metadata/utils/findFieldMetadataItemByFieldMetadataId';
 import { isValidJunctionTargetField } from '@/object-record/record-field/ui/utils/junction/isValidJunctionTargetField';
 import { SettingsOptionCardContentSelect } from '@/settings/components/SettingsOptions/SettingsOptionCardContentSelect';
-import { SettingsOptionCardContentToggle } from '@/settings/components/SettingsOptions/SettingsOptionCardContentToggle';
+import { SettingsOptionCardContentSwitch } from '@/settings/components/SettingsOptions/SettingsOptionCardContentSwitch';
 import { Select } from '@/ui/input/components/Select';
 import { isAdvancedModeEnabledState } from '@/ui/navigation/navigation-drawer/states/isAdvancedModeEnabledState';
 import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
@@ -20,11 +20,13 @@ import { type SettingsDataModelFieldEditFormValues } from '@/settings/data-model
 type SettingsDataModelFieldRelationJunctionFormProps = {
   objectNameSingular: string;
   existingFieldMetadataId: string;
+  disabled?: boolean;
 };
 
 export const SettingsDataModelFieldRelationJunctionForm = ({
   objectNameSingular,
   existingFieldMetadataId,
+  disabled = false,
 }: SettingsDataModelFieldRelationJunctionFormProps) => {
   const { t } = useLingui();
   const { watch, setValue } =
@@ -68,7 +70,6 @@ export const SettingsDataModelFieldRelationJunctionForm = ({
         targetObjectMetadata.id === junctionObjectMetadataItem.id,
     )?.targetFieldMetadata.id;
 
-  // Self-referential relations cannot be junction objects
   if (sourceObjectMetadataId === junctionObjectMetadataItem.id) {
     return null;
   }
@@ -157,12 +158,13 @@ export const SettingsDataModelFieldRelationJunctionForm = ({
 
   return (
     <>
-      <SettingsOptionCardContentToggle
+      <SettingsOptionCardContentSwitch
         Icon={IconLink}
         title={t`This is a relation to a Junction Object`}
         description={t`Build many-to-many relations`}
         checked={isJunctionConfigEnabled}
         onChange={handleJunctionToggle}
+        disabled={disabled}
         divider={isJunctionConfigEnabled && junctionFieldOptions.length > 0}
         advancedMode
       />
@@ -187,6 +189,7 @@ export const SettingsDataModelFieldRelationJunctionForm = ({
             }
             options={junctionFieldOptions}
             onChange={handleSelectionChange}
+            disabled={disabled}
           />
         </SettingsOptionCardContentSelect>
       )}

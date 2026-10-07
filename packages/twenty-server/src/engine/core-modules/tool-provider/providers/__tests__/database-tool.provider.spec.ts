@@ -1,6 +1,7 @@
 import { type ObjectPermissions } from 'twenty-shared/types';
 
 import { type I18nService } from 'src/engine/core-modules/i18n/i18n.service';
+import { type ApplicationTranslationCatalogService } from 'src/engine/metadata-modules/application-translation-catalog/services/application-translation-catalog.service';
 import { DatabaseToolProvider } from 'src/engine/core-modules/tool-provider/providers/database-tool.provider';
 import { type ToolDescriptor } from 'src/engine/core-modules/tool-provider/types/tool-descriptor.type';
 import { type ToolIndexEntry } from 'src/engine/core-modules/tool-provider/types/tool-index-entry.type';
@@ -96,9 +97,7 @@ describe('DatabaseToolProvider', () => {
       }),
     } as unknown as WorkspaceManyOrAllFlatEntityMapsCacheService;
 
-    // Returns the messageId so the label util falls back to the English source,
-    // mirroring the runtime behavior when no translation exists for the locale.
-    // getI18nInstance resolves verb descriptors to their English source message.
+    // Echo the messageId so labels fall back to the English source, as at runtime without a translation.
     const i18nService = {
       translateMessage: jest.fn(
         ({ messageId }: { messageId: string }) => messageId,
@@ -111,10 +110,20 @@ describe('DatabaseToolProvider', () => {
       })),
     } as unknown as I18nService;
 
+    const applicationTranslationCatalogService = {
+      getApplicationAuthorIdentifiers: jest.fn().mockResolvedValue({
+        standardApplicationId: 'standard-application-id',
+        workspaceCustomApplicationUniversalIdentifier:
+          'workspace-custom-application-universal-identifier',
+        universalIdentifierByApplicationId: {},
+      }),
+    } as unknown as ApplicationTranslationCatalogService;
+
     const provider = new DatabaseToolProvider(
       workspaceCacheService,
       flatEntityMapsCacheService,
       i18nService,
+      applicationTranslationCatalogService,
     );
 
     return (await provider.generateDescriptors(
@@ -285,6 +294,26 @@ describe('DatabaseToolProvider', () => {
     for (const descriptor of descriptors) {
       expect(descriptor.label).toBeDefined();
       expect(descriptor.label.length).toBeGreaterThan(0);
+    }
+  });
+
+  it('names the records widget on every record descriptor but group_by', async () => {
+    const descriptors = await generateDescriptors([
+      createFlatObject({
+        nameSingular: 'task',
+        namePlural: 'tasks',
+        labelSingular: 'Task',
+        labelPlural: 'Tasks',
+      }),
+    ]);
+
+    for (const descriptor of descriptors) {
+      if (descriptor.operation === 'group_by') {
+        expect(descriptor.widgetName).toBeUndefined();
+        continue;
+      }
+
+      expect(descriptor.widgetName).toBe('records');
     }
   });
 

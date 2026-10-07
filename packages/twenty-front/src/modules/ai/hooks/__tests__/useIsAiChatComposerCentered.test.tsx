@@ -1,4 +1,5 @@
-import { renderHook } from '@testing-library/react';
+import { AGENT_CHAT_NEW_THREAD_DRAFT_KEY } from '@/ai/states/agentChatDraftsByThreadIdState';
+import { act, renderHook } from '@testing-library/react';
 import { Provider as JotaiProvider } from 'jotai';
 import { type ReactNode } from 'react';
 
@@ -9,7 +10,9 @@ import { AiChatSurfaceContext } from '@/ai/contexts/AiChatSurfaceContext';
 import { useIsAiChatComposerCentered } from '@/ai/hooks/useIsAiChatComposerCentered';
 import { agentChatDisplayedThreadState } from '@/ai/states/agentChatDisplayedThreadState';
 import { agentChatMessagesComponentFamilyState } from '@/ai/states/agentChatMessagesComponentFamilyState';
+import { agentChatMessagesLoadingState } from '@/ai/states/agentChatMessagesLoadingState';
 import { currentAiChatThreadState } from '@/ai/states/currentAiChatThreadState';
+import { threadIdCreatedFromDraftState } from '@/ai/states/threadIdCreatedFromDraftState';
 import { type AiChatSurface } from '@/ai/types/AiChatSurface';
 import {
   jotaiStore,
@@ -17,7 +20,7 @@ import {
 } from '@/ui/utilities/state/jotai/jotaiStore';
 
 const INSTANCE_ID = 'aiChatComposerCenteredTest';
-const THREAD_ID = 'thread-1';
+const THREAD_ID = AGENT_CHAT_NEW_THREAD_DRAFT_KEY;
 
 const renderForSurface = ({
   surface = AI_CHAT_SURFACE.PAGE,
@@ -54,6 +57,52 @@ describe('useIsAiChatComposerCentered', () => {
     const { result } = renderForSurface();
 
     expect(result.current).toBe(true);
+  });
+
+  it('centers a new draft even if the previous conversation was still loading', () => {
+    jotaiStore.set(agentChatMessagesLoadingState.atom, true);
+    const { result } = renderForSurface();
+
+    expect(result.current).toBe(true);
+  });
+
+  it('keeps an existing conversation bottom-aligned before, during and after fetching messages', () => {
+    jotaiStore.set(currentAiChatThreadState.atom, 'existing-thread');
+    jotaiStore.set(agentChatDisplayedThreadState.atom, 'existing-thread');
+    const { result } = renderForSurface();
+
+    expect(result.current).toBe(false);
+    act(() => jotaiStore.set(agentChatMessagesLoadingState.atom, true));
+    expect(result.current).toBe(false);
+    act(() => jotaiStore.set(agentChatMessagesLoadingState.atom, false));
+    expect(result.current).toBe(false);
+  });
+
+  it('keeps the composer centered on the thread its draft created until the first message', () => {
+    jotaiStore.set(currentAiChatThreadState.atom, 'draft-thread');
+    jotaiStore.set(agentChatDisplayedThreadState.atom, 'draft-thread');
+    jotaiStore.set(threadIdCreatedFromDraftState.atom, 'draft-thread');
+    const { result } = renderForSurface();
+
+    expect(result.current).toBe(true);
+
+    act(() =>
+      jotaiStore.set(
+        agentChatMessagesComponentFamilyState.atomFamily({
+          instanceId: INSTANCE_ID,
+          familyKey: { threadId: 'draft-thread' },
+        }),
+        [{ id: 'message-1', role: 'user', parts: [] }],
+      ),
+    );
+
+    expect(result.current).toBe(false);
+  });
+
+  it('does not center while the initial route has not selected a thread yet', () => {
+    jotaiStore.set(currentAiChatThreadState.atom, null);
+    const { result } = renderForSurface();
+    expect(result.current).toBe(false);
   });
 
   it('should not center the composer in the side panel', () => {

@@ -3,6 +3,7 @@ import { Injectable } from '@nestjs/common';
 import {
   FieldActorSource,
   MessageChannelContactAutoCreationPolicy,
+  MessageChannelType,
   MessageParticipantRole,
 } from 'twenty-shared/types';
 import { isDefined } from 'twenty-shared/utils';
@@ -25,7 +26,7 @@ import {
 import { MessagingMessageFolderAssociationService } from 'src/modules/messaging/message-import-manager/services/messaging-message-folder-association.service';
 import { MessagingMessageService } from 'src/modules/messaging/message-import-manager/services/messaging-message.service';
 import { type MessageChannelMessageAssociationFolderAssociation } from 'src/modules/messaging/message-import-manager/types/message-channel-message-association-folder-association.type';
-import { type MessageWithParticipants } from 'src/modules/messaging/message-import-manager/types/message';
+import { type MessageWithParticipants } from 'src/modules/messaging/message-import-manager/types/message.type';
 import { isGroupEmail } from 'src/modules/messaging/message-import-manager/utils/is-group-email';
 import { MessagingMessageParticipantService } from 'src/modules/messaging/message-participant-manager/services/messaging-message-participant.service';
 import { isWorkEmail } from 'src/utils/is-work-email';
@@ -102,8 +103,7 @@ export class MessagingSaveMessagesAndEnqueueContactCreationService {
                         messageChannel.excludeGroupEmails &&
                         isGroupEmail(participant.handle);
 
-                      // Drafts are outgoing, so don't turn recipients of an
-                      // unsent email into CRM contacts.
+                      // Drafts are outgoing, so recipients of an unsent email don't become contacts
                       const shouldCreateContact =
                         !message.isDraft &&
                         !!participant.handle &&
@@ -197,16 +197,23 @@ export class MessagingSaveMessagesAndEnqueueContactCreationService {
       return undefined;
     }
 
+    const messageIds = [
+      ...new Set(
+        savedMessagesResult.participantsWithMessageId.map(
+          ({ messageId }) => messageId,
+        ),
+      ),
+    ];
+
+    // Matching non-email handles as emails would null out caller-supplied identities, so those channels only reconcile targets
     await this.messageParticipantService.matchMessageParticipants({
       participants: savedMessagesResult.savedMessageParticipants,
-      messageIds: [
-        ...new Set(
-          savedMessagesResult.participantsWithMessageId.map(
-            ({ messageId }) => messageId,
-          ),
-        ),
-      ],
+      messageIds,
       workspaceId,
+      matchWith:
+        messageChannel.type === MessageChannelType.APP
+          ? 'targetsOnly'
+          : 'workspaceMemberAndPerson',
     });
 
     return {

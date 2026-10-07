@@ -1,20 +1,23 @@
 import 'twenty-ui/style.css';
+import 'twenty-ui/theme-dark.css';
+import 'twenty-ui/theme-light.css';
 
 import styled from '@emotion/styled';
 import { isNonEmptyString } from '@sniptt/guards';
 import { useState } from 'react';
-import { enqueueSnackbar } from 'twenty-sdk/front-component';
+import { enqueueSnackbar, useColorScheme } from 'twenty-sdk/front-component';
 import { isDefined } from 'twenty-sdk/utils';
 import { Callout } from 'twenty-ui/feedback';
 import { Button } from 'twenty-ui/input';
 import { Section } from 'twenty-ui/layout';
-import { themeCssVariables } from 'twenty-ui/theme-constants';
+import { ThemeProvider, themeCssVariables } from 'twenty-ui/theme-constants';
 import { H2Title } from 'twenty-ui/typography';
 
+import { SlackAccessModeSection } from 'src/front-components/components/SlackAccessModeSection';
+import { SlackChannelRulesSection } from 'src/front-components/components/SlackChannelRulesSection';
 import { SlackUserLinkForm } from 'src/front-components/components/SlackUserLinkForm';
 import { SlackUserLinksList } from 'src/front-components/components/SlackUserLinksList';
 import { UnlinkedSlackUsersList } from 'src/front-components/components/UnlinkedSlackUsersList';
-import { SLACK_CONNECTION_HEALTH_CALLOUTS } from 'src/front-components/constants/slack-connection-health-callouts.constant';
 import { useCanManageSlackUserLinks } from 'src/front-components/hooks/use-can-manage-slack-user-links';
 import { useMatchSlackUserLinks } from 'src/front-components/hooks/use-match-slack-user-links';
 import { useSlackConnectionStatus } from 'src/front-components/hooks/use-slack-connection-status';
@@ -23,6 +26,8 @@ import { useResendSlackUserLinkConsent } from 'src/front-components/hooks/use-re
 import { useSlackUserLinks } from 'src/front-components/hooks/use-slack-user-links';
 import { useUnlinkedSlackUsers } from 'src/front-components/hooks/use-unlinked-slack-users';
 import { type SlackUserLinkRecord } from 'src/front-components/types/slack-user-link-record.type';
+import { enqueueSlackToolResultSnackbar } from 'src/front-components/utils/enqueue-slack-tool-result-snackbar.util';
+import { SLACK_CONNECTION_HEALTH } from 'src/logic-functions/constants/slack-connection-health';
 
 const StyledContainer = styled.div`
   box-sizing: border-box;
@@ -63,7 +68,7 @@ const StyledCenteredState = styled.div`
   width: 100%;
 `;
 
-export const SlackUserLinksSettings = () => {
+const SlackUserLinksSettingsContent = () => {
   const { canManage, isPermissionLoading } = useCanManageSlackUserLinks();
   const {
     isSlackConnected,
@@ -128,10 +133,7 @@ export const SlackUserLinksSettings = () => {
   const handleRemove = async (slackUserLink: SlackUserLinkRecord) => {
     const result = await removeSlackUserLink(slackUserLink.id);
 
-    enqueueSnackbar({
-      message: isNonEmptyString(result.error) ? result.error : result.message,
-      variant: result.success ? 'success' : 'error',
-    });
+    enqueueSlackToolResultSnackbar(result);
 
     if (result.success) {
       await handleLinkSaved();
@@ -158,34 +160,21 @@ export const SlackUserLinksSettings = () => {
       slackUserId: slackUserLink.slackUserId,
     });
 
-    enqueueSnackbar({
-      message: isNonEmptyString(result.error) ? result.error : result.message,
-      variant: result.success ? 'success' : 'error',
-    });
+    enqueueSlackToolResultSnackbar(result);
 
     if (result.success) {
       await refetchSlackUserLinks();
     }
   };
 
-  if (isConnectionStatusLoading || !isSlackConnected) {
+  const isConnectionBroken =
+    isDefined(connectionHealth) &&
+    connectionHealth !== SLACK_CONNECTION_HEALTH.OK;
+
+  // A broken connection is reported by the app health banner, which stays
+  // visible next to the connection itself; the tools below need a working one.
+  if (isConnectionStatusLoading || !isSlackConnected || isConnectionBroken) {
     return null;
-  }
-
-  const connectionHealthCallout = isDefined(connectionHealth)
-    ? SLACK_CONNECTION_HEALTH_CALLOUTS[connectionHealth]
-    : undefined;
-
-  if (isDefined(connectionHealthCallout)) {
-    return (
-      <StyledContainer>
-        <Callout
-          variant="error"
-          title={connectionHealthCallout.title}
-          description={connectionHealthCallout.description}
-        />
-      </StyledContainer>
-    );
   }
 
   if (isPermissionLoading) {
@@ -211,6 +200,11 @@ export const SlackUserLinksSettings = () => {
           description="The last automatic email match failed before linking everyone. Press Auto-link by email below to run it again."
         />
       )}
+      <SlackAccessModeSection canManage={canManage} />
+      <SlackChannelRulesSection
+        canManage={canManage}
+        installedSlackTeamId={installedSlackTeamId}
+      />
       {canManage && (
         <Section>
           <H2Title
@@ -285,5 +279,19 @@ export const SlackUserLinksSettings = () => {
           </StyledDisclosure>
         ))}
     </StyledContainer>
+  );
+};
+
+// twenty-ui components and this app's styled rules read every token off
+// ThemeContext as a var() reference. The sandbox document does not inherit the
+// host stylesheet, so the theme variable sheets are imported here for the
+// provider to resolve them against.
+export const SlackUserLinksSettings = () => {
+  const colorScheme = useColorScheme();
+
+  return (
+    <ThemeProvider colorScheme={colorScheme}>
+      <SlackUserLinksSettingsContent />
+    </ThemeProvider>
   );
 };

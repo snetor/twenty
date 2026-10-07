@@ -1,7 +1,9 @@
 import { Injectable } from '@nestjs/common';
 
+import { FeatureFlagKey } from 'twenty-shared/types';
 import { Any } from 'typeorm';
 
+import { FeatureFlagService } from 'src/engine/core-modules/feature-flag/services/feature-flag.service';
 import { type CalendarChannelEntity } from 'src/engine/metadata-modules/calendar-channel/entities/calendar-channel.entity';
 import { type ConnectedAccountEntity } from 'src/engine/metadata-modules/connected-account/entities/connected-account.entity';
 import { WorkspaceOrmManager } from 'src/engine/twenty-orm/workspace-orm.manager';
@@ -11,13 +13,14 @@ import { CalendarEventParticipantService } from 'src/modules/calendar/calendar-e
 import { buildCalendarEventParticipantSaveOperations } from 'src/modules/calendar/calendar-event-participant-manager/utils/build-calendar-event-participant-save-operations.util';
 import { type CalendarChannelEventAssociationWorkspaceEntity } from 'src/modules/calendar/common/standard-objects/calendar-channel-event-association.workspace-entity';
 import { type CalendarEventWorkspaceEntity } from 'src/modules/calendar/common/standard-objects/calendar-event.workspace-entity';
-import { type FetchedCalendarEvent } from 'src/modules/calendar/common/types/fetched-calendar-event';
+import { type FetchedCalendarEvent } from 'src/modules/calendar/common/types/fetched-calendar-event.type';
 
 @Injectable()
 export class CalendarSaveEventsService {
   constructor(
     private readonly workspaceOrmManager: WorkspaceOrmManager,
     private readonly calendarEventParticipantService: CalendarEventParticipantService,
+    private readonly featureFlagService: FeatureFlagService,
   ) {}
 
   public async saveCalendarEventsAndEnqueueContactCreationJob(
@@ -28,12 +31,19 @@ export class CalendarSaveEventsService {
   ): Promise<{ calendarEventIds: string[] }> {
     const authContext = buildSystemAuthContext(workspaceId);
 
+    const shouldSkipUnchangedRecords =
+      await this.featureFlagService.isFeatureEnabled(
+        FeatureFlagKey.IS_CALENDAR_SYNC_SKIP_UNCHANGED_RECORDS_ENABLED,
+        workspaceId,
+      );
+
     const { savedParticipantIds, calendarEventIds } =
       await this.workspaceOrmManager.executeInWorkspaceContext(
         async () => {
           const calendarChannelEventAssociationRepository =
             this.workspaceOrmManager.getRepository<CalendarChannelEventAssociationWorkspaceEntity>(
               'calendarChannelEventAssociation',
+              { shouldBypassPermissionChecks: true },
             );
 
           const existingAssociations =
@@ -46,13 +56,33 @@ export class CalendarSaveEventsService {
               },
             });
 
+          const calendarEventRepository =
+            this.workspaceOrmManager.getRepository<CalendarEventWorkspaceEntity>(
+              'calendarEvent',
+              { shouldBypassPermissionChecks: true },
+            );
+
+          const existingCalendarEvents = shouldSkipUnchangedRecords
+            ? await calendarEventRepository.find({
+                where: {
+                  id: Any(
+                    existingAssociations.map(
+                      (association) => association.calendarEventId,
+                    ),
+                  ),
+                },
+              })
+            : [];
+
           const {
             saveOperations,
+            existingCalendarEventIds,
             participantsOfNewEvents,
             participantsOfExistingEvents,
           } = buildCalendarEventSaveOperations({
             fetchedCalendarEvents,
             existingAssociations,
+            existingCalendarEvents,
             calendarChannelId: calendarChannel.id,
           });
 
@@ -72,6 +102,7 @@ export class CalendarSaveEventsService {
                 ...participantsOfExistingEvents,
               ],
               existingParticipants,
+              shouldSkipUnchangedParticipants: shouldSkipUnchangedRecords,
             });
 
           await this.workspaceOrmManager.runInWorkspaceTransaction(
@@ -79,11 +110,13 @@ export class CalendarSaveEventsService {
               const calendarEventRepository =
                 transactionScope.getRepository<CalendarEventWorkspaceEntity>(
                   'calendarEvent',
+                  { shouldBypassPermissionChecks: true },
                 );
 
               const associationRepository =
                 transactionScope.getRepository<CalendarChannelEventAssociationWorkspaceEntity>(
                   'calendarChannelEventAssociation',
+                  { shouldBypassPermissionChecks: true },
                 );
 
               if (saveOperations.calendarEventsToInsert.length > 0) {
@@ -127,9 +160,7 @@ export class CalendarSaveEventsService {
               ...saveOperations.associationsToInsert.map(
                 ({ calendarEventId }) => calendarEventId,
               ),
-              ...saveOperations.calendarEventsToUpdate.map(
-                ({ criteria }) => criteria,
-              ),
+              ...existingCalendarEventIds,
             ],
           };
         },

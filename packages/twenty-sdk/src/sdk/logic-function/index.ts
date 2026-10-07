@@ -1,14 +1,5 @@
-// Runtime-facing barrel for logic-function authors.
-//
-// Anything imported from this entry point is allowed to reach the Lambda
-// runtime. Today we only re-export type-only payload shapes; all of these
-// disappear at TS compile time so the compiled bundle is empty.
-//
-// `defineLogicFunction`, `definePostInstallLogicFunction`, etc. intentionally
-// stay in `twenty-sdk/define` — they are build-time metadata factories that
-// the SDK CLI stubs out before bundling. Logic-function source files keep
-// importing them from `twenty-sdk/define`, but should reach for *types* (and
-// future runtime helpers) here, never directly from `twenty-shared/*`.
+// Only what may reach the Lambda runtime; build-time define* factories stay in twenty-sdk/define.
+// Logic functions import types from here, never directly from twenty-shared/*.
 
 export type {
   LogicFunctionConfig,
@@ -30,6 +21,7 @@ export type {
 export type { CronPayload } from '@/sdk/define/logic-functions/triggers/cron-payload-type';
 
 export type {
+  DatabaseEventBatchPayload,
   DatabaseEventPayload,
   ObjectRecordBaseEvent,
   ObjectRecordCreateEvent,
@@ -54,11 +46,33 @@ export { getConnection } from '@/sdk/logic-function/connections/get-connection';
 export { listConnections } from '@/sdk/logic-function/connections/list-connections';
 export type { ListConnectionsFilter } from '@/sdk/logic-function/connections/list-connections';
 export { findConnectionForRequest } from '@/sdk/logic-function/connections/find-connection-for-request';
+export { reportConnectionAuthFailure } from '@/sdk/logic-function/connections/report-connection-auth-failure';
 export { AppConnectionAuthFailedError } from '@/sdk/logic-function/connections/errors/app-connection-auth-failed.error';
 export type { AppConnection } from '@/sdk/logic-function/connections/types/app-connection.type';
 
+export { createMessageChannel } from '@/sdk/logic-function/messaging/create-message-channel';
+export type { CreateMessageChannelInput } from '@/sdk/logic-function/messaging/create-message-channel';
+export { listMessageChannels } from '@/sdk/logic-function/messaging/list-message-channels';
+export type { ListMessageChannelsFilter } from '@/sdk/logic-function/messaging/list-message-channels';
+export { updateMessageChannel } from '@/sdk/logic-function/messaging/update-message-channel';
+export type { UpdateMessageChannelInput } from '@/sdk/logic-function/messaging/update-message-channel';
+export { deleteMessageChannel } from '@/sdk/logic-function/messaging/delete-message-channel';
+export { ingestMessages } from '@/sdk/logic-function/messaging/ingest-messages';
+export type {
+  IngestedMessage,
+  IngestMessage,
+  IngestMessageParticipant,
+} from '@/sdk/logic-function/messaging/types/ingest-message.type';
+export type { AppMessageChannel } from '@/sdk/logic-function/messaging/types/app-message-channel.type';
+
 export { runAgent } from '@/sdk/logic-function/agents/run-agent';
 export type { RunAgentInput, RunAgentResult } from 'twenty-shared/application';
+
+export { sendInboxMessage } from '@/sdk/logic-function/inbox/send-inbox-message';
+export type {
+  SendInboxMessageInput,
+  SendInboxMessageResult,
+} from 'twenty-shared/application';
 
 export { enqueueJob } from '@/sdk/logic-function/jobs/enqueue-job';
 export { enqueueJobs } from '@/sdk/logic-function/jobs/enqueue-jobs';

@@ -8,8 +8,7 @@ export type LocaleOption = {
   searchKeywords: string;
 };
 
-// Language name in English and in its own language, so it is searchable
-// regardless of the UI language — e.g. typing "chinese" or "中文".
+// English and native names, so a locale is findable from any UI language ("chinese" or "中文").
 const getLocaleSearchKeywords = (
   locale: (typeof APP_LOCALES)[keyof typeof APP_LOCALES],
 ): string => {
@@ -36,50 +35,54 @@ const LOCALE_SEARCH_KEYWORDS: Record<string, string> = Object.fromEntries(
 export const useLocaleOptions = (): LocaleOption[] => {
   const { t } = useLingui();
 
-  const unsortedLocaleOptions: Array<Omit<LocaleOption, 'searchKeywords'>> = [
-    { label: t`Afrikaans`, value: APP_LOCALES['af-ZA'] },
-    { label: t`Arabic`, value: APP_LOCALES['ar-SA'] },
-    { label: t`Catalan`, value: APP_LOCALES['ca-ES'] },
-    { label: t`Chinese — Simplified`, value: APP_LOCALES['zh-CN'] },
-    { label: t`Chinese — Traditional`, value: APP_LOCALES['zh-TW'] },
-    { label: t`Czech`, value: APP_LOCALES['cs-CZ'] },
-    { label: t`Danish`, value: APP_LOCALES['da-DK'] },
-    { label: t`Dutch`, value: APP_LOCALES['nl-NL'] },
-    { label: t`English`, value: APP_LOCALES.en },
-    { label: t`Finnish`, value: APP_LOCALES['fi-FI'] },
-    { label: t`French`, value: APP_LOCALES['fr-FR'] },
-    { label: t`German`, value: APP_LOCALES['de-DE'] },
-    { label: t`Greek`, value: APP_LOCALES['el-GR'] },
-    { label: t`Hebrew`, value: APP_LOCALES['he-IL'] },
-    { label: t`Hungarian`, value: APP_LOCALES['hu-HU'] },
-    { label: t`Italian`, value: APP_LOCALES['it-IT'] },
-    { label: t`Japanese`, value: APP_LOCALES['ja-JP'] },
-    { label: t`Korean`, value: APP_LOCALES['ko-KR'] },
-    { label: t`Norwegian`, value: APP_LOCALES['no-NO'] },
-    { label: t`Polish`, value: APP_LOCALES['pl-PL'] },
-    { label: t`Portuguese — Portugal`, value: APP_LOCALES['pt-PT'] },
-    { label: t`Portuguese — Brazil`, value: APP_LOCALES['pt-BR'] },
-    { label: t`Romanian`, value: APP_LOCALES['ro-RO'] },
-    { label: t`Russian`, value: APP_LOCALES['ru-RU'] },
-    { label: t`Serbian (Cyrillic)`, value: APP_LOCALES['sr-Cyrl'] },
-    { label: t`Spanish`, value: APP_LOCALES['es-ES'] },
-    { label: t`Swedish`, value: APP_LOCALES['sv-SE'] },
-    { label: t`Turkish`, value: APP_LOCALES['tr-TR'] },
-    { label: t`Ukrainian`, value: APP_LOCALES['uk-UA'] },
-    { label: t`Vietnamese`, value: APP_LOCALES['vi-VN'] },
-  ];
+  // A Record, not a list, so a locale added to APP_LOCALES without a label fails the typecheck.
+  const labelByLocale: Record<keyof typeof APP_LOCALES, string> = {
+    'af-ZA': t`Afrikaans`,
+    'ar-SA': t`Arabic`,
+    'hy-AM': t`Armenian`,
+    'ca-ES': t`Catalan`,
+    'zh-CN': t`Chinese — Simplified`,
+    'zh-TW': t`Chinese — Traditional`,
+    'cs-CZ': t`Czech`,
+    'da-DK': t`Danish`,
+    'nl-NL': t`Dutch`,
+    en: t`English`,
+    'fi-FI': t`Finnish`,
+    'fr-FR': t`French`,
+    'de-DE': t`German`,
+    'el-GR': t`Greek`,
+    'he-IL': t`Hebrew`,
+    'hu-HU': t`Hungarian`,
+    'it-IT': t`Italian`,
+    'ja-JP': t`Japanese`,
+    'ko-KR': t`Korean`,
+    'no-NO': t`Norwegian`,
+    'pl-PL': t`Polish`,
+    'pt-PT': t`Portuguese — Portugal`,
+    'pt-BR': t`Portuguese — Brazil`,
+    'ro-RO': t`Romanian`,
+    'ru-RU': t`Russian`,
+    'sr-Cyrl': t`Serbian (Cyrillic)`,
+    'sr-Latn': t`Serbian (Latin)`,
+    'es-ES': t`Spanish`,
+    'sv-SE': t`Swedish`,
+    'tr-TR': t`Turkish`,
+    'uk-UA': t`Ukrainian`,
+    'uz-UZ': t`Uzbek`,
+    'vi-VN': t`Vietnamese`,
+    'pseudo-en': t`Pseudo-English`,
+  };
 
-  if (process.env.NODE_ENV === 'development') {
-    unsortedLocaleOptions.push({
-      label: t`Pseudo-English`,
-      value: APP_LOCALES['pseudo-en'],
-    });
-  }
-
-  return [...unsortedLocaleOptions]
-    .sort((a, b) => a.label.localeCompare(b.label))
-    .map((option) => ({
-      ...option,
-      searchKeywords: LOCALE_SEARCH_KEYWORDS[option.value] ?? '',
-    }));
+  return Object.entries(labelByLocale)
+    .filter(
+      ([locale]) =>
+        locale !== APP_LOCALES['pseudo-en'] ||
+        process.env.NODE_ENV === 'development',
+    )
+    .map(([locale, label]) => ({
+      label,
+      value: locale as LocaleOption['value'],
+      searchKeywords: LOCALE_SEARCH_KEYWORDS[locale] ?? '',
+    }))
+    .sort((a, b) => a.label.localeCompare(b.label));
 };

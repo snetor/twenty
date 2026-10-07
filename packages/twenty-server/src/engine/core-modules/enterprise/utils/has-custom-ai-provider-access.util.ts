@@ -1,6 +1,6 @@
 /* @license Enterprise */
 
-import { MAX_SEATS_WITHOUT_ENTERPRISE_KEY } from 'src/engine/core-modules/enterprise/constants/max-seats-without-enterprise-key.constant';
+import { MAX_SEATS_WITHOUT_ENTERPRISE_KEY } from 'src/engine/core-modules/enterprise/constants/max-seats-without-organization-key.constant';
 
 type HasCustomAiProviderAccessArgs = {
   isBillingEnabled: boolean;
@@ -8,9 +8,7 @@ type HasCustomAiProviderAccessArgs = {
   seatCount: number;
 };
 
-// Cloud runs a single instance whose seat count spans every customer, so the
-// threshold would always trip; there the plan is enforced per workspace by
-// billing entitlements instead.
+// Cloud's seat count spans every customer, so there billing entitlements enforce the plan per workspace.
 export const hasCustomAiProviderAccess = ({
   isBillingEnabled,
   hasValidEnterprisePlan,

@@ -1,15 +1,22 @@
+import { WorkflowVersionOnUpdateSideEffectHandlerService } from 'src/engine/metadata-modules/metadata-side-effect/handlers/workflow/services/workflow-version-on-update-side-effect-handler.service';
+import { WorkflowVersionOnCreateSideEffectHandlerService } from 'src/engine/metadata-modules/metadata-side-effect/handlers/workflow/services/workflow-version-on-create-side-effect-handler.service';
+import { WorkflowVersionOnDeleteSideEffectHandlerService } from 'src/engine/metadata-modules/metadata-side-effect/handlers/workflow/services/workflow-version-on-delete-side-effect-handler.service';
 import { Module } from '@nestjs/common';
 
+import { FieldSearchFieldMetadataOnCreateSideEffectHandlerService } from 'src/engine/metadata-modules/metadata-side-effect/handlers/field-metadata/services/field-search-field-metadata-on-create-side-effect-handler.service';
 import { FieldSearchFieldMetadataOnDeleteSideEffectHandlerService } from 'src/engine/metadata-modules/metadata-side-effect/handlers/field-metadata/services/field-search-field-metadata-on-delete-side-effect-handler.service';
 import { FieldIndexViewFieldOnCreateSideEffectHandlerService } from 'src/engine/metadata-modules/metadata-side-effect/handlers/field-metadata/services/field-index-view-field-on-create-side-effect-handler.service';
 import { FieldRecordFormWidgetOnCreateSideEffectHandlerService } from 'src/engine/metadata-modules/metadata-side-effect/handlers/field-metadata/services/field-record-form-widget-on-create-side-effect-handler.service';
 import { FieldRecordFormWidgetOnDeleteSideEffectHandlerService } from 'src/engine/metadata-modules/metadata-side-effect/handlers/field-metadata/services/field-record-form-widget-on-delete-side-effect-handler.service';
 import { FieldRecordFormWidgetOnUpdateSideEffectHandlerService } from 'src/engine/metadata-modules/metadata-side-effect/handlers/field-metadata/services/field-record-form-widget-on-update-side-effect-handler.service';
 import { FieldRecordPageViewFieldOnCreateSideEffectHandlerService } from 'src/engine/metadata-modules/metadata-side-effect/handlers/field-metadata/services/field-record-page-view-field-on-create-side-effect-handler.service';
+import { FieldSearchFieldMetadataOnUpdateSideEffectHandlerService } from 'src/engine/metadata-modules/metadata-side-effect/handlers/field-metadata/services/field-search-field-metadata-on-update-side-effect-handler.service';
 import { FieldSystemViewFieldsOnDeleteSideEffectHandlerService } from 'src/engine/metadata-modules/metadata-side-effect/handlers/field-metadata/services/field-system-view-fields-on-delete-side-effect-handler.service';
 import { FieldUniqueBackingIndexOnCreateSideEffectHandlerService } from 'src/engine/metadata-modules/metadata-side-effect/handlers/field-metadata/services/field-unique-backing-index-on-create-side-effect-handler.service';
 import { FieldUniqueBackingIndexOnDeleteSideEffectHandlerService } from 'src/engine/metadata-modules/metadata-side-effect/handlers/field-metadata/services/field-unique-backing-index-on-delete-side-effect-handler.service';
 import { FieldUniqueBackingIndexOnUpdateSideEffectHandlerService } from 'src/engine/metadata-modules/metadata-side-effect/handlers/field-metadata/services/field-unique-backing-index-on-update-side-effect-handler.service';
+import { FieldValidationRulesOnDeleteSideEffectHandlerService } from 'src/engine/metadata-modules/metadata-side-effect/handlers/field-metadata/services/field-validation-rules-on-delete-side-effect-handler.service';
+import { FieldValidationRulesOnUpdateSideEffectHandlerService } from 'src/engine/metadata-modules/metadata-side-effect/handlers/field-metadata/services/field-validation-rules-on-update-side-effect-handler.service';
 import { ObjectIndexViewLabelIdentifierOnUpdateSideEffectHandlerService } from 'src/engine/metadata-modules/metadata-side-effect/handlers/object-metadata/services/object-index-view-label-identifier-on-update-side-effect-handler.service';
 import { ObjectIndexViewOnCreateSideEffectHandlerService } from 'src/engine/metadata-modules/metadata-side-effect/handlers/object-metadata/services/object-index-view-on-create-side-effect-handler.service';
 import { ObjectNavigationCommandOnCreateSideEffectHandlerService } from 'src/engine/metadata-modules/metadata-side-effect/handlers/object-metadata/services/object-navigation-command-on-create-side-effect-handler.service';
@@ -23,19 +30,27 @@ import { ObjectSystemFieldsOnCreateSideEffectHandlerService } from 'src/engine/m
 import { ObjectSystemRelationsOnCreateSideEffectHandlerService } from 'src/engine/metadata-modules/metadata-side-effect/handlers/object-metadata/services/object-system-relations-on-create-side-effect-handler.service';
 import { ObjectSystemRelationsOnUpdateSideEffectHandlerService } from 'src/engine/metadata-modules/metadata-side-effect/handlers/object-metadata/services/object-system-relations-on-update-side-effect-handler.service';
 import { ObjectSystemSideEffectsOnDeleteSideEffectHandlerService } from 'src/engine/metadata-modules/metadata-side-effect/handlers/object-metadata/services/object-system-side-effects-on-delete-side-effect-handler.service';
+import { ObjectValidationRulesOnDeleteSideEffectHandlerService } from 'src/engine/metadata-modules/metadata-side-effect/handlers/object-metadata/services/object-validation-rules-on-delete-side-effect-handler.service';
 
 @Module({
   providers: [
+    WorkflowVersionOnUpdateSideEffectHandlerService,
+    WorkflowVersionOnCreateSideEffectHandlerService,
+    WorkflowVersionOnDeleteSideEffectHandlerService,
     FieldUniqueBackingIndexOnCreateSideEffectHandlerService,
     FieldUniqueBackingIndexOnUpdateSideEffectHandlerService,
     FieldUniqueBackingIndexOnDeleteSideEffectHandlerService,
+    FieldSearchFieldMetadataOnCreateSideEffectHandlerService,
     FieldSearchFieldMetadataOnDeleteSideEffectHandlerService,
+    FieldSearchFieldMetadataOnUpdateSideEffectHandlerService,
     FieldIndexViewFieldOnCreateSideEffectHandlerService,
     FieldRecordPageViewFieldOnCreateSideEffectHandlerService,
     FieldRecordFormWidgetOnCreateSideEffectHandlerService,
     FieldRecordFormWidgetOnDeleteSideEffectHandlerService,
     FieldRecordFormWidgetOnUpdateSideEffectHandlerService,
     FieldSystemViewFieldsOnDeleteSideEffectHandlerService,
+    FieldValidationRulesOnUpdateSideEffectHandlerService,
+    FieldValidationRulesOnDeleteSideEffectHandlerService,
     ObjectSystemFieldsOnCreateSideEffectHandlerService,
     ObjectIndexViewOnCreateSideEffectHandlerService,
     ObjectRecordPageOnCreateSideEffectHandlerService,
@@ -49,6 +64,7 @@ import { ObjectSystemSideEffectsOnDeleteSideEffectHandlerService } from 'src/eng
     ObjectIndexViewLabelIdentifierOnUpdateSideEffectHandlerService,
     ObjectRecordPageLabelIdentifierOnUpdateSideEffectHandlerService,
     ObjectSystemSideEffectsOnDeleteSideEffectHandlerService,
+    ObjectValidationRulesOnDeleteSideEffectHandlerService,
   ],
 })
 export class MetadataSideEffectHandlersModule {}

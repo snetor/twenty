@@ -44,7 +44,6 @@ export const repairToolCall = async ({
   model: LanguageModel;
   billingContext?: RepairToolCallBillingContext;
 }): Promise<ToolCall | null> => {
-  // Don't attempt to fix invalid tool names
   if (NoSuchToolError.isInstance(error)) {
     return null;
   }
@@ -83,7 +82,7 @@ export const repairToolCall = async ({
         `- Object structures must match the schema shape`,
         `- Array items must follow the specified format`,
       ].join('\n'),
-      experimental_telemetry: buildAiTelemetry({
+      ...buildAiTelemetry({
         functionId: 'repair-tool-call',
         workspaceId: billingContext?.workspaceId,
         userWorkspaceId: billingContext?.userWorkspaceId,

@@ -1,6 +1,7 @@
 import { WorkflowActionType } from 'twenty-shared/workflow';
 
 import { type WorkflowAiAgentActionSettings } from 'src/modules/workflow/workflow-executor/workflow-actions/ai-agent/types/workflow-ai-agent-action-settings.type';
+import { type WorkflowClassifyActionSettings } from 'src/modules/workflow/workflow-executor/workflow-actions/classify/types/workflow-classify-action-settings.type';
 import { type WorkflowCodeActionSettings } from 'src/modules/workflow/workflow-executor/workflow-actions/code/types/workflow-code-action-settings.type';
 import { type WorkflowCreateCalendarEventActionSettings } from 'src/modules/workflow/workflow-executor/workflow-actions/create-calendar-event/types/workflow-create-calendar-event-action-settings.type';
 import { type WorkflowDelayActionSettings } from 'src/modules/workflow/workflow-executor/workflow-actions/delay/types/workflow-delay-action-settings.type';
@@ -11,6 +12,7 @@ import { type WorkflowIfElseActionSettings } from 'src/modules/workflow/workflow
 import { type WorkflowIteratorActionSettings } from 'src/modules/workflow/workflow-executor/workflow-actions/iterator/types/workflow-iterator-action-settings.type';
 import { type WorkflowLogicFunctionActionSettings } from 'src/modules/workflow/workflow-executor/workflow-actions/logic-function/types/workflow-logic-function-action-settings.type';
 import { type WorkflowSendEmailActionSettings } from 'src/modules/workflow/workflow-executor/workflow-actions/mail-sender/types/workflow-send-email-action-settings.type';
+import { type WorkflowSendChatMessageActionSettings } from 'src/modules/workflow/workflow-executor/workflow-actions/send-chat-message/types/workflow-send-chat-message-action-settings.type';
 import {
   type WorkflowCreateRecordActionSettings,
   type WorkflowDeleteRecordActionSettings,
@@ -52,6 +54,11 @@ export type WorkflowSendEmailAction = BaseWorkflowAction & {
 export type WorkflowDraftEmailAction = BaseWorkflowAction & {
   type: WorkflowActionType.DRAFT_EMAIL;
   settings: WorkflowSendEmailActionSettings;
+};
+
+export type WorkflowSendChatMessageAction = BaseWorkflowAction & {
+  type: WorkflowActionType.SEND_CHAT_MESSAGE;
+  settings: WorkflowSendChatMessageActionSettings;
 };
 
 export type WorkflowCreateCalendarEventAction = BaseWorkflowAction & {
@@ -114,6 +121,11 @@ export type WorkflowAiAgentAction = BaseWorkflowAction & {
   settings: WorkflowAiAgentActionSettings;
 };
 
+export type WorkflowClassifyAction = BaseWorkflowAction & {
+  type: WorkflowActionType.CLASSIFY;
+  settings: WorkflowClassifyActionSettings;
+};
+
 export type WorkflowIteratorAction = BaseWorkflowAction & {
   type: WorkflowActionType.ITERATOR;
   settings: WorkflowIteratorActionSettings;
@@ -133,6 +145,7 @@ export type WorkflowAction =
   | WorkflowLogicFunctionAction
   | WorkflowSendEmailAction
   | WorkflowDraftEmailAction
+  | WorkflowSendChatMessageAction
   | WorkflowCreateCalendarEventAction
   | WorkflowCreateRecordAction
   | WorkflowUpdateRecordAction
@@ -145,6 +158,7 @@ export type WorkflowAction =
   | WorkflowIfElseAction
   | WorkflowHttpRequestAction
   | WorkflowAiAgentAction
+  | WorkflowClassifyAction
   | WorkflowIteratorAction
   | WorkflowEmptyAction
   | WorkflowDelayAction;

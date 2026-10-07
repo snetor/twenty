@@ -1,15 +1,15 @@
-import { useRefetchOnApplicationLifecycleSettled } from '@/applications/hooks/useRefetchOnApplicationLifecycleSettled';
+import { useRefetchOnApplicationOperation } from '@/applications/hooks/useRefetchOnApplicationOperation';
 import { useRefetchOnApplicationRegistrationChange } from '@/applications/hooks/useRefetchOnApplicationRegistrationChange';
 import { applicationsSelector } from '@/applications/states/applicationsSelector';
 import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
 import { useQuery } from '@apollo/client/react';
 import { FindManyApplicationsDocument } from '~/generated-metadata/graphql';
-import { type ApplicationWithoutRelation } from '~/pages/settings/applications/types/applicationWithoutRelation';
+import { type ApplicationWithoutRelation } from '~/pages/settings/applications/types/ApplicationWithoutRelation';
 
 export const useInstalledApplications = (): ApplicationWithoutRelation[] => {
   const { data, refetch } = useQuery(FindManyApplicationsDocument);
 
-  useRefetchOnApplicationLifecycleSettled({ refetch });
+  useRefetchOnApplicationOperation({ refetch });
   useRefetchOnApplicationRegistrationChange({ refetch });
 
   const applications = useAtomStateValue(applicationsSelector);
