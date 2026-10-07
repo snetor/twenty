@@ -1,6 +1,10 @@
 import { applyCountryPermissionFilter } from 'src/engine/twenty-orm/utils/apply-country-permission-filter.util';
 import { buildMutationQueryBuilder } from 'src/engine/api/common/common-query-runners/utils/build-mutation-query-builder.util';
 import { WorkspaceSelectQueryBuilder } from 'src/engine/twenty-orm/query-builder/workspace-select-query-builder';
+import {
+  PermissionsException,
+  PermissionsExceptionCode,
+} from 'src/engine/metadata-modules/permissions/permissions.exception';
 import { WorkspaceRepository } from 'src/engine/twenty-orm/repository/workspace-repository';
 
 // SWC compile les exports ESM en getters non-configurables → `jest.spyOn` lève
@@ -256,6 +260,99 @@ describe('WorkspaceRepository — branchement du cloisonnement par portefeuille'
 
       expect((repository as any).createQueryBuilder).toHaveBeenCalledTimes(1);
       expect([...ids]).toEqual(['a']);
+    });
+  });
+
+  // `validateParentRecordsAreWritableOrThrow` (creating or attaching a child under a parent,
+  // e.g. a note or task target) reads the parent through `applyWriteRowLevelPermissions`, which
+  // now carries the Snetor filter. The fake builder below mirrors the real flow: `getMany()`
+  // fires the repository's `onBeforeExecute` hook, and the (mocked) filter then restricts the
+  // rows to the in-scope ones. An in-scope parent must stay writable, an out-of-scope one must
+  // be refused.
+  describe('PARENT WRITABILITY CHECK — validateInheritedParentsAreWritableOrThrow', () => {
+    const IN_SCOPE_PARENT = 'company-in-scope';
+    const OUT_OF_SCOPE_PARENT = 'company-out-of-scope';
+
+    const buildChildRepository = () => {
+      const parentRepository = buildRepository();
+
+      (parentRepository as any).applyRowLevelPermissionPredicates = jest.fn();
+      (parentRepository as any).validateQueryIsPermitted = jest.fn();
+
+      let requestedIds: string[] = [];
+
+      (parentRepository as any).createQueryBuilder = () => {
+        const fake: any = {
+          alias: 'company',
+          scoped: false,
+          where: (criteria: { id: { value: string[] } }) => {
+            requestedIds = criteria.id.value;
+
+            return fake;
+          },
+          withDeleted: () => fake,
+          select: () => fake,
+          // Same order as the real builder: hook first, then the SQL runs.
+          getMany: async () => {
+            (parentRepository as any).onBeforeExecute(fake);
+
+            return requestedIds
+              .filter((id) => !fake.scoped || id === IN_SCOPE_PARENT)
+              .map((id) => ({ id }));
+          },
+        };
+
+        return fake;
+      };
+
+      applyMock.mockImplementation(({ queryBuilder }) => {
+        queryBuilder.scoped = true;
+      });
+
+      const child = buildRepository();
+
+      Object.assign((child as any).options, {
+        flatObjectMetadata: { nameSingular: 'noteTarget' },
+        getRepositoryForObjectMetadataId: () => parentRepository,
+      });
+      (child as any).shouldValidateInheritedParents = () => true;
+      (child as any).resolveInheritingRecordLinks = () => [];
+      (child as any).resolveOwnParentLinks = () => [
+        {
+          joinColumnName: 'companyId',
+          parentFlatObjectMetadata: {
+            id: 'company-id',
+            nameSingular: 'company',
+          },
+        },
+      ];
+
+      return child;
+    };
+
+    const attachChildTo = (parentId: string) =>
+      (
+        buildChildRepository() as any
+      ).validateInheritedParentsAreWritableOrThrow({
+        writtenRecords: [{ companyId: parentId }],
+        affectedRecords: [],
+      });
+
+    afterEach(() => {
+      applyMock.mockReset();
+    });
+
+    it('a scoped member attaching a child under an IN-scope parent succeeds', async () => {
+      await expect(attachChildTo(IN_SCOPE_PARENT)).resolves.toBeUndefined();
+    });
+
+    it('a scoped member attaching a child under an OUT-of-scope parent is refused', async () => {
+      const attempt = attachChildTo(OUT_OF_SCOPE_PARENT);
+
+      await expect(attempt).rejects.toBeInstanceOf(PermissionsException);
+      await expect(attempt).rejects.toMatchObject({
+        code: PermissionsExceptionCode.PERMISSION_DENIED,
+      });
     });
   });
 
