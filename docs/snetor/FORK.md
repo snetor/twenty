@@ -7,8 +7,16 @@ modification s'accroche au code amont, et ce qui casse quand l'amont bouge.
 Il se met à jour **dans la même pull request** que la modification qu'il décrit. Un fichier de
 carte en retard est pire qu'absent : il fait chercher au mauvais endroit.
 
-> **État décrit** : fork sur `twenty/v2.39.0`.
-> Mesure de l'écart avec l'amont : `git diff --stat twenty/v2.39.0 HEAD`.
+> **État décrit** : fork sur `twenty/v2.45.6`.
+> Mesure de l'écart avec l'amont : `git diff --stat twenty/v2.45.6 HEAD`.
+>
+> **2.39 -> 2.45.6 (2026-10-07), in English:** two conflicts only, both in files already listed
+> below (`workspace-repository.ts`, `navigate-app-tool.ts`). Every Snetor hook survived. One anchor
+> moved: for `kind === 'update'`, `runMutation()` now delegates to the private `performMutation()`
+> through `runWithValidationRules()`; the write filter call lives in `performMutation()`, under the
+> same `if (!rowLevelPermissionsApplied)`. Other kinds still call `performMutation()` directly.
+> Upstream removed `createPermissionBypassingQueryBuilder`; `createQueryBuilderForOwnInserts` must
+> keep mirroring `createQueryBuilder` (it now also passes `isRecordSharingEnabled`).
 >
 > **Ce que la montée 2.30 → 2.39 a changé pour ce fichier**, et c'est le résumé le plus
 > utile qu'il porte : le cloisonnement est passé de **cinq points d'application dispersés à
@@ -179,7 +187,7 @@ puis **`denyAll()` en default-deny**.
 | Point d'ancrage | Ce qu'il couvre | Fragilité |
 |---|---|---|
 | `onBeforeExecute()` — un appel après `applyRowLevelPermissionPredicates` | **toute la LECTURE.** `createQueryBuilder()` injecte ce hook dans chaque builder de lecture : `find`, `getCount()`, le groupBy du Kanban (via `applyRowLevelPermissions()`), les relations imbriquées | 🟢 hook d'un contexte, interface publique |
-| `runMutation()` — un appel sous la même condition `if (!rowLevelPermissionsApplied)` que l'amont | **toute l'ÉCRITURE.** update, delete, soft-delete, restore | 🟢 méthode publique |
+| `runMutation()` -> `performMutation()` (since 2.45: the call sits in `performMutation()`) — un appel sous la même condition `if (!rowLevelPermissionsApplied)` que l'amont | **toute l'ÉCRITURE.** update, delete, soft-delete, restore | 🟢 méthode publique |
 
 Plus la méthode privée `applyCountryPermissionFilterPredicate()` qui les sert, ajoutée au même
 fichier.
