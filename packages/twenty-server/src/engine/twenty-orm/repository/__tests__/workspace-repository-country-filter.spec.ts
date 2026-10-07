@@ -97,6 +97,11 @@ describe('WorkspaceRepository — branchement du cloisonnement par portefeuille'
       repository: WorkspaceRepository<any>,
       rowLevelPermissionsApplied: boolean,
     ) => {
+      // Upstream (v2.45) validates and formats the write BEFORE reaching our hook; the
+      // stub has no field metadata, so those neighbours are neutralised, like the read side.
+      (repository as any).validateWriteIsPermitted = jest.fn();
+      (repository as any).formatWriteData = jest.fn().mockReturnValue({});
+
       try {
         await (repository as any).runMutation({
           selectQueryBuilder: buildQueryBuilder(),
