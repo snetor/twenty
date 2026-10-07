@@ -5,7 +5,7 @@ import { Provider as JotaiProvider } from 'jotai';
 import { MemoryRouter } from 'react-router-dom';
 import { SOURCE_LOCALE } from 'twenty-shared/translations';
 import { AppPath } from 'twenty-shared/types';
-import { ThemeProvider } from 'twenty-ui/theme-constants';
+import { ThemeProvider } from 'twenty-ui/theme';
 
 import { VerifyEmail } from '@/auth/components/VerifyEmail';
 import { clientConfigApiStatusState } from '@/client-config/states/clientConfigApiStatusState';
@@ -20,8 +20,6 @@ const verifyEmailAndGetWorkspaceAgnosticTokenMock = jest.fn();
 const verifyEmailAndGetLoginTokenMock = jest.fn();
 const verifyLoginTokenMock = jest.fn();
 const redirectToWorkspaceDomainMock = jest.fn();
-const enqueueSuccessSnackBarMock = jest.fn();
-const enqueueErrorSnackBarMock = jest.fn();
 
 let isOnAWorkspaceValue = false;
 
@@ -53,14 +51,13 @@ jest.mock('~/hooks/useNavigateApp', () => ({
   useNavigateApp: () => navigateMock,
 }));
 
-jest.mock('@/ui/feedback/snack-bar-manager/hooks/useSnackBar', () => ({
-  useSnackBar: () => ({
-    enqueueSuccessSnackBar: enqueueSuccessSnackBarMock,
-    enqueueErrorSnackBar: enqueueErrorSnackBarMock,
-  }),
+const mockEnqueueToast = jest.fn();
+
+jest.mock('twenty-ui/components', () => ({
+  ...jest.requireActual('twenty-ui/components'),
+  useToast: () => ({ enqueueToast: mockEnqueueToast }),
 }));
 
-// Rendered by VerifyEmail in the error state; isolate it from Apollo.
 jest.mock(
   '@/auth/sign-in-up/hooks/useHandleResendEmailVerificationToken',
   () => ({
@@ -116,12 +113,12 @@ describe('VerifyEmail', () => {
       );
     });
 
-    // The workspace-agnostic flow only sets the next sign-in-up step, so the
-    // effect must hand off to the SignInUp page for that step to render.
     await waitFor(() => {
       expect(navigateMock).toHaveBeenCalledWith(AppPath.SignInUp);
     });
-    expect(enqueueSuccessSnackBarMock).toHaveBeenCalled();
+    expect(mockEnqueueToast).toHaveBeenCalledWith(
+      expect.objectContaining({ variant: 'success' }),
+    );
   });
 
   it('does not hand off to the SignInUp page when the verification fails', async () => {
@@ -132,7 +129,9 @@ describe('VerifyEmail', () => {
     renderVerifyEmail(VERIFY_EMAIL_URL);
 
     await waitFor(() => {
-      expect(enqueueErrorSnackBarMock).toHaveBeenCalled();
+      expect(mockEnqueueToast).toHaveBeenCalledWith(
+        expect.objectContaining({ variant: 'error' }),
+      );
     });
     expect(navigateMock).not.toHaveBeenCalledWith(AppPath.SignInUp);
   });

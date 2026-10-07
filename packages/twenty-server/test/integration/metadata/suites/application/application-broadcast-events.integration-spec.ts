@@ -4,7 +4,7 @@ import { cleanupApplicationAndAppRegistration } from 'test/integration/metadata/
 import { setupApplicationForSync } from 'test/integration/metadata/suites/application/utils/setup-application-for-sync.util';
 import { syncApplication } from 'test/integration/metadata/suites/application/utils/sync-application.util';
 import { uninstallApplication } from 'test/integration/metadata/suites/application/utils/uninstall-application.util';
-import { makeMetadataAPIRequest } from 'test/integration/metadata/suites/utils/make-metadata-api-request.util';
+import { makeMetadataApiRequest } from 'test/integration/metadata/suites/utils/make-metadata-api-request.util';
 import { getAppProviderByClassName } from 'test/integration/utils/get-app-provider-by-class-name.util';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -17,7 +17,6 @@ const APPLICATION_PAYLOAD_KEYS = [
   'id',
   'name',
   'sdkClientCoreChecksum',
-  'state',
   'universalIdentifier',
   'version',
 ];
@@ -108,14 +107,13 @@ describe('Application broadcast events', () => {
     expect(applicationCreatedEvent?.properties.after).toMatchObject({
       id: applicationCreatedEvent?.recordId,
       name: 'Broadcast test application',
-      state: expect.any(String),
     });
 
     const applicationRegistrationId = registrationCreatedEvent?.recordId;
 
     broadcastSpy.mockClear();
 
-    const updateRegistrationResponse = await makeMetadataAPIRequest({
+    const updateRegistrationResponse = await makeMetadataApiRequest({
       query: gql`
         mutation UpdateApplicationRegistration(
           $input: UpdateApplicationRegistrationInput!

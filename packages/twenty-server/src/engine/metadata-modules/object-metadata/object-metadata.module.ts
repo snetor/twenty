@@ -9,6 +9,7 @@ import { ApplicationModule } from 'src/engine/core-modules/application/applicati
 import { TokenModule } from 'src/engine/core-modules/auth/token/token.module';
 import { FeatureFlagEntity } from 'src/engine/core-modules/feature-flag/feature-flag.entity';
 import { FeatureFlagModule } from 'src/engine/core-modules/feature-flag/feature-flag.module';
+import { DerivedFieldMetadataIdsModule } from 'src/engine/metadata-modules/derived-field-metadata-ids/derived-field-metadata-ids.module';
 import { FieldMetadataEntity } from 'src/engine/metadata-modules/field-metadata/field-metadata.entity';
 import { WorkspaceManyOrAllFlatEntityMapsCacheModule } from 'src/engine/metadata-modules/flat-entity/services/workspace-many-or-all-flat-entity-maps-cache.module';
 import { IndexMetadataModule } from 'src/engine/metadata-modules/index-metadata/index-metadata.module';
@@ -27,6 +28,7 @@ import { WorkspaceCacheStorageModule } from 'src/engine/workspace-cache-storage/
 import { WorkspaceCacheModule } from 'src/engine/workspace-cache/workspace-cache.module';
 import { WorkspaceDataSourceModule } from 'src/engine/workspace-datasource/workspace-datasource.module';
 import { WorkspaceMigrationModule } from 'src/engine/workspace-manager/workspace-migration/workspace-migration.module';
+import { provideWorkspaceScopedRepository } from 'src/engine/twenty-orm/workspace-scoped-repository/provide-workspace-scoped-repository';
 
 @Module({
   imports: [
@@ -44,6 +46,7 @@ import { WorkspaceMigrationModule } from 'src/engine/workspace-manager/workspace
     ApplicationTranslationModule,
     WorkspaceManyOrAllFlatEntityMapsCacheModule,
     TypeORMModule,
+    DerivedFieldMetadataIdsModule,
     IndexMetadataModule,
     PermissionsModule,
     WorkspaceDataSourceModule,
@@ -59,6 +62,8 @@ import { WorkspaceMigrationModule } from 'src/engine/workspace-manager/workspace
     ObjectRecordCountService,
     MostlyEmptyFieldsService,
     ObjectMetadataToolsFactory,
+    provideWorkspaceScopedRepository(ObjectMetadataEntity),
+    provideWorkspaceScopedRepository(FieldMetadataEntity),
   ],
   exports: [ObjectMetadataService, ObjectMetadataToolsFactory],
 })

@@ -15,8 +15,7 @@ export type DovecotImapAccount = {
   messageChannelId: string;
 };
 
-// The IMAP driver routes through the SSRF guard, which rejects the container's
-// private address before the connection is attempted.
+// The SSRF guard would otherwise reject the container's private address.
 export const connectDovecotImapAccount = async ({
   handle,
   password,
@@ -25,7 +24,7 @@ export const connectDovecotImapAccount = async ({
   password: string;
 }): Promise<DovecotImapAccount> => {
   await updateConfigVariable({
-    input: { key: 'OUTBOUND_HTTP_SAFE_MODE_ENABLED', value: false },
+    input: { key: 'OUTBOUND_HTTP_ALLOWED_INTERNAL_HOSTS', value: ['*'] },
   });
 
   const dovecot = await startDovecotContainer({ password });

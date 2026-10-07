@@ -7,7 +7,7 @@ import { buildNavigationPlaceholderValues } from 'src/engine/metadata-modules/co
 import { type FlatEntityMaps } from 'src/engine/metadata-modules/flat-entity/types/flat-entity-maps.type';
 import { findFlatEntityByIdInFlatEntityMaps } from 'src/engine/metadata-modules/flat-entity/utils/find-flat-entity-by-id-in-flat-entity-maps.util';
 import { type FlatObjectMetadata } from 'src/engine/metadata-modules/flat-object-metadata/types/flat-object-metadata.type';
-import { type EffectiveEntityI18nContext } from 'src/engine/metadata-modules/utils/effective-entity-i18n-context.type';
+import { type EffectiveEntityI18nContext } from 'src/engine/metadata-modules/overrides/types/effective-entity-i18n-context.type';
 
 type InterpolatableCommandMenuItemRecord = Record<string, unknown> & {
   engineComponentKey?: unknown;
@@ -16,9 +16,7 @@ type InterpolatableCommandMenuItemRecord = Record<string, unknown> & {
 
 const INTERPOLATED_FIELDS = ['label', 'shortLabel', 'icon'] as const;
 
-// NAVIGATION items are the only ones whose placeholders name another entity,
-// and the label that fills them is the target object's -- which is locale
-// dependent, so this runs at delivery on already-resolved values.
+// Runs at delivery because the target object label filling the placeholders is locale dependent
 export const interpolateNavigationCommandMenuItemEvent = ({
   record,
   flatObjectMetadataMaps,

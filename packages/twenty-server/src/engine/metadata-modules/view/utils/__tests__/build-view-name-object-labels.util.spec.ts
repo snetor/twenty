@@ -9,11 +9,12 @@ const i18nContext = {
   locale: 'fr-FR' as const,
   i18nInstance: { _: (id: string) => id },
   isStandardApp: true,
+  workspaceCustomApplicationUniversalIdentifier:
+    'workspace-custom-application-universal-identifier',
+  ownerApplicationUniversalIdentifier: undefined,
 };
 
 describe('buildViewNameObjectLabels', () => {
-  // Capitalization rides along: the value carries the casing because a
-  // placeholder can start a label.
   it('resolves only the placeholder the name carries', () => {
     expect(
       buildViewNameObjectLabels({

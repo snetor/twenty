@@ -60,19 +60,25 @@ export class TimelineCalendarEventService {
     // filtre du choke-point ORM ne s'y applique donc pas du tout. Le périmètre est posé à
     // la main, avant toute lecture.
     //
-    // 🔴 Même réserve que `get-messages.service.ts` : quand
-    // `IS_MESSAGE_CALENDAR_TARGET_READ_ENABLED` est allumé, le `where` ci-dessous bascule
-    // sur `calendarEventTargets` et ne consulte plus `personIds` — notre périmètre ne le
-    // couvre pas. Le drapeau est éteint hors seeder de développement ; ne pas l'allumer
-    // sans étendre le cloisonnement à `targetFilter`.
-    const personIdsInScope =
-      await this.countryScopeService.keepPersonIdsInScope({
-        personIds,
-        workspaceMemberId: currentWorkspaceMemberId,
-        workspaceId,
-      });
+    // Same two branches as `get-messages.service.ts`, decided first and fail-closed:
+    //  - UNSCOPED member: upstream path unchanged (`targetFilter` allowed, no person required);
+    //  - SCOPED member: in-scope persons only, `targetFilter` dropped, empty when none is in scope.
+    // Sentinel: `timeline-calendar-event.service.spec.ts`.
+    const isScoped = await this.countryScopeService.isMemberScoped({
+      workspaceMemberId: currentWorkspaceMemberId,
+      workspaceId,
+    });
 
-    if (personIdsInScope.length === 0) {
+    const personIdsInScope = isScoped
+      ? await this.countryScopeService.keepPersonIdsInScope({
+          personIds,
+          workspaceMemberId: currentWorkspaceMemberId,
+          workspaceId,
+        })
+      : personIds;
+    const effectiveTargetFilter = isScoped ? undefined : targetFilter;
+
+    if (personIdsInScope.length === 0 && !isDefined(effectiveTargetFilter)) {
       return {
         totalNumberOfCalendarEvents: 0,
         timelineCalendarEvents: [],
@@ -85,24 +91,18 @@ export class TimelineCalendarEventService {
     return this.workspaceOrmManager.executeInWorkspaceContext(async () => {
       const offset = (page - 1) * pageSize;
 
-      // Runs under a system auth context, which resolves no role, so without
-      // this the participant relations (person, workspaceMember) are read with
-      // empty permissions and denied for everyone. Channel-level redaction of
-      // title and description below is what gates the caller's access.
-      // TODO run under the caller's role via resolveRolePermissionConfig instead
-      // of bypassing, once roles that cannot read person degrade to a redacted
-      // timeline rather than a denied one
-      // https://github.com/twentyhq/core-team-issues/issues/2777
+      // System auth context resolves no role, so participant relations would be denied; channel-level redaction below gates access.
+      // TODO: run under the caller's role once unreadable person degrades to redaction https://github.com/twentyhq/core-team-issues/issues/2777
       const calendarEventRepository =
         this.workspaceOrmManager.getRepository<CalendarEventWorkspaceEntity>(
           'calendarEvent',
           { shouldBypassPermissionChecks: true },
         );
 
-      const where = isDefined(targetFilter)
+      const where = isDefined(effectiveTargetFilter)
         ? {
             calendarEventTargets: {
-              [targetFilter.fieldName]: targetFilter.recordId,
+              [effectiveTargetFilter.fieldName]: effectiveTargetFilter.recordId,
             },
           }
         : {
@@ -154,6 +154,7 @@ export class TimelineCalendarEventService {
       const callRecordingRepository =
         this.workspaceOrmManager.getRepository<CallRecordingWorkspaceEntity>(
           'callRecording',
+          { shouldBypassPermissionChecks: true },
         );
 
       const callRecordings = await callRecordingRepository.find({
@@ -211,7 +212,6 @@ export class TimelineCalendarEventService {
             })
           : [];
 
-      // Resolve current user's userWorkspaceId (workspaceMember → userId → userWorkspace)
       const workspaceMemberRepo =
         this.workspaceOrmManager.getRepository<WorkspaceMemberWorkspaceEntity>(
           'workspaceMember',

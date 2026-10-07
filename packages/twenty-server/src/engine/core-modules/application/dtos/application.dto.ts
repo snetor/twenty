@@ -12,9 +12,9 @@ import GraphQLJSON from 'graphql-type-json';
 import { UUIDScalarType } from 'src/engine/api/graphql/workspace-schema-builder/graphql-types/scalars';
 import { ApplicationRegistrationSummaryDTO } from 'src/engine/core-modules/application/application-registration/dtos/application-registration-summary.dto';
 import { ApplicationVariableEntityDTO } from 'src/engine/core-modules/application/application-variable/dtos/application-variable.dto';
-import { ApplicationState } from 'src/engine/core-modules/application/enums/application-state.enum';
 import { AgentDTO } from 'src/engine/metadata-modules/ai/ai-agent/dtos/agent.dto';
 import { CommandMenuItemDTO } from 'src/engine/metadata-modules/command-menu-item/dtos/command-menu-item.dto';
+import { SettingsMenuItemDTO } from 'src/engine/metadata-modules/settings-menu-item/dtos/settings-menu-item.dto';
 import { FrontComponentDTO } from 'src/engine/metadata-modules/front-component/dtos/front-component.dto';
 import { LogicFunctionDTO } from 'src/engine/metadata-modules/logic-function/dtos/logic-function.dto';
 import { ObjectMetadataDTO } from 'src/engine/metadata-modules/object-metadata/dtos/object-metadata.dto';
@@ -55,9 +55,6 @@ export class ApplicationDTO {
   @IsString()
   @Field()
   universalIdentifier: string;
-
-  @Field(() => ApplicationState)
-  state: ApplicationState;
 
   @IsOptional()
   @IsString()
@@ -106,6 +103,11 @@ export class ApplicationDTO {
   settingsCustomTabFrontComponentId?: string;
 
   @IsOptional()
+  @IsUUID()
+  @Field(() => UUIDScalarType, { nullable: true })
+  healthCheckLogicFunctionId?: string;
+
+  @IsOptional()
   @Field(() => RoleDTO, { nullable: true })
   defaultLogicFunctionRole?: RoleDTO;
 
@@ -117,6 +119,9 @@ export class ApplicationDTO {
 
   @Field(() => [CommandMenuItemDTO])
   commandMenuItems?: CommandMenuItemDTO[];
+
+  @Field(() => [SettingsMenuItemDTO], { nullable: true })
+  settingsMenuItems?: SettingsMenuItemDTO[];
 
   @Field(() => [LogicFunctionDTO])
   logicFunctions?: LogicFunctionDTO[];

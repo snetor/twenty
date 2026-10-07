@@ -1,25 +1,22 @@
 import { useCallback } from 'react';
 
 import { type FlatViewFilter } from '@/metadata-store/types/FlatViewFilter';
-import { type MetadataRequestResult } from '@/object-metadata/types/MetadataRequestResult.type';
+import { type MetadataRequestResult } from '@/object-metadata/types/MetadataRequestResult';
 import { usePerformViewEntityApiPersistOperation } from '@/views/hooks/internal/usePerformViewEntityApiPersistOperation';
 import { useMutation } from '@apollo/client/react';
 import { CrudOperationType } from 'twenty-shared/types';
 import { convertViewFilterValueToString, isDefined } from 'twenty-shared/utils';
 import {
   type CreateViewFilterMutationVariables,
-  type DeleteViewFilterMutationVariables,
   type DestroyViewFilterMutationVariables,
   type UpdateViewFilterMutationVariables,
   type ViewFilterFragmentFragment,
   CreateViewFilterDocument,
-  DeleteViewFilterDocument,
   DestroyViewFilterDocument,
   UpdateViewFilterDocument,
 } from '~/generated-metadata/graphql';
 
-// Normalize value like the fetch path (splitViewWithRelated) so store
-// comparisons against string-converted values stay consistent
+// Normalized like the fetch path (splitViewWithRelated) so store comparisons stay consistent
 const toFlatViewFilter = ({
   __typename,
   ...viewFilter
@@ -32,7 +29,6 @@ const toFlatViewFilter = ({
 export const usePerformViewFilterApiPersist = () => {
   const [createViewFilterMutation] = useMutation(CreateViewFilterDocument);
   const [updateViewFilterMutation] = useMutation(UpdateViewFilterDocument);
-  const [deleteViewFilterMutation] = useMutation(DeleteViewFilterDocument);
   const [destroyViewFilterMutation] = useMutation(DestroyViewFilterDocument);
 
   const { performViewEntityApiPersistBatchOperation } =
@@ -86,27 +82,6 @@ export const usePerformViewFilterApiPersist = () => {
     [updateViewFilterMutation, performViewEntityApiPersistBatchOperation],
   );
 
-  const performViewFilterApiDelete = useCallback(
-    async (
-      deleteViewFilterInputs: DeleteViewFilterMutationVariables[],
-    ): Promise<
-      MetadataRequestResult<
-        Awaited<ReturnType<typeof deleteViewFilterMutation>>[]
-      >
-    > =>
-      performViewEntityApiPersistBatchOperation({
-        inputs: deleteViewFilterInputs,
-        mutate: (variables) => deleteViewFilterMutation({ variables }),
-        applyResultToDraft: (fulfilledMutations, { removeFromDraft }) =>
-          removeFromDraft({
-            key: 'viewFilters',
-            itemIds: fulfilledMutations.map(({ input }) => input.input.id),
-          }),
-        operationType: CrudOperationType.DELETE,
-      }),
-    [deleteViewFilterMutation, performViewEntityApiPersistBatchOperation],
-  );
-
   const performViewFilterApiDestroy = useCallback(
     async (
       destroyViewFilterInputs: DestroyViewFilterMutationVariables[],
@@ -131,7 +106,6 @@ export const usePerformViewFilterApiPersist = () => {
   return {
     performViewFilterApiCreate,
     performViewFilterApiUpdate,
-    performViewFilterApiDelete,
     performViewFilterApiDestroy,
   };
 };

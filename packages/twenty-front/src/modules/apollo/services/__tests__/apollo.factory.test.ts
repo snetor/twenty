@@ -8,10 +8,7 @@ import { getSessionGeneration } from '@/auth/utils/getSessionGeneration';
 import { rotateSessionGeneration } from '@/auth/utils/rotateSessionGeneration';
 import { CUSTOM_WORKSPACE_APPLICATION_MOCK } from '@/object-metadata/hooks/__tests__/constants/CustomWorkspaceApplicationMock.test.constant';
 import {
-  AUTO_SELECT_FAST_MODEL_ID,
-  AUTO_SELECT_SMART_MODEL_ID,
-} from 'twenty-shared/constants';
-import {
+  AiModelTier,
   WorkspaceActivationStatus,
   WorkspaceDiscoverability,
 } from '~/generated-metadata/graphql';
@@ -63,6 +60,8 @@ const mockWorkspace = {
   currentBillingSubscription: null,
   workspaceMembersCount: 0,
   isPublicInviteLinkEnabled: false,
+  isCampaignClickTrackingEnabled: false,
+  isCampaignOpenTrackingEnabled: false,
   workspaceDiscoverability: WorkspaceDiscoverability.PUBLIC,
   isGoogleAuthEnabled: false,
   isMicrosoftAuthEnabled: false,
@@ -83,11 +82,10 @@ const mockWorkspace = {
   isTwoFactorAuthenticationEnforced: false,
   trashRetentionDays: 14,
   eventLogRetentionDays: 365 * 3,
-  fastModel: AUTO_SELECT_FAST_MODEL_ID,
-  smartModel: AUTO_SELECT_SMART_MODEL_ID,
-  routerModel: 'auto',
-  enabledAiModelIds: [],
-  useRecommendedModels: true,
+  aiChatModelTier: AiModelTier.fast,
+  aiAgentModelTier: AiModelTier.fast,
+  isAutoModelSelectionEnabled: true,
+  aiModelIdByTier: {},
   isInternalMessagesImportEnabled: false,
   workspaceCustomApplication: CUSTOM_WORKSPACE_APPLICATION_MOCK,
   workspaceCustomApplicationId: CUSTOM_WORKSPACE_APPLICATION_MOCK.id,
@@ -276,8 +274,7 @@ describe('ApolloFactory', () => {
     }
   }, 10000);
 
-  // fetch normalises header names, so assert case-insensitively rather than
-  // depending on the casing the mock happens to expose.
+  // fetch normalises header names.
   const readHeader = (
     headers: Record<string, string>,
     name: string,
@@ -303,8 +300,7 @@ describe('ApolloFactory', () => {
     expect(readHeader(headers, 'X-App-Version')).toBe('1.0.0');
   });
 
-  // The session cookie is issued and refreshed server-side, so a rejection is
-  // the end of the session rather than something the client can retry.
+  // The session cookie is server-managed, so a rejection ends the session.
   it('should sign out on an unauthenticated response', async () => {
     fetchMock.mockResponse(UNAUTHENTICATED_RESPONSE);
     mockOnUnauthenticatedError.mockImplementation(clearSessionGeneration);

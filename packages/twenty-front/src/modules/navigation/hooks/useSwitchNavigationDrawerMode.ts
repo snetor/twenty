@@ -1,3 +1,4 @@
+import { useIsMobile } from 'twenty-ui/utilities';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { SettingsPath } from 'twenty-shared/types';
 
@@ -24,6 +25,7 @@ import { useNavigateSettings } from '~/hooks/useNavigateSettings';
 import { isAiChatPath } from '~/utils/isAiChatPath';
 
 export const useSwitchNavigationDrawerMode = () => {
+  const isMobile = useIsMobile();
   const location = useLocation();
   const navigate = useNavigate();
   const navigateSettings = useNavigateSettings();
@@ -64,7 +66,9 @@ export const useSwitchNavigationDrawerMode = () => {
 
     if (isSettingsDrawer) {
       setCurrentMobileNavigationDrawer('main');
-      setIsNavigationDrawerExpanded(navigationDrawerExpandedMemorized);
+      if (isMobile) {
+        setIsNavigationDrawerExpanded(navigationDrawerExpandedMemorized);
+      }
       navigate(
         getNavigationDrawerHomeDestination({
           memorizedUrl: navigationMemorizedUrl,
@@ -86,8 +90,7 @@ export const useSwitchNavigationDrawerMode = () => {
     switchToNewChat();
   };
 
-  // The AI mode also covers the chat history listed next to another page, so it
-  // is the chat page rather than the active mode that makes a click a no-op.
+  // AI mode also lists chat history beside other pages, so only the chat page makes a click a no-op.
   const switchNavigationDrawerMode = (mode: NavigationDrawerActiveTab) => {
     switch (mode) {
       case NAVIGATION_DRAWER_TABS.NAVIGATION_MENU:
@@ -105,10 +108,7 @@ export const useSwitchNavigationDrawerMode = () => {
         switchToAiChat();
         break;
       case NAVIGATION_DRAWER_TABS.SETTINGS:
-        // The mobile settings drawer outlives the route that opened it, a
-        // browser back out of settings for one, so the page rather than the
-        // drawer says whether there is anywhere left to go. Desktop has no
-        // such split: there the two are the same thing.
+        // The mobile settings drawer can outlive its route (browser back), so check the page, not the drawer.
         if (isSettingsPage) {
           return;
         }

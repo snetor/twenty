@@ -3,6 +3,7 @@ import {
   type GlobalAvailability,
   type SingleRecordAvailability,
   type workflowAiAgentActionSchema,
+  type workflowClassifyActionSchema,
   type workflowCodeActionSchema,
   type workflowCreateCalendarEventActionSchema,
   type workflowCreateRecordActionSchema,
@@ -25,6 +26,7 @@ import {
   type workflowRunStateSchema,
   type workflowRunStatusSchema,
   type workflowRunStepStatusSchema,
+  type workflowSendChatMessageActionSchema,
   type workflowSendEmailActionSchema,
   type workflowTriggerSchema,
   type workflowUpdateRecordActionSchema,
@@ -42,6 +44,9 @@ export type WorkflowSendEmailAction = z.infer<
 >;
 export type WorkflowDraftEmailAction = z.infer<
   typeof workflowDraftEmailActionSchema
+>;
+export type WorkflowSendChatMessageAction = z.infer<
+  typeof workflowSendChatMessageActionSchema
 >;
 export type WorkflowCreateCalendarEventAction = z.infer<
   typeof workflowCreateCalendarEventActionSchema
@@ -75,6 +80,9 @@ export type WorkflowIteratorAction = z.infer<
   typeof workflowIteratorActionSchema
 >;
 export type WorkflowAiAgentAction = z.infer<typeof workflowAiAgentActionSchema>;
+export type WorkflowClassifyAction = z.infer<
+  typeof workflowClassifyActionSchema
+>;
 export type WorkflowEmptyAction = z.infer<typeof workflowEmptyActionSchema>;
 
 export type WorkflowAction =
@@ -82,6 +90,7 @@ export type WorkflowAction =
   | WorkflowLogicFunctionAction
   | WorkflowSendEmailAction
   | WorkflowDraftEmailAction
+  | WorkflowSendChatMessageAction
   | WorkflowCreateCalendarEventAction
   | WorkflowCreateRecordAction
   | WorkflowUpdateRecordAction
@@ -94,6 +103,7 @@ export type WorkflowAction =
   | WorkflowFormAction
   | WorkflowHttpRequestAction
   | WorkflowAiAgentAction
+  | WorkflowClassifyAction
   | WorkflowIteratorAction
   | WorkflowDelayAction
   | WorkflowEmptyAction;
@@ -163,7 +173,7 @@ export type Workflow = {
   versions: Array<
     Pick<WorkflowVersion, 'id' | 'status' | 'name' | 'createdAt'>
   >;
-  lastPublishedVersionId: string;
+  lastPublishedVersionId: string | null;
   statuses: Array<WorkflowStatus> | null;
 };
 

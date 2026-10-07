@@ -1,3 +1,4 @@
+import { NavigationButton } from '@/ui/input/components/NavigationButton';
 import { currentWorkspaceState } from '@/auth/states/currentWorkspaceState';
 import { useObjectMetadataItemById } from '@/object-metadata/hooks/useObjectMetadataItemById';
 import { mapRLSOperandToRecordFilterOperand } from '@/object-record/record-filter/utils/mapRLSOperandToRecordFilterOperand';
@@ -18,11 +19,10 @@ import {
   isDefined,
   isRecordFilterValueValid,
 } from 'twenty-shared/utils';
-import { Button } from 'twenty-ui/input';
-import { themeCssVariables } from 'twenty-ui/theme-constants';
+import { themeCssVariables } from 'twenty-ui/theme';
 import { useQuery } from '@apollo/client/react';
+import { checkIfBillingEntitlementIsEnabledOnWorkspace } from '@/workspace/utils/checkIfBillingEntitlementIsEnabledOnWorkspace';
 import {
-  type BillingEntitlement,
   BillingEntitlementKey,
   FindOneAgentDocument,
 } from '~/generated-metadata/graphql';
@@ -56,14 +56,11 @@ export const SettingsRolePermissionsObjectLevelObjectForm = ({
     objectId: objectMetadataId,
   });
 
-  const workspaceBillingEntitlements = currentWorkspace?.billingEntitlements;
-
   const isRLSBillingEntitlementEnabled =
-    workspaceBillingEntitlements?.some(
-      (entitlement: BillingEntitlement) =>
-        entitlement.key === BillingEntitlementKey.RLS &&
-        entitlement.value === true,
-    ) ?? false;
+    checkIfBillingEntitlementIsEnabledOnWorkspace(
+      BillingEntitlementKey.RLS,
+      currentWorkspace,
+    );
 
   const objectMetadataItem = objectMetadata.objectMetadataItem;
 
@@ -157,14 +154,13 @@ export const SettingsRolePermissionsObjectLevelObjectForm = ({
           label={t`2. Set ${objectLabelPlural} permissions`}
           onBack={() => navigate(previousStepPath)}
           trailing={
-            <Button
-              title={t`Finish`}
-              variant="primary"
-              size="small"
-              accent="blue"
-              to={isFinishDisabled ? undefined : finishButtonPath}
+            <NavigationButton
+              size="sm"
+              to={finishButtonPath}
               disabled={isFinishDisabled}
-            />
+              variant="solid"
+              color="accent"
+            >{t`Finish`}</NavigationButton>
           }
         />
       }

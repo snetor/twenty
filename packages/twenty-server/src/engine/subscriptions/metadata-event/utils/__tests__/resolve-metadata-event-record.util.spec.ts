@@ -1,6 +1,6 @@
 import { SOURCE_LOCALE } from 'twenty-shared/translations';
 
-import { type EffectiveEntityI18nContext } from 'src/engine/metadata-modules/utils/effective-entity-i18n-context.type';
+import { type EffectiveEntityI18nContext } from 'src/engine/metadata-modules/overrides/types/effective-entity-i18n-context.type';
 import { resolveMetadataEventRecord } from 'src/engine/subscriptions/metadata-event/utils/resolve-metadata-event-record.util';
 
 const buildI18nContext = (
@@ -10,6 +10,9 @@ const buildI18nContext = (
   i18nInstance: { _: (messageId: string) => `translated:${messageId}` },
   isStandardApp: true,
   applicationCatalog: undefined,
+  workspaceCustomApplicationUniversalIdentifier:
+    'workspace-custom-application-universal-identifier',
+  ownerApplicationUniversalIdentifier: undefined,
   ...overrides,
 });
 
@@ -40,8 +43,6 @@ describe('resolveMetadataEventRecord', () => {
     expect(resolved.isPinned).toBe(true);
   });
 
-  // The whole point of resolving at delivery: an override is workspace-authored
-  // text, so it wins over the catalog rather than being hashed against it.
   it('should prefer an override over the translated base value', () => {
     const resolved = resolveMetadataEventRecord({
       metadataName: 'pageLayoutTab',
@@ -84,9 +85,7 @@ describe('resolveMetadataEventRecord', () => {
 
     expect(resolved.name).toBe('My custom view');
   });
-  // Regression: delivery strips `overrides`, so anything it does not apply is
-  // lost. The publisher used to apply every overridable property, not just the
-  // translatable ones.
+  // Delivery strips `overrides`, so any it does not apply is lost
   it('should apply an override on a non-translatable property', () => {
     const resolved = resolveMetadataEventRecord({
       metadataName: 'pageLayoutTab',
@@ -129,9 +128,6 @@ describe('resolveMetadataEventRecord', () => {
     expect(resolved).not.toHaveProperty('overrides');
   });
 
-  // viewField is the one overridable entity with nothing translatable. Its
-  // overrides used to be flattened by the publisher instead, which meant two
-  // mechanisms resolving the same thing for different entities.
   it('should apply overrides for an entity that has nothing translatable', () => {
     const resolved = resolveMetadataEventRecord({
       metadataName: 'viewField',

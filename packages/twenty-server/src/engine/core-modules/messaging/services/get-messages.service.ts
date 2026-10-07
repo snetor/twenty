@@ -35,27 +35,31 @@ export class GetMessagesService {
     // en contexte système : le filtre du choke-point ORM ne s'y applique pas. Le périmètre
     // est donc posé à la main, au seul endroit qui les couvre toutes.
     //
-    // 🔴 À RELIRE AVANT D'ALLUMER `IS_MESSAGE_CALENDAR_TARGET_READ_ENABLED`. La v2.39.0 a
-    // introduit `targetFilter`, qui sélectionne les threads par l'enregistrement cible
-    // (`messageThreadTarget.<fieldName> = recordId`) et NON par les personnes. Notre
-    // périmètre, lui, ne porte que sur `personIds`. Tant que ce drapeau est éteint —
-    // son seul `true` du dépôt est dans le seeder de développement, donc il est absent
-    // d'un workspace réel — `resolveTargetFilter` rend `undefined` et le cloisonnement
-    // reste complet. L'allumer sans étendre le périmètre à `targetFilter` ouvrirait
-    // l'onglet Emails d'un enregistrement hors portée.
-    //
-    // Effet de bord assumé de l'early-return ci-dessous : avec le drapeau allumé, un
-    // membre dont aucune personne liée n'est dans sa portée ne verrait aucun thread, même
-    // ceux que `targetFilter` aurait légitimement remontés. Plus restrictif que l'amont,
-    // donc sûr — mais c'est la fonctionnalité qui tombe, pas la confidentialité.
-    const personIdsInScope =
-      await this.countryScopeService.keepPersonIdsInScope({
-        personIds,
-        workspaceMemberId,
-        workspaceId,
-      });
+    // Two branches, decided first (fail-closed: if the scope cannot be resolved this throws and
+    // nothing is read; a member that cannot be found counts as scoped and gets nothing):
+    //  - UNSCOPED member (all countries, or a workspace without scope fields): the upstream path,
+    //    unchanged — upstream's `targetFilter` (v2.45 removed
+    //    IS_MESSAGE_CALENDAR_TARGET_READ_ENABLED, so it exists for every workspace) selects
+    //    threads by TARGET RECORD, and no person is required for it.
+    //  - SCOPED member: the person-based selection only, `targetFilter` dropped. Otherwise an
+    //    out-of-scope company with one in-scope contact exposes all of its threads (trap 3 of
+    //    twenty-fork-security-checks.md). Empty when no related person is in scope.
+    // Sentinel: `get-messages.service.spec.ts`.
+    const isScoped = await this.countryScopeService.isMemberScoped({
+      workspaceMemberId,
+      workspaceId,
+    });
 
-    if (personIdsInScope.length === 0) {
+    const personIdsInScope = isScoped
+      ? await this.countryScopeService.keepPersonIdsInScope({
+          personIds,
+          workspaceMemberId,
+          workspaceId,
+        })
+      : personIds;
+    const effectiveTargetFilter = isScoped ? undefined : targetFilter;
+
+    if (personIdsInScope.length === 0 && !isDefined(effectiveTargetFilter)) {
       return {
         totalNumberOfThreads: 0,
         timelineThreads: [],
@@ -69,7 +73,7 @@ export class GetMessagesService {
         workspaceId,
         offset,
         pageSize,
-        targetFilter,
+        effectiveTargetFilter,
       );
 
     if (!messageThreads) {

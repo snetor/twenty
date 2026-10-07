@@ -1,9 +1,12 @@
+import { isDefined } from 'twenty-shared/utils';
 import { styled } from '@linaria/react';
 import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react/macro';
-import { Button, LightButton } from 'twenty-ui/input';
-import { themeCssVariables } from 'twenty-ui/theme-constants';
+import { LightButton } from 'twenty-ui/components';
+import { Button } from 'twenty-ui/primitives/input';
+import { themeCssVariables } from 'twenty-ui/theme';
 
+import { serializePlainTextAsAdvancedTextEditorDocument } from '@/advanced-text-editor/utils/serializePlainTextAsAdvancedTextEditorDocument';
 import { getAiChatSuggestedPrompts } from '@/ai/components/suggested-prompts/getAiChatSuggestedPrompts';
 import { useAiChatSuggestedPromptsContext } from '@/ai/hooks/useAiChatSuggestedPromptsContext';
 import { useStageAiChatPreprompt } from '@/ai/hooks/useStageAiChatPreprompt';
@@ -69,7 +72,9 @@ export const AiChatSuggestedPrompts = ({
 
   const handleClick = (suggestedPrompt: SuggestedPrompt) => {
     stageAiChatPreprompt({
-      text: resolveMessage(pickRandom(suggestedPrompt.prompts)),
+      serializedDocument: serializePlainTextAsAdvancedTextEditorDocument(
+        resolveMessage(pickRandom(suggestedPrompt.prompts)),
+      ),
       mode: suggestedPrompt.mode ?? 'PREFILL',
       draftKey: currentAiChatThread ?? AGENT_CHAT_NEW_THREAD_DRAFT_KEY,
     });
@@ -85,19 +90,28 @@ export const AiChatSuggestedPrompts = ({
           isCentered ? (
             <Button
               key={suggestedPrompt.id}
-              Icon={suggestedPrompt.Icon}
-              title={resolveMessage(suggestedPrompt.label)}
-              variant="secondary"
+              startIcon={
+                isDefined(suggestedPrompt.Icon) ? (
+                  <suggestedPrompt.Icon />
+                ) : undefined
+              }
               onClick={() => handleClick(suggestedPrompt)}
-            />
+              variant="outline"
+            >
+              {resolveMessage(suggestedPrompt.label)}
+            </Button>
           ) : (
             <LightButton
               key={suggestedPrompt.id}
-              Icon={suggestedPrompt.Icon}
-              title={resolveMessage(suggestedPrompt.label)}
-              accent="secondary"
+              startIcon={
+                isDefined(suggestedPrompt.Icon) ? (
+                  <suggestedPrompt.Icon />
+                ) : undefined
+              }
               onClick={() => handleClick(suggestedPrompt)}
-            />
+            >
+              {resolveMessage(suggestedPrompt.label)}
+            </LightButton>
           ),
         )}
       </StyledPromptList>

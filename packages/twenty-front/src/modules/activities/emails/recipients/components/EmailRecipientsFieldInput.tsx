@@ -1,3 +1,5 @@
+import { type EmailRecipientSuggestion } from '@/activities/emails/recipients/types/EmailRecipientSuggestion';
+import { ToastOnQueryErrorEffect } from '@/apollo/components/ToastOnQueryErrorEffect';
 import { pointerIntersection } from '@dnd-kit/collision';
 import { useDroppable } from '@dnd-kit/react';
 import { styled } from '@linaria/react';
@@ -16,7 +18,7 @@ import {
 } from 'react';
 import { flushSync } from 'react-dom';
 import { isDefined } from 'twenty-shared/utils';
-import { themeCssVariables } from 'twenty-ui/theme-constants';
+import { themeCssVariables } from 'twenty-ui/theme';
 import { useDebouncedCallback } from 'use-debounce';
 
 import { EMAIL_RECIPIENT_DND_TYPE } from '@/activities/emails/recipients/constants/EmailRecipientDndType';
@@ -27,10 +29,7 @@ import {
 import { EmailRecipientSuggestionsDropdownContent } from '@/activities/emails/recipients/components/EmailRecipientSuggestionsDropdownContent';
 import { useEmailRecipientsField } from '@/activities/emails/recipients/hooks/useEmailRecipientsField';
 import { useEmailRecipientsResolution } from '@/activities/emails/recipients/hooks/useEmailRecipientsResolution';
-import {
-  type EmailRecipientSuggestion,
-  useEmailRecipientSuggestions,
-} from '@/activities/emails/recipients/hooks/useEmailRecipientSuggestions';
+import { useEmailRecipientSuggestions } from '@/activities/emails/recipients/hooks/useEmailRecipientSuggestions';
 import { type EmailComposerContextRecord } from '@/activities/emails/recipients/types/EmailComposerContextRecord';
 import { type EmailRecipient } from '@/activities/emails/recipients/types/EmailRecipient';
 import { type EmailRecipientsFieldId } from '@/activities/emails/recipients/types/EmailRecipientsFieldId';
@@ -53,12 +52,9 @@ import { FocusComponentType } from '@/ui/utilities/focus/types/FocusComponentTyp
 import { useHotkeysOnFocusedElement } from '@/ui/utilities/hotkey/hooks/useHotkeysOnFocusedElement';
 import { useAtomComponentStateCallbackState } from '@/ui/utilities/state/jotai/hooks/useAtomComponentStateCallbackState';
 import { useAtomComponentStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomComponentStateValue';
-import { useWorkspaceSurfaceScopedComponentInstanceId } from '@/ui/layout/hooks/useWorkspaceSurfaceScopedComponentInstanceId';
 
 const SUGGESTIONS_SEARCH_DEBOUNCE_MS = 300;
 
-// The field sits inside a bordered composer row, so it carries no chrome of its
-// own; the drop-target tint is the only surface it paints.
 const StyledRowContainer = styled.div<{ $isDropTarget: boolean }>`
   align-content: flex-start;
   align-items: center;
@@ -105,8 +101,7 @@ const StyledInput = styled.input`
 
 type EmailRecipientsFieldInputProps = {
   fieldId: EmailRecipientsFieldId;
-  // Indices being dragged out of this field, or null when the drag started
-  // elsewhere.
+  // null when the drag started in another field.
   draggedSourceIndices: number[] | null;
   label: string;
   recipients: EmailRecipient[];
@@ -128,9 +123,7 @@ export const EmailRecipientsFieldInput = ({
 }: EmailRecipientsFieldInputProps) => {
   const instanceId = useId();
   const focusId = `email-recipients-field-${instanceId}`;
-  const suggestionsDropdownId = useWorkspaceSurfaceScopedComponentInstanceId(
-    `${focusId}-suggestions`,
-  );
+  const suggestionsDropdownId = `${focusId}-suggestions`;
 
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -203,7 +196,7 @@ export const EmailRecipientsFieldInput = ({
     recipients,
   });
 
-  const { suggestions } = useEmailRecipientSuggestions({
+  const { suggestions, error } = useEmailRecipientSuggestions({
     searchInput: isEditing ? '' : suggestionsSearchInput,
     excludedRecipientKeys: excludedSuggestionKeys,
     contextRecord,
@@ -243,8 +236,7 @@ export const EmailRecipientsFieldInput = ({
 
   const getChipId = (chipIndex: number) => `${focusId}-chip-${chipIndex}`;
 
-  // Gaps at either end of the dragged run put the chips back exactly where they
-  // came from, so marking them would promise a reorder that cannot happen.
+  // Gaps at either end of the dragged run are no-op drops, so marking them would promise a reorder.
   const isNoOpDropGap = (gapIndex: number) => {
     if (draggedSourceIndices === null || draggedSourceIndices.length === 0) {
       return false;
@@ -630,33 +622,36 @@ export const EmailRecipientsFieldInput = ({
   }
 
   return (
-    <FormFieldInputContainer>
-      <Dropdown
-        dropdownId={suggestionsDropdownId}
-        dropdownPlacement="bottom-start"
-        dropdownOffset={{ y: 4 }}
-        disableClickForClickableComponent
-        clickableComponentWidth="100%"
-        onClose={resetSelectedItem}
-        clickableComponent={
-          <StyledRowContainer
-            ref={droppableRef}
-            $isDropTarget={isActiveDropField}
-            data-drop-target={isActiveDropField}
-            onMouseDown={handleRowMouseDown}
-          >
-            {rowChildren}
-          </StyledRowContainer>
-        }
-        dropdownComponents={
-          <EmailRecipientSuggestionsDropdownContent
-            suggestions={suggestions}
-            selectableListInstanceId={suggestionsDropdownId}
-            focusId={suggestionsDropdownId}
-            onPick={handlePickSuggestion}
-          />
-        }
-      />
-    </FormFieldInputContainer>
+    <>
+      <ToastOnQueryErrorEffect error={error} />
+      <FormFieldInputContainer>
+        <Dropdown
+          dropdownId={suggestionsDropdownId}
+          dropdownPlacement="bottom-start"
+          dropdownOffset={{ y: 4 }}
+          disableClickForClickableComponent
+          clickableComponentWidth="100%"
+          onClose={resetSelectedItem}
+          clickableComponent={
+            <StyledRowContainer
+              ref={droppableRef}
+              $isDropTarget={isActiveDropField}
+              data-drop-target={isActiveDropField}
+              onMouseDown={handleRowMouseDown}
+            >
+              {rowChildren}
+            </StyledRowContainer>
+          }
+          dropdownComponents={
+            <EmailRecipientSuggestionsDropdownContent
+              suggestions={suggestions}
+              selectableListInstanceId={suggestionsDropdownId}
+              focusId={suggestionsDropdownId}
+              onPick={handlePickSuggestion}
+            />
+          }
+        />
+      </FormFieldInputContainer>
+    </>
   );
 };

@@ -1,3 +1,10 @@
+jest.mock(
+  '@/onboarding/effect-components/WorkspaceSetupChatSidePanelEffect',
+  () => ({
+    WorkspaceSetupChatSidePanelEffect: () => null,
+  }),
+);
+
 import { act, render, screen, waitFor } from '@testing-library/react';
 import { useEffect } from 'react';
 import {
@@ -44,6 +51,10 @@ jest.mock('@/side-panel/components/SidePanelForDesktop', () => ({
 
 jest.mock('@/command-menu/components/CommandMenuForMobile', () => ({
   CommandMenuForMobile: () => null,
+}));
+
+jest.mock('@/log-console/components/LogConsole', () => ({
+  LogConsole: () => null,
 }));
 
 jest.mock('@/side-panel/routing/components/SidePanelPathUrlSyncEffect', () => ({
@@ -93,8 +104,7 @@ describe('MainAppLayoutWithSidePanel', () => {
     );
 
     expect(await screen.findByText('record index page')).toBeInTheDocument();
-    // Hosted above the routes, the provider still reads the matched leaf's
-    // params: react-router shares one params object across a matched branch.
+    // react-router shares one params object across a matched branch, so the provider above the routes reads leaf params
     expect(mockSeenParams.at(-1)?.objectNamePlural).toBe('companies');
 
     act(() => {

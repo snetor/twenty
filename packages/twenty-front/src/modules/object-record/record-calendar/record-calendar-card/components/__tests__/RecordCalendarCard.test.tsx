@@ -35,16 +35,6 @@ jest.mock('@/ui/layout/dropdown/hooks/useOpenDropdown', () => ({
   useOpenDropdown: () => ({ openDropdown: jest.fn() }),
 }));
 jest.mock(
-  '@/object-record/record-field-list/contexts/RecordFieldsScopeContext',
-  () => ({
-    RecordFieldsScopeContextProvider: ({
-      children,
-    }: {
-      children: React.ReactNode;
-    }) => children,
-  }),
-);
-jest.mock(
   '@/object-record/record-calendar/record-calendar-card/anchored-portal/components/RecordCalendarCardCellHoveredPortal',
   () => ({ RecordCalendarCardCellHoveredPortal: () => null }),
 );
@@ -77,14 +67,14 @@ jest.mock('@/object-record/record-card/components/RecordCard', () => ({
     </button>
   ),
 }));
-jest.mock('twenty-ui/layout', () => ({
-  AnimatedEaseInOut: ({
+jest.mock('twenty-ui/primitives/layout', () => ({
+  Collapsible: ({
     children,
-    isOpen,
+    isExpanded,
   }: {
     children: React.ReactNode;
-    isOpen: boolean;
-  }) => (isOpen ? children : null),
+    isExpanded: boolean;
+  }) => (isExpanded ? children : null),
 }));
 
 describe('RecordCalendarCard', () => {

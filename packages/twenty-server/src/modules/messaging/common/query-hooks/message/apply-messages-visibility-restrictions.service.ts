@@ -32,6 +32,7 @@ export class ApplyMessagesVisibilityRestrictionsService {
     messages: MessageWorkspaceEntity[],
     workspaceId: string,
     userId?: string,
+    applicationId?: string,
   ) {
     const authContext = buildSystemAuthContext(workspaceId);
 
@@ -40,6 +41,7 @@ export class ApplyMessagesVisibilityRestrictionsService {
         const messageChannelMessageAssociationRepository =
           this.workspaceOrmManager.getRepository<MessageChannelMessageAssociationWorkspaceEntity>(
             'messageChannelMessageAssociation',
+            { shouldBypassPermissionChecks: true },
           );
 
         const messageChannelMessagesAssociations =
@@ -130,6 +132,26 @@ export class ApplyMessagesVisibilityRestrictionsService {
               if (connectedAccounts.length > 0) {
                 continue;
               }
+            }
+          }
+
+          // Same bypass as above, via the application owning the connection; email connections carry no
+          // applicationId, so this only matches channels the calling application created
+          if (isDefined(applicationId)) {
+            const connectedAccounts =
+              await this.connectedAccountRepository.find({
+                where: {
+                  applicationId,
+                  workspaceId,
+                  messageChannels: {
+                    id: In(messageChannels.map((channel) => channel.id)),
+                  },
+                },
+                relations: { messageChannels: true },
+              });
+
+            if (connectedAccounts.length > 0) {
+              continue;
             }
           }
 

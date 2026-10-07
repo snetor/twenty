@@ -7,8 +7,30 @@ modification s'accroche au code amont, et ce qui casse quand l'amont bouge.
 Il se met à jour **dans la même pull request** que la modification qu'il décrit. Un fichier de
 carte en retard est pire qu'absent : il fait chercher au mauvais endroit.
 
-> **État décrit** : fork sur `twenty/v2.39.0`.
-> Mesure de l'écart avec l'amont : `git diff --stat twenty/v2.39.0 HEAD`.
+> **État décrit** : fork sur `twenty/v2.45.6`.
+> Mesure de l'écart avec l'amont : `git diff --stat twenty/v2.45.6 HEAD`.
+>
+> **2.39 -> 2.45.6 (2026-10-07), in English:** two conflicts only, both in files already listed
+> below (`workspace-repository.ts`, `navigate-app-tool.ts`). Every Snetor hook survived. One anchor
+> moved: for `kind === 'update'`, `runMutation()` now delegates to the private `performMutation()`
+> through `runWithValidationRules()`; the write filter call lives in `performMutation()`, under the
+> same `if (!rowLevelPermissionsApplied)`. Other kinds still call `performMutation()` directly.
+> Upstream removed `createPermissionBypassingQueryBuilder`; `createQueryBuilderForOwnInserts` must
+> keep mirroring `createQueryBuilder` (it now also passes `isRecordSharingEnabled`).
+>
+> **Security-review fixes on the same upgrade (2026-10-07):**
+> 1. Upstream deleted `IS_MESSAGE_CALENDAR_TARGET_READ_ENABLED`: a `targetFilter` now exists for
+>    every workspace with the target objects and selects threads/events by target record, past
+>    the person scope. `get-messages.service.ts` and `timeline-calendar-event.service.ts` now drop it
+>    for scoped members (`CountryScopeService.isMemberScoped`), decided FIRST and fail-closed: an
+>    unscoped member (all countries, or a workspace without scope fields) takes the upstream path
+>    unchanged, no person required; a scoped member gets the person scope only, empty when no
+>    related person is in scope. Trap 3 of the private runbook is therefore no longer a flag to keep
+>    off but a guard to keep in place. (A first version kept the person early return for everyone and
+>    emptied upstream's "manual company targets without a related person" integration tests.)
+> 2. `applyWriteRowLevelPermissions()` now applies the Snetor filter too. A bulk write whose
+>    filter traverses a relation reports `rowLevelPermissionsApplied: true`, and `performMutation`
+>    skipped the filter on that path (present on `main` before this upgrade).
 >
 > **Ce que la montée 2.30 → 2.39 a changé pour ce fichier**, et c'est le résumé le plus
 > utile qu'il porte : le cloisonnement est passé de **cinq points d'application dispersés à
@@ -174,12 +196,13 @@ repli sur `countryCode` ; allow-list `COUNTRY_AGNOSTIC_OBJECTS` (`country`, `pro
 `workspaceMember`, `salesperson`, `salespersonCountry`, `dashboard`) ; table `SELF_OWNED_FILTERS` ;
 puis **`denyAll()` en default-deny**.
 
-**Patchs dans du code amont — DEUX, tous deux dans `twenty-orm/repository/workspace-repository.ts` :**
+**Patchs dans du code amont — TROIS ancrages (`onBeforeExecute`, `performMutation`, `applyWriteRowLevelPermissions`), tous dans `twenty-orm/repository/workspace-repository.ts` :**
 
 | Point d'ancrage | Ce qu'il couvre | Fragilité |
 |---|---|---|
 | `onBeforeExecute()` — un appel après `applyRowLevelPermissionPredicates` | **toute la LECTURE.** `createQueryBuilder()` injecte ce hook dans chaque builder de lecture : `find`, `getCount()`, le groupBy du Kanban (via `applyRowLevelPermissions()`), les relations imbriquées | 🟢 hook d'un contexte, interface publique |
-| `runMutation()` — un appel sous la même condition `if (!rowLevelPermissionsApplied)` que l'amont | **toute l'ÉCRITURE.** update, delete, soft-delete, restore | 🟢 méthode publique |
+| `runMutation()` -> `performMutation()` (since 2.45: the call sits in `performMutation()`) — un appel sous la même condition `if (!rowLevelPermissionsApplied)` que l'amont | **toute l'ÉCRITURE.** update, delete, soft-delete, restore | 🟢 méthode publique |
+| `applyWriteRowLevelPermissions()` — un appel après `applyRowLevelPermissionPredicates` | **ÉCRITURE EN MASSE à travers une relation.** `buildMutationQueryBuilder` l'appelle sur la sous-requête d'ids puis annonce `rowLevelPermissionsApplied: true`, donc `performMutation` ne pose rien : ce point d'ancrage est le seul filtre de cette voie | 🟢 méthode publique |
 
 Plus la méthode privée `applyCountryPermissionFilterPredicate()` qui les sert, ajoutée au même
 fichier.
@@ -300,8 +323,8 @@ via `CountryScopeService.keepPersonIdsInScope`.
 
 | Fichier | Nature du patch | Fragilité |
 |---|---|---|
-| `core-modules/messaging/services/get-messages.service.ts` | injection au constructeur + bloc `keepPersonIdsInScope` + early-return + **3 substitutions** `personIds` → `personIdsInScope` | 🔴 substitutions dispersées |
-| `core-modules/calendar/timeline-calendar-event.service.ts` | idem, avec `currentWorkspaceMemberId` comme identité + substitutions dans le `where`, le retour anticipé et 2 `relatedPersonIds` | 🔴 idem. L'amont y a réécrit 517 lignes à la v2.39.0 |
+| `core-modules/messaging/services/get-messages.service.ts` | injection au constructeur + bloc `keepPersonIdsInScope` + early-return + **3 substitutions** `personIds` → `personIdsInScope` | 🔴 substitutions dispersées. **Since 2.45:** `isMemberScoped` first (fail-closed): unscoped = upstream path (`targetFilter` allowed, no person early return), scoped = person scope + `effectiveTargetFilter` dropped |
+| `core-modules/calendar/timeline-calendar-event.service.ts` | idem, avec `currentWorkspaceMemberId` comme identité + substitutions dans le `where`, le retour anticipé et 2 `relatedPersonIds` | 🔴 idem. L'amont y a réécrit 517 lignes à la v2.39.0  **Since 2.45:** same two branches (`isMemberScoped` first, `effectiveTargetFilter`) before the `where` |
 | `core-modules/tool/tools/navigate-tool/navigate-app-tool.ts` | injection + signature élargie + renommages `selectColumns` → `baseSelectColumns` et `records` → `allRecords` + `.filter(isScopeInScope(...))` | 🔴 **le patch le plus intrusif du fork** |
 | `core-modules/messaging/timeline-messaging.module.ts` | `CountryScopeModule,` dans `imports:` | 🟢 stable |
 | `core-modules/calendar/timeline-calendar-event.module.ts` | idem | 🟢 stable |
@@ -358,6 +381,10 @@ après un merge.**
 | `auth/utils/__tests__/get-microsoft-apis-oauth-scopes.spec.ts` | que les scopes Graph demandés restent ceux consentis dans Entra |
 | `api/common/common-query-runners/common-create-many-query-runner/__tests__/snetor-create-readback.spec.ts` | that a creation reads its own inserts back outside the portfolio filter, and an upsert does not |
 | `api/common/common-query-runners/__tests__/common-merge-many-query-runner-scope-path.spec.ts` | that the native merge never writes `scopePath` with the user's permissions, and writes it in system context only after the user's update succeeded |
+| `core-modules/messaging/services/__tests__/get-messages.service.spec.ts` (`targetFilter` block) | that a scoped member never gets upstream's selection by target record (Emails tab) |
+| `core-modules/calendar/__tests__/timeline-calendar-event.service.spec.ts` | same guard, Calendar tab |
+| `test/integration/graphql/suites/timeline-from-object-record-scoped.integration-spec.ts` | integration: a scoped member gets no thread and no event from a company target without an in-scope person (an all-countries control reads them). **Needs Postgres/Redis**; it creates and removes the custom field `workspaceMember.allowedCountries`. The upstream `timeline-from-object-record.integration-spec.ts` is untouched and covers the unscoped member |
+| `twenty-orm/repository/__tests__/workspace-repository-country-filter.spec.ts` (bulk write block) | that the relational bulk-write path (`applyWriteRowLevelPermissions`) applies the Snetor filter, for update, delete, soft-delete and restore |
 
 Elles étaient cinq avant la v2.39.0 : celles du select builder et des trois builders de mutation
 ont fusionné, parce que les points d'application ont fusionné.
@@ -381,7 +408,7 @@ déployer — le détail est dans son en-tête et dans `modules/twenty/main.tf` 
 Si l'une échoue après un merge : **un patch a sauté. Ne pas continuer, ne pas la réparer en
 ajustant l'attente.** Retrouver où l'accroche a disparu.
 
-### L'inventaire des tests du fork — 13 fichiers, 153 cas
+### L'inventaire des tests du fork — 17 suites jest (+ 1 integration spec) (mesure du 2026-10-07, v2.45.6)
 
 Mesure du 2026-09-15, sur la branche de montée v2.39.0 :
 
@@ -403,6 +430,7 @@ src/engine/core-modules/country-code-derivation/utils/__tests__/derive-country-c
 src/engine/core-modules/country-code-derivation/services/__tests__/country-code-from-relation.service.spec.ts
 src/engine/core-modules/tool/tools/navigate-tool/__tests__/navigate-app-tool.spec.ts
 src/engine/core-modules/messaging/services/__tests__/get-messages.service.spec.ts
+src/engine/core-modules/calendar/__tests__/timeline-calendar-event.service.spec.ts          ← sentinel (2026-10-07)
 src/engine/api/graphql/.../group-by/services/__tests__/group-by-with-records-country-filter.spec.ts  ← sentinelle
 src/engine/core-modules/auth/services/create-message-channel.service.spec.ts              ← sentinelle
 src/engine/core-modules/auth/services/create-calendar-channel.service.spec.ts             ← sentinelle
@@ -427,6 +455,9 @@ Quatre choses qu'un humain doit relire à l'œil après chaque montée :
 
 1. to 3. **The three traps of chantier 4**, and how to check each: see
    `docs/live/runbooks/twenty-fork-security-checks.md` in `snetor/client-matrix` (private).
+   Trap 3 changed on 2026-10-07: upstream deleted the flag, so the guard is now unconditional
+   (`effectiveTargetFilter`). Check after each upgrade that both services still call it and that
+   their two sentinels are green. The unscoped branch must NOT require a related person: upstream's integration tests "manual company targets without a related person" depend on it.
 4. **La résurrection de `external-contributor-pr-auto-draft.yaml`.**
 
 ---
@@ -531,6 +562,7 @@ sérieusement.
 | `danger-js` | `The job has exceeded the maximum execution time of 5m0s` — il analyse le diff, ici 9 752 fichiers | Rien. Mécanique sur une PR de merge |
 | `renderer-sb-test` | `The job was not started because it repeatedly failed to be acquired (5 attempts)` — le runner GitHub n'a jamais démarré | Relancer si on y tient. C'est de l'infrastructure |
 | `server-integration-test (N)` | Instable | Relancer une fois avant de conclure |
+| `server-test (N)` red while every suite is green | An upstream **orphan snapshot** (a `.snap` without its spec): `jest --ci` exits 1 on "snapshot file obsolete". Seen at v2.45.6 (#27158). Check by running one passing spec locally with `--ci` | Delete the orphan `.snap` in its own commit; drop that commit when upstream's spec lands |
 
 ⚠️ **Le label ne suffit pas à relancer.** Le workflow lit
 `github.event.pull_request.labels.*.name`, c'est-à-dire le **payload de l'événement d'origine**.

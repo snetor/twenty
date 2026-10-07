@@ -3,6 +3,7 @@ import {
   MetadataReadability,
   MetadataWritability,
   ObjectOpenRecordIn,
+  ObjectSharingReach,
 } from 'twenty-shared/types';
 
 import { type UniversalFlatObjectMetadata } from 'src/engine/workspace-manager/workspace-migration/universal-flat-entity/types/universal-flat-object-metadata.type';
@@ -36,6 +37,9 @@ export const fromObjectManifestToUniversalFlatObjectMetadata = ({
     isUICreatable: objectManifest.isUICreatable ?? true,
     writability: objectManifest.writability ?? MetadataWritability.OPEN,
     readability: objectManifest.readability ?? MetadataReadability.OPEN,
+    readabilityParentFieldUniversalIdentifiers:
+      objectManifest.readabilityParentFieldUniversalIdentifiers ?? null,
+    sharingReach: objectManifest.sharingReach ?? ObjectSharingReach.WORKSPACE,
     isAuditLogged: true,
     isSearchable: objectManifest.isSearchable ?? true,
     duplicateCriteria: null,
@@ -44,6 +48,7 @@ export const fromObjectManifestToUniversalFlatObjectMetadata = ({
     fieldUniversalIdentifiers: [],
     indexMetadataUniversalIdentifiers: [],
     searchFieldMetadataUniversalIdentifiers: [],
+    navigationMenuItemUniversalIdentifiers: [],
     commandMenuItemUniversalIdentifiers: [],
     objectPermissionUniversalIdentifiers: [],
     fieldPermissionUniversalIdentifiers: [],

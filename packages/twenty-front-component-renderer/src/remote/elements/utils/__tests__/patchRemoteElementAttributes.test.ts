@@ -1,13 +1,34 @@
 import '@/remote/generated/remote-elements';
 
+import { installClassAttributeAccessors } from '@/polyfills/dom/utils/installClassAttributeAccessors';
+import { installStylePropertyOnRemoteElements } from '@/remote/elements/utils/installStylePropertyOnRemoteElements';
+import { resolveRemoteElementPrototypes } from '@/remote/elements/utils/resolveRemoteElementPrototypes';
+
 import { patchRemoteElementAttributes } from '../patchRemoteElementAttributes';
 
-const createHtmlDivElement = (): HTMLElement =>
+type RemoteElementWithPropertyUpdater = HTMLElement & {
+  updateRemoteProperty: (propertyName: string, value?: unknown) => void;
+};
+
+type RemoteSvgElement = RemoteElementWithPropertyUpdater & {
+  viewBox?: string;
+  strokeWidth?: string;
+};
+
+const createHtmlDivElement = (): RemoteElementWithPropertyUpdater =>
   document.createElement('html-div');
+
+const createHtmlSvgElement = (): RemoteSvgElement =>
+  document.createElement('html-svg');
 
 describe('patchRemoteElementAttributes', () => {
   beforeAll(() => {
+    installStylePropertyOnRemoteElements();
     patchRemoteElementAttributes();
+    installClassAttributeAccessors({
+      elementPrototype: Element.prototype,
+      remoteElementPrototypes: resolveRemoteElementPrototypes(),
+    });
   });
 
   describe('getAttribute on property-mapped attributes', () => {
@@ -151,6 +172,253 @@ describe('patchRemoteElementAttributes', () => {
       element.removeAttribute('class');
 
       expect(element.getAttributeNames()).toEqual(['id']);
+    });
+  });
+
+  describe('className attribute alias', () => {
+    it('should store a className attribute as the class attribute', () => {
+      const element = createHtmlDivElement();
+
+      element.setAttribute('className', 'from-react-18');
+
+      expect(element.getAttribute('class')).toBe('from-react-18');
+      expect(element.getAttribute('className')).toBe('from-react-18');
+      expect(element.hasAttribute('className')).toBe(true);
+      expect(element.className).toBe('from-react-18');
+      expect(element.getAttributeNames()).toEqual(['class']);
+    });
+
+    it('should forward a className attribute to the host as the className property', () => {
+      const element = createHtmlDivElement();
+      const updateRemoteProperty = jest.spyOn(element, 'updateRemoteProperty');
+
+      element.setAttribute('className', 'from-react-18');
+
+      expect(updateRemoteProperty).toHaveBeenCalledTimes(1);
+      expect(updateRemoteProperty).toHaveBeenCalledWith(
+        'className',
+        'from-react-18',
+      );
+    });
+
+    it('should clear the class attribute when removing the className alias', () => {
+      const element = createHtmlDivElement();
+
+      element.setAttribute('className', 'from-react-18');
+
+      const updateRemoteProperty = jest.spyOn(element, 'updateRemoteProperty');
+
+      element.removeAttribute('className');
+
+      expect(element.getAttribute('class')).toBeNull();
+      expect(element.hasAttribute('className')).toBe(false);
+      expect(updateRemoteProperty).toHaveBeenCalledTimes(1);
+      expect(updateRemoteProperty).toHaveBeenCalledWith('className', undefined);
+    });
+  });
+
+  describe('camelCase remote property names written as attributes', () => {
+    it('should store a camelCase property name under its kebab-case attribute', () => {
+      const element = createHtmlSvgElement();
+
+      element.setAttribute('viewBox', '0 0 24 24');
+
+      expect(element.getAttribute('view-box')).toBe('0 0 24 24');
+      expect(element.getAttribute('viewBox')).toBe('0 0 24 24');
+      expect(element.hasAttribute('viewBox')).toBe(true);
+      expect(element.viewBox).toBe('0 0 24 24');
+      expect(element.getAttributeNames()).toEqual(['view-box']);
+    });
+
+    it('should assign the camelCase remote property that remote-dom forwards', () => {
+      const element = createHtmlSvgElement();
+
+      element.setAttribute('strokeWidth', '2');
+
+      expect(element.strokeWidth).toBe('2');
+      expect(element.getAttribute('stroke-width')).toBe('2');
+    });
+
+    it('should clear the property when removing the camelCase attribute', () => {
+      const element = createHtmlSvgElement();
+
+      element.setAttribute('viewBox', '0 0 24 24');
+      element.removeAttribute('viewBox');
+
+      expect(element.getAttribute('viewBox')).toBeNull();
+      expect(element.hasAttribute('view-box')).toBe(false);
+      expect(element.viewBox).toBeUndefined();
+    });
+
+    it('should leave attributes that are not remote properties untouched', () => {
+      const element = createHtmlSvgElement();
+
+      element.setAttribute('data-icon', 'lock');
+
+      expect(element.getAttribute('data-icon')).toBe('lock');
+      expect(element.getAttributeNames()).toEqual(['data-icon']);
+    });
+  });
+
+  describe('remote properties read through attribute methods', () => {
+    it('should read a string property that React or Preact assigned directly', () => {
+      const element =
+        createHtmlDivElement() as RemoteElementWithPropertyUpdater &
+          Record<string, unknown>;
+
+      element.role = 'combobox';
+      element['aria-label'] = 'Account';
+
+      expect(element.getAttribute('role')).toBe('combobox');
+      expect(element.hasAttribute('role')).toBe(true);
+      expect(element.getAttribute('aria-label')).toBe('Account');
+    });
+
+    it('should serialize a true aria-hidden property the way the page renders it', () => {
+      const element =
+        createHtmlDivElement() as RemoteElementWithPropertyUpdater &
+          Record<string, unknown>;
+
+      element['aria-hidden'] = true;
+
+      expect(element.getAttribute('aria-hidden')).toBe('true');
+    });
+
+    it('should treat a false aria-hidden property like a missing attribute', () => {
+      const element =
+        createHtmlDivElement() as RemoteElementWithPropertyUpdater &
+          Record<string, unknown>;
+
+      element['aria-hidden'] = false;
+
+      expect(element.getAttribute('aria-hidden')).toBeNull();
+      expect(element.hasAttribute('aria-hidden')).toBe(false);
+    });
+
+    it('should read back an aria-hidden attribute written as false', () => {
+      const element = createHtmlDivElement();
+
+      element.setAttribute('aria-hidden', 'false');
+
+      expect(element.getAttribute('aria-hidden')).toBe('false');
+      expect(element.hasAttribute('aria-hidden')).toBe(true);
+    });
+
+    it('should drop a stale aria-hidden attribute once the property is false', () => {
+      const element =
+        createHtmlDivElement() as RemoteElementWithPropertyUpdater &
+          Record<string, unknown>;
+
+      element.setAttribute('aria-hidden', 'true');
+      element['aria-hidden'] = false;
+
+      expect(element.getAttribute('aria-hidden')).toBeNull();
+      expect(element.getAttributeNames()).not.toContain('aria-hidden');
+    });
+
+    it('should list properties assigned directly among the attribute names', () => {
+      const element =
+        createHtmlDivElement() as RemoteElementWithPropertyUpdater &
+          Record<string, unknown>;
+
+      element.role = 'combobox';
+      element['aria-label'] = 'Account';
+
+      expect(element.getAttributeNames()).toEqual(['role', 'aria-label']);
+    });
+
+    it('should serialize boolean draggable values as true and false', () => {
+      const draggableElement = createHtmlDivElement();
+      const fixedElement = createHtmlDivElement();
+
+      draggableElement.draggable = true;
+      fixedElement.draggable = false;
+
+      expect(draggableElement.getAttribute('draggable')).toBe('true');
+      expect(fixedElement.getAttribute('draggable')).toBe('false');
+    });
+
+    it('should serialize boolean HTML attributes as present or absent', () => {
+      const button = document.createElement(
+        'html-button',
+      ) as RemoteElementWithPropertyUpdater & { disabled: boolean };
+
+      button.disabled = true;
+      expect(button.getAttribute('disabled')).toBe('');
+
+      button.disabled = false;
+      expect(button.hasAttribute('disabled')).toBe(false);
+    });
+
+    it('should report the live property instead of the attribute it replaced', () => {
+      const element =
+        createHtmlDivElement() as RemoteElementWithPropertyUpdater &
+          Record<string, unknown>;
+
+      element.setAttribute('aria-label', 'First label');
+      element['aria-label'] = 'Second label';
+
+      expect(element.getAttribute('aria-label')).toBe('Second label');
+    });
+
+    it('should read inline styles written through the style property', () => {
+      const element = createHtmlDivElement();
+
+      element.style.color = 'red';
+
+      expect(element.getAttribute('style')).toBe('color:red');
+    });
+
+    it('should drop a property assigned directly once its attribute is removed', () => {
+      const element = createHtmlDivElement();
+
+      element.id = 'account';
+      element.removeAttribute('id');
+
+      expect(element.getAttribute('id')).toBeNull();
+      expect(element.hasAttribute('id')).toBe(false);
+    });
+
+    it('should drop inline styles once the style attribute is removed', () => {
+      const element = createHtmlDivElement();
+
+      element.setAttribute('style', 'color: red');
+      element.removeAttribute('style');
+
+      expect(element.getAttribute('style')).toBeNull();
+    });
+
+    it('should restore an attribute value over a newer property', () => {
+      const element =
+        createHtmlDivElement() as RemoteElementWithPropertyUpdater &
+          Record<string, unknown>;
+
+      element.setAttribute('aria-label', 'First label');
+      element['aria-label'] = 'Second label';
+      element.setAttribute('aria-label', 'First label');
+
+      expect(element.getAttribute('aria-label')).toBe('First label');
+    });
+
+    it('should keep the checked attribute as the default checked state', () => {
+      const input = document.createElement(
+        'html-input',
+      ) as RemoteElementWithPropertyUpdater & { checked: boolean };
+
+      input.setAttribute('checked', '');
+      input.checked = false;
+
+      expect(input.getAttribute('checked')).toBe('');
+    });
+
+    it('should keep the selected attribute as the default selected state', () => {
+      const option = document.createElement(
+        'html-option',
+      ) as RemoteElementWithPropertyUpdater & { selected: boolean };
+
+      option.selected = true;
+
+      expect(option.hasAttribute('selected')).toBe(false);
     });
   });
 

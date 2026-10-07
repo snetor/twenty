@@ -72,7 +72,9 @@ export const useBuildRecordInputFromRLSPredicates = ({
     }
 
     let workspaceMemberFieldValue =
-      currentWorkspaceMemberRecord?.[workspaceMemberFieldMetadataItem.name];
+      currentWorkspaceMemberRecord?.[
+        getRecordInputFieldName(workspaceMemberFieldMetadataItem)
+      ];
 
     if (isCompositeFieldType(workspaceMemberFieldMetadataItem.type)) {
       if (!workspaceMemberSubFieldName) {
@@ -177,8 +179,6 @@ export const useBuildRecordInputFromRLSPredicates = ({
       }
     });
 
-    // Only process filters without rlsDynamicValue in buildRecordInputFromFilter
-    // Filters with rlsDynamicValue are already handled above
     const staticFilters = rlsPredicatesAsRecordFilters.filter(
       (filter) => !isDefined(filter.rlsDynamicValue),
     );

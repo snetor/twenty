@@ -5,7 +5,7 @@ import { useUpdateOneObjectMetadataItem } from '@/object-metadata/hooks/useUpdat
 import { type EnrichedObjectMetadataItem } from '@/object-metadata/types/EnrichedObjectMetadataItem';
 import { computeUpdatedNavigationMemorizedUrlAfterObjectNamePluralChange } from '@/settings/data-model/object-details/utils/computeUpdatedNavigationMemorizedUrlAfterObjectNamePluralChange';
 import { type SettingsDataModelObjectAboutFormValues } from '@/settings/data-model/validation-schemas/settingsDataModelObjectAboutFormSchema';
-import { useModal } from '@/ui/layout/modal/hooks/useModal';
+import { useDialog } from '@/ui/layout/dialog/hooks/useDialog';
 import { navigationMemorizedUrlState } from '@/ui/navigation/states/navigationMemorizedUrlState';
 import { useAtomStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomStateValue';
 import { useSetAtomState } from '@/ui/utilities/state/jotai/hooks/useSetAtomState';
@@ -15,7 +15,7 @@ import { TRANSLATABLE_PROPERTIES_BY_METADATA_NAME } from 'twenty-shared/i18n';
 import { SOURCE_LOCALE } from 'twenty-shared/translations';
 import { SettingsPath } from 'twenty-shared/types';
 import { isDefined } from 'twenty-shared/utils';
-import { parseThemeColor } from 'twenty-ui/utilities';
+import { getObjectColorWithFallback } from '@/object-metadata/utils/getObjectColorWithFallback';
 import { useLocaleOptions } from '~/localization/hooks/useLocaleOptions';
 import { MetadataTranslationsDocument } from '~/generated-metadata/graphql';
 import { useNavigateSettings } from '~/hooks/useNavigateSettings';
@@ -30,9 +30,6 @@ const OBJECT_TRANSLATABLE_PROPERTIES =
 type ObjectTranslatableProperty =
   (typeof OBJECT_TRANSLATABLE_PROPERTIES)[number];
 
-// The translate-vs-rename save state machine behind the About form: a label
-// edit made through a translation prompts for intent; every other save is a
-// plain canonical update.
 export const useSaveUpdateDataModelObjectAboutForm = ({
   objectMetadataItem,
   formConfig,
@@ -53,7 +50,7 @@ export const useSaveUpdateDataModelObjectAboutForm = ({
   );
   const { updateOneObjectMetadataItem } = useUpdateOneObjectMetadataItem();
   const apolloClient = useApolloClient();
-  const { openModal, closeModal } = useModal();
+  const { openDialog, closeDialog } = useDialog();
   const currentWorkspaceMember = useAtomStateValue(currentWorkspaceMemberState);
   const currentLocale = currentWorkspaceMember?.locale ?? SOURCE_LOCALE;
   const localeOptions = useLocaleOptions();
@@ -71,9 +68,7 @@ export const useSaveUpdateDataModelObjectAboutForm = ({
       isDefined(formConfig.formState.dirtyFields[property]),
     );
 
-  // Only dirty fields are ever sent: untouched values hold the viewer-locale
-  // resolved labels, and sending those back would silently turn a translation
-  // into a rename. Standard objects additionally cannot change their names.
+  // Only dirty fields are sent: untouched values hold viewer-locale labels, and sending them back would turn a translation into a rename
   const pickDirtyValues = (
     formValues: SettingsDataModelObjectAboutFormValues,
   ): Partial<SettingsDataModelObjectAboutFormValues> => {
@@ -131,10 +126,12 @@ export const useSaveUpdateDataModelObjectAboutForm = ({
         nameSingular: updatedObject?.data?.updateOneObject.nameSingular,
         ...(isCustomObject
           ? {
-              color: parseThemeColor(
-                updatedObject?.data?.updateOneObject.color ??
+              color: getObjectColorWithFallback({
+                ...objectMetadataItem,
+                color:
+                  updatedObject?.data?.updateOneObject.color ??
                   objectMetadataItem.color,
-              ),
+              }),
             }
           : {}),
       });
@@ -175,8 +172,7 @@ export const useSaveUpdateDataModelObjectAboutForm = ({
 
     const dirtyTranslatableProperties = pickDirtyTranslatableProperties();
 
-    // Editing a label the viewer sees through a translation is ambiguous:
-    // fix the translation, or rename the concept for every language? Ask.
+    // A label seen through a translation is ambiguous: fix the translation, or rename for every language?
     if (
       dirtyTranslatableProperties.length > 0 &&
       currentLocale !== SOURCE_LOCALE
@@ -204,7 +200,7 @@ export const useSaveUpdateDataModelObjectAboutForm = ({
 
       if (isEditingThroughTranslation) {
         setPendingFormValues(formValues);
-        openModal(TRANSLATION_INTENT_MODAL_ID);
+        openDialog(TRANSLATION_INTENT_MODAL_ID);
         return;
       }
     }
@@ -223,15 +219,11 @@ export const useSaveUpdateDataModelObjectAboutForm = ({
       property,
       value: pendingFormValues[property] ?? null,
     }));
-    // With label↔name sync on, the name fields were auto-derived from the
-    // label being translated (they are not editable directly in that state):
-    // a translation must not rename the API.
+    // With label/name sync on, the names derive from the translated label, and a translation must not rename the API
     const isPendingLabelSyncedWithName =
       pendingFormValues.isLabelSyncedWithName ?? isLabelSyncedWithName;
     const syncDerivedNameProperties: readonly string[] =
       isPendingLabelSyncedWithName ? ['nameSingular', 'namePlural'] : [];
-    // Unrelated dirty edits (icon, ...) ride along as canonical updates —
-    // only the label edits become locale-scoped.
     const dirtyNonTranslatableValues = Object.fromEntries(
       Object.entries(pickDirtyValues(pendingFormValues)).filter(
         ([key]) =>
@@ -246,12 +238,11 @@ export const useSaveUpdateDataModelObjectAboutForm = ({
       updatePayload: { ...dirtyNonTranslatableValues, translations },
     });
 
-    closeModal(TRANSLATION_INTENT_MODAL_ID);
+    closeDialog(TRANSLATION_INTENT_MODAL_ID);
     setPendingFormValues(null);
 
     if (updateResult.status === 'successful') {
-      // The form must reflect what was saved: the unchanged API names, not
-      // the ones the sync derived from the translated label.
+      // Reflect the unchanged API names, not the ones sync derived from the translated label
       formConfig.reset(
         isPendingLabelSyncedWithName
           ? { ...pendingFormValues, nameSingular, namePlural }
@@ -267,7 +258,7 @@ export const useSaveUpdateDataModelObjectAboutForm = ({
 
     const formValues = pendingFormValues;
 
-    closeModal(TRANSLATION_INTENT_MODAL_ID);
+    closeDialog(TRANSLATION_INTENT_MODAL_ID);
     setPendingFormValues(null);
     await saveAsRename(formValues);
   };

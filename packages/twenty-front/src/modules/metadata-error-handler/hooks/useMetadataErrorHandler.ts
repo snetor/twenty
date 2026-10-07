@@ -1,16 +1,17 @@
 import { type CombinedGraphQLErrors } from '@apollo/client/errors';
 import { t } from '@lingui/core/macro';
 
+import { getToastOptionsFromError } from '@/error-handler/utils/getToastOptionsFromError';
 import { classifyMetadataError } from '@/metadata-error-handler/utils/classifyMetadataError';
-import { useSnackBar } from '@/ui/feedback/snack-bar-manager/hooks/useSnackBar';
 import {
   type AllMetadataName,
   WorkspaceMigrationV2ExceptionCode,
 } from 'twenty-shared/metadata';
 import { CrudOperationType } from 'twenty-shared/types';
+import { useToast } from 'twenty-ui/components';
 
 export const useMetadataErrorHandler = () => {
-  const { enqueueErrorSnackBar } = useSnackBar();
+  const { enqueueToast } = useToast();
 
   const TRANSLATED_OPERATION_TYPE = {
     [CrudOperationType.CREATE]: t`create`,
@@ -53,6 +54,10 @@ export const useMetadataErrorHandler = () => {
     connectionProvider: t`connection provider`,
     searchFieldMetadata: t`search field metadata`,
     timelineActivityType: t`timeline activity type`,
+    settingsMenuItem: t`settings menu item`,
+    validationRule: t`validation rule`,
+    workflow: t`workflow`,
+    workflowVersion: t`workflow version`,
   } as const satisfies Record<AllMetadataName, string>;
 
   const handleMetadataError = (
@@ -72,7 +77,7 @@ export const useMetadataErrorHandler = () => {
 
     switch (classification.type) {
       case 'v1':
-        enqueueErrorSnackBar({ apolloError: classification.error });
+        enqueueToast(getToastOptionsFromError({ error: classification.error }));
         break;
 
       case 'v2-validation': {
@@ -83,8 +88,9 @@ export const useMetadataErrorHandler = () => {
         if (targetErrors.length > 0) {
           targetErrors.forEach((entityError) => {
             entityError.errors.forEach((validationError) =>
-              enqueueErrorSnackBar({
-                message:
+              enqueueToast({
+                variant: 'error',
+                children:
                   validationError.userFriendlyMessage ??
                   validationError.message,
               }),
@@ -103,8 +109,9 @@ export const useMetadataErrorHandler = () => {
             .map((metadataName) => TRANSLATED_METADATA_NAME[metadataName])
             .join(', ');
 
-          enqueueErrorSnackBar({
-            message: t`Failed to ${translatedOperationType} ${translatedMetadataName}. Related ${relatedEntityNames} validation failed. Please check your configuration and try again.`,
+          enqueueToast({
+            variant: 'error',
+            children: t`Failed to ${translatedOperationType} ${translatedMetadataName}. Related ${relatedEntityNames} validation failed. Please check your configuration and try again.`,
           });
         }
 
@@ -112,8 +119,9 @@ export const useMetadataErrorHandler = () => {
           targetErrors.length === 0 &&
           relatedFailingMetadataNames.length === 0
         ) {
-          enqueueErrorSnackBar({
-            message: t`Failed to ${translatedOperationType} ${translatedMetadataName}. Please try again.`,
+          enqueueToast({
+            variant: 'error',
+            children: t`Failed to ${translatedOperationType} ${translatedMetadataName}. Please try again.`,
           });
         }
         break;
@@ -127,7 +135,7 @@ export const useMetadataErrorHandler = () => {
             ? t`An internal error occurred while validating your changes. Please contact support.`
             : t`An internal error occurred while applying your changes. Please contact support and try again later.`;
 
-        enqueueErrorSnackBar({ message: errorMessage });
+        enqueueToast({ variant: 'error', children: errorMessage });
         break;
       }
     }

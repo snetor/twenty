@@ -18,12 +18,13 @@ import { type ApplicationExport } from 'src/engine/core-modules/application/appl
 import { ApplicationVersionValidationService } from 'src/engine/core-modules/application/application-package/application-version-validation.service';
 import { VERSION_REASON_TO_APPLICATION_EXCEPTION_CODE } from 'src/engine/core-modules/application/application-package/constants/version-reason-to-exception-code.constant';
 import { ApplicationRegistrationAssetService } from 'src/engine/core-modules/application/application-registration/application-registration-asset.service';
-import { ApplicationRegistrationService } from 'src/engine/core-modules/application/application-registration/application-registration.service';
+import { ApplicationRegistrationLookupService } from 'src/engine/core-modules/application/application-registration/application-registration-lookup/application-registration-lookup.service';
 import { ApplicationRegistrationSourceType } from 'src/engine/core-modules/application/application-registration/enums/application-registration-source-type.enum';
 import {
   ApplicationException,
   ApplicationExceptionCode,
 } from 'src/engine/core-modules/application/application.exception';
+import { ApplicationLookupService } from 'src/engine/core-modules/application/application-lookup/application-lookup.service';
 import { ApplicationService } from 'src/engine/core-modules/application/application.service';
 import { CacheLockService } from 'src/engine/core-modules/cache-lock/cache-lock.service';
 import { ThrottlerService } from 'src/engine/core-modules/throttler/throttler.service';
@@ -31,7 +32,6 @@ import { FileStorageService } from 'src/engine/core-modules/file-storage/service
 import { validateFilePath } from 'src/engine/core-modules/file-storage/utils/validate-file-path.util';
 import { type FileDTO } from 'src/engine/core-modules/file/dtos/file.dto';
 import { streamToBuffer } from 'src/utils/stream-to-buffer';
-import { type ApplicationRegistrationEntity } from 'src/engine/core-modules/application/application-registration/application-registration.entity';
 
 const APP_SYNC_LOCK_OPTIONS = { ttl: 60_000, ms: 500, maxRetries: 120 };
 
@@ -41,10 +41,11 @@ export class ApplicationDevelopmentService {
 
   constructor(
     private readonly applicationService: ApplicationService,
+    private readonly applicationLookupService: ApplicationLookupService,
     private readonly applicationSyncService: ApplicationSyncService,
     private readonly applicationManifestApplyService: ApplicationManifestApplyService,
     private readonly applicationManifestExportService: ApplicationManifestExportService,
-    private readonly applicationRegistrationService: ApplicationRegistrationService,
+    private readonly applicationRegistrationLookupService: ApplicationRegistrationLookupService,
     private readonly applicationRegistrationAssetService: ApplicationRegistrationAssetService,
     private readonly applicationVersionValidationService: ApplicationVersionValidationService,
     private readonly fileStorageService: FileStorageService,
@@ -64,15 +65,18 @@ export class ApplicationDevelopmentService {
     await this.throttlePerApplication(universalIdentifier, workspaceId);
 
     const applicationRegistration =
-      await this.findOwnedApplicationRegistrationOrThrow({
+      await this.applicationRegistrationLookupService.findOneOwnedByWorkspaceOrThrow(
+        {
+          universalIdentifier,
+          workspaceId,
+        },
+      );
+
+    const existing =
+      await this.applicationLookupService.findByUniversalIdentifier({
         universalIdentifier,
         workspaceId,
       });
-
-    const existing = await this.applicationService.findByUniversalIdentifier({
-      universalIdentifier,
-      workspaceId,
-    });
 
     if (existing) {
       return {
@@ -144,10 +148,12 @@ export class ApplicationDevelopmentService {
       );
     }
 
-    await this.findOwnedApplicationRegistrationOrThrow({
-      universalIdentifier: manifest.application.universalIdentifier,
-      workspaceId,
-    });
+    await this.applicationRegistrationLookupService.findOneOwnedByWorkspaceOrThrow(
+      {
+        universalIdentifier: manifest.application.universalIdentifier,
+        workspaceId,
+      },
+    );
 
     if (dryRun === true) {
       const { workspaceMigration } =
@@ -216,12 +222,11 @@ export class ApplicationDevelopmentService {
       );
     }
 
-    const application = await this.applicationService.findByUniversalIdentifier(
-      {
+    const application =
+      await this.applicationLookupService.findByUniversalIdentifier({
         universalIdentifier: applicationUniversalIdentifier,
         workspaceId,
-      },
-    );
+      });
 
     if (!isDefined(application)) {
       throw new ApplicationException(
@@ -246,17 +251,18 @@ export class ApplicationDevelopmentService {
     inferDeletionFromMissingEntities: boolean,
   ): Promise<WorkspaceMigrationDTO> {
     const applicationRegistration =
-      await this.findOwnedApplicationRegistrationOrThrow({
+      await this.applicationRegistrationLookupService.findOneOwnedByWorkspaceOrThrow(
+        {
+          universalIdentifier: manifest.application.universalIdentifier,
+          workspaceId,
+        },
+      );
+
+    const application =
+      await this.applicationLookupService.findByUniversalIdentifier({
         universalIdentifier: manifest.application.universalIdentifier,
         workspaceId,
       });
-
-    const application = await this.applicationService.findByUniversalIdentifier(
-      {
-        universalIdentifier: manifest.application.universalIdentifier,
-        workspaceId,
-      },
-    );
 
     if (!isDefined(application)) {
       throw new ApplicationException(
@@ -297,37 +303,6 @@ export class ApplicationDevelopmentService {
       APP_DEV_RATE_LIMIT_MAX,
       APP_DEV_RATE_LIMIT_WINDOW_MS,
     );
-  }
-
-  private async findOwnedApplicationRegistrationOrThrow({
-    universalIdentifier,
-    workspaceId,
-  }: {
-    universalIdentifier: string;
-    workspaceId: string;
-  }): Promise<ApplicationRegistrationEntity> {
-    const existingRegistration =
-      await this.applicationRegistrationService.findOneByUniversalIdentifierGlobal(
-        universalIdentifier,
-      );
-
-    if (!existingRegistration) {
-      throw new ApplicationException(
-        `No registration found for "${universalIdentifier}". Create one first with createApplicationRegistration.`,
-        ApplicationExceptionCode.APPLICATION_NOT_FOUND,
-      );
-    }
-
-    if (existingRegistration.ownerWorkspaceId !== workspaceId) {
-      throw new ApplicationException(
-        !isDefined(existingRegistration.ownerWorkspaceId)
-          ? `"${universalIdentifier}" is registered on this instance but claimed by no workspace. Claim its ownership before developing on it.`
-          : `"${universalIdentifier}" is registered to another workspace. Change the universalIdentifier in your manifest, or transfer the registration from the owning workspace.`,
-        ApplicationExceptionCode.FORBIDDEN,
-      );
-    }
-
-    return existingRegistration;
   }
 
   private async syncRegistrationMetadata(

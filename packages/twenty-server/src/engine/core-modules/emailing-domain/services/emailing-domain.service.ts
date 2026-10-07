@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { msg } from '@lingui/core/macro';
 
 import { isDefined } from 'twenty-shared/utils';
 
@@ -16,6 +17,7 @@ import {
   EmailingDomainException,
   EmailingDomainExceptionCode,
 } from 'src/engine/core-modules/emailing-domain/exceptions/emailing-domain.exception';
+import { DmarcRecordService } from 'src/engine/core-modules/emailing-domain/services/dmarc-record.service';
 import { UnsubscribeHostnameService } from 'src/engine/core-modules/emailing-domain/services/unsubscribe-hostname.service';
 import { WorkspaceEntity } from 'src/engine/core-modules/workspace/workspace.entity';
 import { InjectWorkspaceScopedRepository } from 'src/engine/twenty-orm/workspace-scoped-repository/inject-workspace-scoped-repository.decorator';
@@ -28,13 +30,22 @@ export class EmailingDomainService {
   constructor(
     @InjectWorkspaceScopedRepository(EmailingDomainEntity)
     private readonly emailingDomainRepository: WorkspaceScopedRepository<EmailingDomainEntity>,
-    // Domain is globally unique across workspaces, so existence checks need
-    // an unscoped repository
+    // Domain is globally unique, so existence checks need an unscoped repository.
+    // eslint-disable-next-line twenty/prefer-workspace-scoped-repository
     @InjectRepository(EmailingDomainEntity)
     private readonly globalEmailingDomainRepository: Repository<EmailingDomainEntity>,
     private readonly emailingDomainDriverFactory: EmailingDomainDriverFactory,
     private readonly unsubscribeHostnameService: UnsubscribeHostnameService,
+    private readonly dmarcRecordService: DmarcRecordService,
   ) {}
+
+  private async withDnsRecords(
+    emailingDomain: EmailingDomainEntity,
+  ): Promise<EmailingDomainEntity> {
+    return this.dmarcRecordService.withDnsRecord(
+      await this.unsubscribeHostnameService.withDnsRecords(emailingDomain),
+    );
+  }
 
   async createEmailingDomain(
     domain: string,
@@ -49,6 +60,11 @@ export class EmailingDomainService {
       throw new EmailingDomainException(
         'Emailing domain is already registered',
         EmailingDomainExceptionCode.EMAILING_DOMAIN_ALREADY_REGISTERED,
+        existingEmailingDomain.workspaceId === workspaceId
+          ? {
+              userFriendlyMessage: msg`Already registered in this workspace.`,
+            }
+          : {},
       );
     }
 
@@ -82,7 +98,7 @@ export class EmailingDomainService {
       provision: true,
     });
 
-    return this.unsubscribeHostnameService.withDnsRecords(
+    return this.withDnsRecords(
       await this.emailingDomainRepository.findOneOrFail(workspaceId, {
         where: { id: emailingDomain.id },
       }),
@@ -179,7 +195,7 @@ export class EmailingDomainService {
 
     return Promise.all(
       emailingDomains.map((emailingDomain) =>
-        this.unsubscribeHostnameService.withDnsRecords(emailingDomain),
+        this.withDnsRecords(emailingDomain),
       ),
     );
   }
@@ -222,7 +238,7 @@ export class EmailingDomainService {
       provision: true,
     });
 
-    return this.unsubscribeHostnameService.withDnsRecords(
+    return this.withDnsRecords(
       await this.emailingDomainRepository.findOneOrFail(workspaceId, {
         where: { id: emailingDomain.id },
       }),

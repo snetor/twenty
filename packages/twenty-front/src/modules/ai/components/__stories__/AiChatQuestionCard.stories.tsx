@@ -13,7 +13,7 @@ import { type AgentChatPendingQuestion } from '@/ai/types/AgentChatPendingQuesti
 import { styled } from '@linaria/react';
 import { MemoryRouterDecorator } from '~/testing/decorators/MemoryRouterDecorator';
 import { RootDecorator } from '~/testing/decorators/RootDecorator';
-import { SnackBarDecorator } from '~/testing/decorators/SnackBarDecorator';
+import { ToastDecorator } from '~/testing/decorators/ToastDecorator';
 
 const StyledContainer = styled.div`
   max-width: 400px;
@@ -23,7 +23,6 @@ const StyledContainer = styled.div`
 const INSTANCE_ID = 'agentChatQuestionCardStory';
 
 const singleQuestion: AgentChatPendingQuestion = {
-  messageId: 'assistant-1',
   toolCallId: 'call-1',
   questions: [
     {
@@ -43,7 +42,6 @@ const singleQuestion: AgentChatPendingQuestion = {
 };
 
 const multipleQuestions: AgentChatPendingQuestion = {
-  messageId: 'assistant-1',
   toolCallId: 'call-2',
   questions: [
     singleQuestion.questions[0],
@@ -59,7 +57,6 @@ const multipleQuestions: AgentChatPendingQuestion = {
 };
 
 const longQuestion: AgentChatPendingQuestion = {
-  messageId: 'assistant-1',
   toolCallId: 'call-3',
   questions: [
     {
@@ -78,7 +75,6 @@ const longQuestion: AgentChatPendingQuestion = {
 };
 
 const multiSelectQuestion: AgentChatPendingQuestion = {
-  messageId: 'assistant-1',
   toolCallId: 'call-4',
   questions: [
     {
@@ -120,7 +116,7 @@ const meta: Meta<typeof AiChatQuestionCard> = {
         </StoreSeeder>
       </AgentChatComponentInstanceContext.Provider>
     ),
-    SnackBarDecorator,
+    ToastDecorator,
     ComponentDecorator,
     MemoryRouterDecorator,
     RootDecorator,

@@ -39,8 +39,7 @@ export class ResendDriver implements EmailingDomainDriverInterface {
     private readonly unsubscribeContentService: UnsubscribeContentService,
   ) {}
 
-  // Resend has no per-workspace resources: domains are account-level and
-  // workspace attribution travels on each send as a tag.
+  // Resend domains are account-level; workspace attribution travels on each send as a tag.
   async provisionWorkspace(workspaceId: string): Promise<void> {
     this.logger.log(
       `No Resend resources to provision for workspace ${workspaceId}`,
@@ -128,7 +127,10 @@ export class ResendDriver implements EmailingDomainDriverInterface {
       );
     }
 
-    const unsubscribeBaseUrl = getUnsubscribeBaseUrl(input.emailingDomain);
+    const unsubscribeBaseUrl = getUnsubscribeBaseUrl(
+      input.emailingDomain,
+      input.sendKind,
+    );
     const emailToSend = this.unsubscribeContentService.addTo(
       input,
       unsubscribeBaseUrl,
@@ -164,6 +166,7 @@ export class ResendDriver implements EmailingDomainDriverInterface {
 
     return {
       messageId: id,
+      headerMessageId: await this.findHeaderMessageId(id),
       deliveredRecipients: {
         to: emailToSend.to,
         cc: emailToSend.cc ?? [],
@@ -189,7 +192,10 @@ export class ResendDriver implements EmailingDomainDriverInterface {
       );
     }
 
-    const unsubscribeBaseUrl = getUnsubscribeBaseUrl(input.emailingDomain);
+    const unsubscribeBaseUrl = getUnsubscribeBaseUrl(
+      input.emailingDomain,
+      input.sendKind,
+    );
     const batchToSend = this.unsubscribeContentService.addToBatch(
       input,
       unsubscribeBaseUrl,
@@ -232,14 +238,34 @@ export class ResendDriver implements EmailingDomainDriverInterface {
         const id = data?.[index]?.id;
 
         return isNonEmptyString(id)
-          ? { recipientIndex: index, messageId: id, errorMessage: null }
+          ? {
+              recipientIndex: index,
+              messageId: id,
+              headerMessageId: null,
+              errorMessage: null,
+            }
           : {
               recipientIndex: index,
               messageId: null,
+              headerMessageId: null,
               errorMessage: 'Resend returned no id for this destination',
             };
       }),
     };
+  }
+
+  private async findHeaderMessageId(emailId: string): Promise<string | null> {
+    const sentEmail = await this.resendApiClientService
+      .getSentEmail(emailId)
+      .catch(() => null);
+
+    const messageId = sentEmail?.message_id;
+
+    if (!isNonEmptyString(messageId)) {
+      return null;
+    }
+
+    return messageId.startsWith('<') ? messageId : `<${messageId}>`;
   }
 
   private async findOrCreateDomain(domainName: string): Promise<ResendDomain> {

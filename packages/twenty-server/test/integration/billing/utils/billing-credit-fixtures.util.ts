@@ -2,17 +2,11 @@ import { createClient, type RedisClientType } from 'redis';
 import { isDefined, isNonEmptyArray } from 'twenty-shared/utils';
 
 import { type BillingCreditGrantType } from 'src/engine/core-modules/billing/enums/billing-credit-grant-type.enum';
-import { type BillingUsageCacheService } from 'src/engine/core-modules/billing/services/billing-usage-cache.service';
+import { type SubscriptionStatus } from 'src/engine/core-modules/billing/enums/billing-subscription-status.enum';
 import { CacheStorageNamespace } from 'src/engine/core-modules/cache-storage/types/cache-storage-namespace.enum';
 import { buildAllowanceCounterKey } from 'src/engine/core-modules/usage-limit/utils/build-allowance-counter-key.util';
 
-import { getAppProviderByClassName } from 'test/integration/utils/get-app-provider-by-class-name.util';
-
-// The dev seeder gives every workspace a billingCustomer and an active
-// billingSubscription, but no subscription item, and no period. Rollover needs
-// the whole chain — subscription -> item -> product -> price with a
-// credit_amount — so these helpers finish the fixture and put the period where
-// the test wants it.
+// The dev seeder creates no subscription item or period; rollover needs subscription -> item -> product -> price
 export const TEST_STRIPE_CUSTOMER_ID = 'cus_default0';
 export const TEST_STRIPE_SUBSCRIPTION_ID = 'sub_default0';
 
@@ -25,7 +19,7 @@ export type CreditGrantRow = {
   amountMicro: number;
   type: BillingCreditGrantType;
   effectiveAt: Date;
-  expiresAt: Date;
+  expiresAt: Date | null;
   revokedAt: Date | null;
   reason: string | null;
   idempotencyKey: string | null;
@@ -35,8 +29,7 @@ export type CreditGrantRow = {
 const query = async <T>(sql: string, params: unknown[] = []): Promise<T[]> =>
   global.testDataSource.query(sql, params);
 
-// The billing seeds insert with orIgnore, so the customer and subscription
-// land on exactly one workspace and which one is not worth hardcoding.
+// Billing seeds insert with orIgnore, so which workspace holds them is not worth hardcoding
 export const getSeededBillingWorkspaceId = async (): Promise<string> => {
   const [row] = await query<{ workspaceId: string }>(
     `SELECT "workspaceId" FROM core."billingSubscription" WHERE "stripeSubscriptionId" = $1`,
@@ -145,7 +138,7 @@ export const insertCreditGrant = async ({
   amountMicro: number;
   type: BillingCreditGrantType;
   effectiveAt: Date;
-  expiresAt: Date;
+  expiresAt: Date | null;
   idempotencyKey?: string | null;
 }): Promise<string> => {
   const [row] = await query<{ id: string }>(
@@ -228,11 +221,6 @@ export const resetBillingCreditState = async (
     [workspaceId],
   );
 
-  const cache = getBillingUsageCacheService();
-
-  await cache.flushAvailableCredits(workspaceId);
-  await cache.flushCounterAdjustmentMarkers(workspaceId);
-
   const redis = await getRedisClient();
   const staleKeys = [
     ...(await redis.keys(`*{${workspaceId}}:quota:allowance:*`)),
@@ -244,7 +232,13 @@ export const resetBillingCreditState = async (
   }
 };
 
-export const getBillingUsageCacheService = (): BillingUsageCacheService =>
-  getAppProviderByClassName<BillingUsageCacheService>(
-    'BillingUsageCacheService',
+// Cancelling stops getCurrentBillingSubscription returning it without deleting rows the suite shares
+export const setSubscriptionStatus = async (
+  workspaceId: string,
+  status: SubscriptionStatus,
+): Promise<void> => {
+  await query(
+    `UPDATE "core"."billingSubscription" SET status = $2 WHERE "workspaceId" = $1`,
+    [workspaceId, status],
   );
+};

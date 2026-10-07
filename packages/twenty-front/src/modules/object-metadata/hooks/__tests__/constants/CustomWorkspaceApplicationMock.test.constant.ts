@@ -1,7 +1,4 @@
-import {
-  type Application,
-  ApplicationState,
-} from '~/generated-metadata/graphql';
+import { type Application } from '~/generated-metadata/graphql';
 
 export const CUSTOM_WORKSPACE_APPLICATION_MOCK = {
   id: 'dc75f982-35a2-4c1b-a63d-bd1131215377',
@@ -9,6 +6,7 @@ export const CUSTOM_WORKSPACE_APPLICATION_MOCK = {
   applicationVariables: [],
   frontComponents: [],
   commandMenuItems: [],
+  settingsMenuItems: [],
   availablePackages: {},
   canBeUninstalled: false,
   autoUpgrade: false,
@@ -18,5 +16,4 @@ export const CUSTOM_WORKSPACE_APPLICATION_MOCK = {
   logicFunctions: [],
   universalIdentifier: '66a698b6-f6c1-4d35-a6e7-20aeadc3cd95',
   version: '1.0.0',
-  state: ApplicationState.INSTALLED,
 } as const satisfies Application;

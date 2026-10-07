@@ -3,6 +3,7 @@ import {
   MetadataReadability,
   MetadataWritability,
   ObjectOpenRecordIn,
+  ObjectSharingReach,
 } from 'twenty-shared/types';
 import {
   capitalize,
@@ -77,6 +78,8 @@ export const fromCreateObjectInputToFlatObjectMetadataAndFlatFieldMetadatasToCre
       isUICreatable: true,
       writability: MetadataWritability.OPEN,
       readability: MetadataReadability.OPEN,
+      readabilityParentFieldUniversalIdentifiers: null,
+      sharingReach: ObjectSharingReach.WORKSPACE,
       isSystem: false,
       labelPlural: capitalize(createObjectInput.labelPlural),
       labelSingular: capitalize(createObjectInput.labelSingular),
@@ -93,6 +96,7 @@ export const fromCreateObjectInputToFlatObjectMetadataAndFlatFieldMetadatasToCre
       indexMetadataUniversalIdentifiers: [],
       searchFieldMetadataUniversalIdentifiers: [],
       pageLayoutUniversalIdentifiers: [],
+      navigationMenuItemUniversalIdentifiers: [],
       commandMenuItemUniversalIdentifiers: [],
       labelIdentifierFieldMetadataUniversalIdentifier,
       imageIdentifierFieldMetadataUniversalIdentifier: null,

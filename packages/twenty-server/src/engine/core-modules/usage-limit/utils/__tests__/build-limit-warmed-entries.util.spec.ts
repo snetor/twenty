@@ -1,9 +1,10 @@
 import { type LimitQuotaCounter } from 'src/engine/core-modules/usage-limit/types/limit-quota-counter.type';
-import { type QuotaConsumptionRow } from 'src/engine/core-modules/usage-limit/types/quota-consumption-row.type';
+import { type UsageConsumptionRow } from 'src/engine/core-modules/usage/types/usage-consumption-row.type';
 import { buildLimitWarmedEntries } from 'src/engine/core-modules/usage-limit/utils/build-limit-warmed-entries.util';
 import { buildPeriodGroupKey } from 'src/engine/core-modules/usage-limit/utils/build-period-group-key.util';
 import { UsageOperationType } from 'src/engine/core-modules/usage/enums/usage-operation-type.enum';
 import { UsageResourceType } from 'src/engine/core-modules/usage/enums/usage-resource-type.enum';
+import { UsageUnit } from 'src/engine/core-modules/usage/enums/usage-unit.enum';
 
 const NOW = new Date('2026-08-20T00:00:00.000Z').getTime();
 
@@ -11,6 +12,7 @@ const buildCounter = (
   overrides: Partial<LimitQuotaCounter> = {},
 ): LimitQuotaCounter => ({
   kind: 'limit',
+  isDefault: false,
   key: 'counter-key',
   limitValue: 1_000,
   meter: 'creditsUsedMicro',
@@ -25,9 +27,10 @@ const buildCounter = (
 });
 
 const buildRow = (
-  overrides: Partial<QuotaConsumptionRow> = {},
-): QuotaConsumptionRow => ({
+  overrides: Partial<UsageConsumptionRow> = {},
+): UsageConsumptionRow => ({
   operationType: UsageOperationType.AI_CHAT_TOKEN,
+  unit: UsageUnit.TOKEN,
   userWorkspaceId: 'user-1',
   apiKeyId: '',
   applicationId: '',
@@ -41,7 +44,7 @@ const buildRow = (
 
 const buildRowsByPeriod = (
   counter: LimitQuotaCounter,
-  rows: QuotaConsumptionRow[],
+  rows: UsageConsumptionRow[],
 ) => new Map([[buildPeriodGroupKey(counter), rows]]);
 
 describe('buildLimitWarmedEntries', () => {

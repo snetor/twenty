@@ -1,26 +1,23 @@
 import { type ConnectedAccount } from '@/accounts/types/ConnectedAccount';
 import { buildConnectedAccountSenderOptions } from '@/accounts/utils/buildConnectedAccountSenderOptions';
-import { canConnectedAccountSendEmail } from '@/accounts/utils/canConnectedAccountSendEmail';
 import { getMissingDraftEmailScopes } from '@/accounts/utils/hasMissingDraftEmailScopes';
 import { FormAdvancedTextFieldInput } from '@/advanced-text-editor/components/FormAdvancedTextFieldInput';
+import { useApolloCoreClient } from '@/object-metadata/hooks/useApolloCoreClient';
 import { FormMultiTextFieldInput } from '@/object-record/record-field/ui/form-types/components/FormMultiTextFieldInput';
 import { FormSelectFieldInput } from '@/object-record/record-field/ui/form-types/components/FormSelectFieldInput';
 import { FormTextFieldInput } from '@/object-record/record-field/ui/form-types/components/FormTextFieldInput';
-import { useApolloCoreClient } from '@/object-metadata/hooks/useApolloCoreClient';
 import { useMyConnectedAccounts } from '@/settings/accounts/hooks/useMyConnectedAccounts';
 import { useTriggerApisOAuth } from '@/settings/accounts/hooks/useTriggerApiOAuth';
+import { useHasPermissionFlag } from '@/settings/roles/hooks/useHasPermissionFlag';
 import { useSidePanelMenu } from '@/side-panel/hooks/useSidePanelMenu';
-import { Dropdown } from '@/ui/layout/dropdown/components/Dropdown';
+import { DropdownRoot } from '@/ui/layout/dropdown/components/DropdownRoot';
 import { DropdownContent } from '@/ui/layout/dropdown/components/DropdownContent';
-import { DropdownMenuItemsContainer } from '@/ui/layout/dropdown/components/DropdownMenuItemsContainer';
 import { GenericDropdownContentWidth } from '@/ui/layout/dropdown/constants/GenericDropdownContentWidth';
-import { useCloseDropdown } from '@/ui/layout/dropdown/hooks/useCloseDropdown';
 import { useAtomComponentStateValue } from '@/ui/utilities/state/jotai/hooks/useAtomComponentStateValue';
 import { WORKFLOW_STEP_CONNECTED_ACCOUNT_HANDLE } from '@/workflow/graphql/queries/workflowStepConnectedAccountHandle';
 import { useWorkflowWithCurrentVersion } from '@/workflow/hooks/useWorkflowWithCurrentVersion';
 import { workflowVisualizerWorkflowIdComponentState } from '@/workflow/states/workflowVisualizerWorkflowIdComponentState';
 import { type WorkflowEmailAction } from '@/workflow/types/WorkflowEmailAction';
-import { isStandaloneVariableString } from 'twenty-shared/workflow';
 import { WorkflowStepBody } from '@/workflow/workflow-steps/components/WorkflowStepBody';
 import { WorkflowStepFooter } from '@/workflow/workflow-steps/components/WorkflowStepFooter';
 import { WorkflowSendEmailAttachments } from '@/workflow/workflow-steps/workflow-actions/components/WorkflowSendEmailAttachments';
@@ -29,14 +26,23 @@ import { useEmailForm } from '@/workflow/workflow-steps/workflow-actions/hooks/u
 import { WorkflowVariablePicker } from '@/workflow/workflow-variables/components/WorkflowVariablePicker';
 import { useQuery } from '@apollo/client/react';
 import { t } from '@lingui/core/macro';
-import { useEffect, useState } from 'react';
-import { ConnectedAccountProvider, SettingsPath } from 'twenty-shared/types';
-import { getSendableEmailHandles, isDefined } from 'twenty-shared/utils';
-import { Callout } from 'twenty-ui/feedback';
-import { IconPlus } from 'twenty-ui/icon';
 import { isNonEmptyString } from '@sniptt/guards';
-import { Button } from 'twenty-ui/input';
-import { MenuItem } from 'twenty-ui/navigation';
+import { useEffect, useState } from 'react';
+import {
+  ConnectedAccountProvider,
+  EmailOperation,
+  SettingsPath,
+} from 'twenty-shared/types';
+import {
+  canConnectedAccountPerformEmailOperation,
+  getSendableEmailHandles,
+  isDefined,
+} from 'twenty-shared/utils';
+import { isStandaloneVariableString } from 'twenty-shared/workflow';
+import { Callout, Dropdown } from 'twenty-ui/components';
+import { IconPlus } from 'twenty-ui/icon';
+import { Button } from 'twenty-ui/primitives/input';
+import { PermissionFlagType } from '~/generated-metadata/graphql';
 import { useNavigateSettings } from '~/hooks/useNavigateSettings';
 
 type WorkflowEditActionEmailBaseProps = {
@@ -56,6 +62,9 @@ export const WorkflowEditActionEmailBase = ({
   actionOptions,
 }: WorkflowEditActionEmailBaseProps) => {
   const { triggerApisOAuth } = useTriggerApisOAuth();
+  const hasConnectedAccountsPermission = useHasPermissionFlag(
+    PermissionFlagType.CONNECTED_ACCOUNTS,
+  );
 
   const workflowVisualizerWorkflowId = useAtomComponentStateValue(
     workflowVisualizerWorkflowIdComponentState,
@@ -88,8 +97,6 @@ export const WorkflowEditActionEmailBase = ({
       inReplyTo: Boolean(action.settings.input.inReplyTo),
     };
   });
-
-  const { closeDropdown } = useCloseDropdown();
 
   const advancedOptionsDropdownId = `${action.id}-email-advanced-options`;
 
@@ -164,7 +171,12 @@ export const WorkflowEditActionEmailBase = ({
       : null;
 
   const sendableAccounts = [
-    ...myAccounts.filter(canConnectedAccountSendEmail),
+    ...myAccounts.filter((connectedAccount) =>
+      canConnectedAccountPerformEmailOperation({
+        connectedAccount,
+        operation: EmailOperation.SEND,
+      }),
+    ),
     ...(isDefined(otherAccount) ? [otherAccount] : []),
   ];
 
@@ -226,25 +238,34 @@ export const WorkflowEditActionEmailBase = ({
             onChange={handleSenderChange}
             VariablePicker={WorkflowVariablePicker}
             readonly={actionOptions.readonly}
-            callToActionButton={{
-              onClick: () => {
-                closeSidePanelMenu();
-                navigate(SettingsPath.NewAccount);
-              },
-              Icon: IconPlus,
-              text: t`Add account`,
-            }}
+            callToActionButton={
+              hasConnectedAccountsPermission
+                ? {
+                    onClick: () => {
+                      closeSidePanelMenu();
+                      navigate(SettingsPath.NewAccount);
+                    },
+                    Icon: IconPlus,
+                    text: t`Add account`,
+                  }
+                : undefined
+            }
           />
           {isDefined(missingScopes) && (
             <>
               <Callout
                 variant={'error'}
                 title={t`Missing email draft permission.`}
-                description={t`This account is connected, but we don't have permission to draft emails on your behalf yet. You'll be redirected to approve this access.`}
-                action={{
-                  label: t`Reauthorize`,
-                  onClick: handleReauthorize,
-                }}
+                description={
+                  hasConnectedAccountsPermission
+                    ? t`This account is connected, but we don't have permission to draft emails on your behalf yet. You'll be redirected to approve this access.`
+                    : t`Ask a workspace admin for the Sync Account permission to reconnect this account.`
+                }
+                action={
+                  hasConnectedAccountsPermission
+                    ? { label: t`Reauthorize`, onClick: handleReauthorize }
+                    : undefined
+                }
               />
             </>
           )}
@@ -304,62 +325,48 @@ export const WorkflowEditActionEmailBase = ({
             />
           )}
           {!actionOptions.readonly && hasAvailableAdvancedOptions && (
-            <Dropdown
-              dropdownId={advancedOptionsDropdownId}
-              dropdownPlacement="bottom-start"
-              clickableComponent={
-                <Button
-                  title={t`Advanced options`}
-                  variant="secondary"
-                  accent="default"
-                  size="small"
-                />
-              }
-              dropdownComponents={
-                <DropdownContent
-                  widthInPixels={GenericDropdownContentWidth.Medium}
-                >
-                  <DropdownMenuItemsContainer>
-                    {!visibleAdvancedFields.cc && (
-                      <MenuItem
-                        text={t`Add CC`}
-                        onClick={() => {
-                          setVisibleAdvancedFields((prev) => ({
-                            ...prev,
-                            cc: true,
-                          }));
-                          closeDropdown(advancedOptionsDropdownId);
-                        }}
-                      />
-                    )}
-                    {!visibleAdvancedFields.bcc && (
-                      <MenuItem
-                        text={t`Add BCC`}
-                        onClick={() => {
-                          setVisibleAdvancedFields((prev) => ({
-                            ...prev,
-                            bcc: true,
-                          }));
-                          closeDropdown(advancedOptionsDropdownId);
-                        }}
-                      />
-                    )}
-                    {!visibleAdvancedFields.inReplyTo && (
-                      <MenuItem
-                        text={t`Add In-Reply-To`}
-                        onClick={() => {
-                          setVisibleAdvancedFields((prev) => ({
-                            ...prev,
-                            inReplyTo: true,
-                          }));
-                          closeDropdown(advancedOptionsDropdownId);
-                        }}
-                      />
-                    )}
-                  </DropdownMenuItemsContainer>
-                </DropdownContent>
-              }
-            />
+            <DropdownRoot dropdownId={advancedOptionsDropdownId} type="menu">
+              <Dropdown.Trigger render={<Button size="sm" variant="outline" />}>
+                {t`Advanced options`}
+              </Dropdown.Trigger>
+              <DropdownContent
+                width={GenericDropdownContentWidth.Medium}
+                align="start"
+              >
+                <Dropdown.Section>
+                  {!visibleAdvancedFields.cc && (
+                    <Dropdown.ActionItem
+                      onClick={() => {
+                        setVisibleAdvancedFields((previousFields) => ({
+                          ...previousFields,
+                          cc: true,
+                        }));
+                      }}
+                    >{t`Add CC`}</Dropdown.ActionItem>
+                  )}
+                  {!visibleAdvancedFields.bcc && (
+                    <Dropdown.ActionItem
+                      onClick={() => {
+                        setVisibleAdvancedFields((previousFields) => ({
+                          ...previousFields,
+                          bcc: true,
+                        }));
+                      }}
+                    >{t`Add BCC`}</Dropdown.ActionItem>
+                  )}
+                  {!visibleAdvancedFields.inReplyTo && (
+                    <Dropdown.ActionItem
+                      onClick={() => {
+                        setVisibleAdvancedFields((previousFields) => ({
+                          ...previousFields,
+                          inReplyTo: true,
+                        }));
+                      }}
+                    >{t`Add In-Reply-To`}</Dropdown.ActionItem>
+                  )}
+                </Dropdown.Section>
+              </DropdownContent>
+            </DropdownRoot>
           )}
           <FormTextFieldInput
             label={t`Subject`}

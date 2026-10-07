@@ -5,8 +5,10 @@ import {
 } from '@/workflow/types/Workflow';
 import { getStepDefinitionOrThrow } from '@/workflow/utils/getStepDefinitionOrThrow';
 import { WorkflowEditActionAiAgent } from '@/workflow/workflow-steps/workflow-actions/ai-agent-action/components/WorkflowEditActionAiAgent';
+import { WorkflowEditActionClassify } from '@/workflow/workflow-steps/workflow-actions/classify-action/components/WorkflowEditActionClassify';
 import { WorkflowActionCode } from '@/workflow/workflow-steps/workflow-actions/code-action/components/WorkflowActionCode';
 import { WorkflowEditActionCreateCalendarEvent } from '@/workflow/workflow-steps/workflow-actions/components/WorkflowEditActionCreateCalendarEvent';
+import { WorkflowEditActionSendChatMessage } from '@/workflow/workflow-steps/workflow-actions/send-chat-message-action/components/WorkflowEditActionSendChatMessage';
 import { WorkflowEditActionCreateRecord } from '@/workflow/workflow-steps/workflow-actions/components/WorkflowEditActionCreateRecord';
 import { WorkflowEditActionDeleteRecord } from '@/workflow/workflow-steps/workflow-actions/components/WorkflowEditActionDeleteRecord';
 import { WorkflowEditActionEmpty } from '@/workflow/workflow-steps/workflow-actions/components/WorkflowEditActionEmpty';
@@ -141,6 +143,17 @@ export const WorkflowRunStepNodeDetail = ({
             />
           );
         }
+        case 'SEND_CHAT_MESSAGE': {
+          return (
+            <WorkflowEditActionSendChatMessage
+              key={stepId}
+              action={stepDefinition.definition}
+              actionOptions={{
+                readonly: true,
+              }}
+            />
+          );
+        }
         case 'CREATE_CALENDAR_EVENT': {
           return (
             <WorkflowEditActionCreateCalendarEvent
@@ -252,6 +265,17 @@ export const WorkflowRunStepNodeDetail = ({
         case 'AI_AGENT': {
           return (
             <WorkflowEditActionAiAgent
+              key={stepId}
+              action={stepDefinition.definition}
+              actionOptions={{
+                readonly: true,
+              }}
+            />
+          );
+        }
+        case 'CLASSIFY': {
+          return (
+            <WorkflowEditActionClassify
               key={stepId}
               action={stepDefinition.definition}
               actionOptions={{

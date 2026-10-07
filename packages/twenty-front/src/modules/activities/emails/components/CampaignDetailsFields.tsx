@@ -1,14 +1,15 @@
 import { styled } from '@linaria/react';
 import { t } from '@lingui/core/macro';
-import { useContext } from 'react';
+import { useId } from 'react';
 import {
   CoreObjectNameSingular,
   MessageChannelType,
 } from 'twenty-shared/types';
 import { isDefined } from 'twenty-shared/utils';
+import { InlineBanner } from 'twenty-ui/components';
 import { IconAlertTriangle } from 'twenty-ui/icon';
-import { type SelectOption } from 'twenty-ui/input';
-import { ThemeContext, themeCssVariables } from 'twenty-ui/theme-constants';
+import { type SelectOption } from 'twenty-ui/primitives/input';
+import { themeCssVariables } from 'twenty-ui/theme';
 
 import {
   CampaignEnvelopeBox,
@@ -21,6 +22,10 @@ import { useCreateOneRecord } from '@/object-record/hooks/useCreateOneRecord';
 import { FormSingleRecordPicker } from '@/object-record/record-field/ui/form-types/components/FormSingleRecordPicker';
 import { useMyMessageChannels } from '@/settings/accounts/hooks/useMyMessageChannels';
 import { Select } from '@/ui/input/components/Select';
+import { usePushFocusItemToFocusStack } from '@/ui/utilities/focus/hooks/usePushFocusItemToFocusStack';
+import { useRemoveFocusItemFromFocusStackById } from '@/ui/utilities/focus/hooks/useRemoveFocusItemFromFocusStackById';
+import { useRemoveFocusItemFromFocusStackOnUnmount } from '@/ui/utilities/focus/hooks/useRemoveFocusItemFromFocusStackOnUnmount';
+import { FocusComponentType } from '@/ui/utilities/focus/types/FocusComponentType';
 
 const StyledSubjectInput = styled.input`
   background: transparent;
@@ -34,18 +39,8 @@ const StyledSubjectInput = styled.input`
   width: 100%;
 `;
 
-const StyledWarning = styled.div`
-  align-items: flex-start;
-  color: ${themeCssVariables.font.color.secondary};
-  display: flex;
-  font-size: ${themeCssVariables.font.size.xs};
-  gap: ${themeCssVariables.spacing[1]};
-  padding: ${themeCssVariables.spacing[2]} ${themeCssVariables.spacing[3]};
-`;
-
-const StyledWarningIcon = styled(IconAlertTriangle)`
-  color: ${themeCssVariables.color.yellow};
-  flex-shrink: 0;
+const StyledWarningContainer = styled.div`
+  margin-top: ${themeCssVariables.spacing[2]};
 `;
 
 type CampaignDetailsFieldsProps = {
@@ -57,8 +52,31 @@ export const CampaignDetailsFields = ({
   campaign,
   width,
 }: CampaignDetailsFieldsProps) => {
-  const { theme } = useContext(ThemeContext);
   const detailsState = useCampaignDetailsState({ campaign });
+  const instanceId = useId();
+  const subjectFocusId = `campaign-subject-input-${instanceId}`;
+  const { pushFocusItemToFocusStack } = usePushFocusItemToFocusStack();
+  const { removeFocusItemFromFocusStackById } =
+    useRemoveFocusItemFromFocusStackById();
+  useRemoveFocusItemFromFocusStackOnUnmount({
+    focusId: subjectFocusId,
+    isEnabled: true,
+  });
+
+  const handleSubjectFocus = () =>
+    pushFocusItemToFocusStack({
+      focusId: subjectFocusId,
+      component: {
+        type: FocusComponentType.FORM_FIELD_INPUT,
+        instanceId: subjectFocusId,
+      },
+      globalHotkeysConfig: {
+        enableGlobalHotkeysConflictingWithKeyboard: false,
+      },
+    });
+
+  const handleSubjectBlur = () =>
+    removeFocusItemFromFocusStackById({ focusId: subjectFocusId });
 
   const { channels } = useMyMessageChannels();
   const { unsubscribeTopics } = useUnsubscribeTopics();
@@ -99,10 +117,14 @@ export const CampaignDetailsFields = ({
       onBlur={() => detailsState.flush()}
       below={
         !hasSenderOptions && (
-          <StyledWarning>
-            <StyledWarningIcon size={theme.icon.size.sm} />
-            {t`No sending address is available. Connect a verified sending domain in Settings before this campaign can go out.`}
-          </StyledWarning>
+          <StyledWarningContainer>
+            <InlineBanner
+              embedded
+              color="danger"
+              LeftIcon={IconAlertTriangle}
+              message={t`No sending address. Connect a verified domain in Settings.`}
+            />
+          </StyledWarningContainer>
         )
       }
     >
@@ -146,6 +168,8 @@ export const CampaignDetailsFields = ({
           aria-label={t`Subject`}
           defaultValue={detailsState.subject}
           onChange={(event) => detailsState.setSubject(event.target.value)}
+          onFocus={handleSubjectFocus}
+          onBlur={handleSubjectBlur}
         />
       </CampaignEnvelopeRow>
     </CampaignEnvelopeBox>

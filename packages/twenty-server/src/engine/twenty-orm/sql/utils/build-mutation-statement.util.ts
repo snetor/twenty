@@ -6,7 +6,7 @@ import {
 import { buildColumnResultAlias } from 'src/engine/twenty-orm/sql/utils/build-column-result-alias.util';
 import {
   quoteColumn,
-  renderUserWhereExpression,
+  renderWhereExpressionWithRowAccess,
   type WhereClause,
 } from 'src/engine/twenty-orm/sql/utils/build-select-statement.util';
 import { type WorkspaceTableShape } from 'src/engine/twenty-orm/table-shape/types/workspace-table-shape.type';
@@ -24,6 +24,8 @@ export type MutationStatementState = {
   kind: MutationKind;
   setClauses: SetClause[];
   whereClauses: WhereClause[];
+  rowAccessConditions: string[];
+  includeDeleted: boolean;
   returningColumns: string[];
 };
 
@@ -55,10 +57,31 @@ const buildSetClause = (state: MutationStatementState): string =>
     )
     .join(', ')}`;
 
+const buildWhereExpression = (state: MutationStatementState): string => {
+  const filterExpression = renderWhereExpressionWithRowAccess({
+    whereClauses: state.whereClauses,
+    rowAccessConditions: state.rowAccessConditions,
+  });
+  const shouldSkipTrashedRows =
+    state.kind === 'soft-delete' &&
+    !state.includeDeleted &&
+    state.tableShape.hasDeletedAtColumn;
+
+  if (!shouldSkipTrashedRows) {
+    return filterExpression;
+  }
+
+  const liveRowPredicate = `${quoteColumn(state.alias, 'deletedAt')} IS NULL`;
+
+  return filterExpression.length > 0
+    ? `(${filterExpression}) AND ${liveRowPredicate}`
+    : liveRowPredicate;
+};
+
 export const buildMutationStatement = (
   state: MutationStatementState,
 ): string => {
-  const whereExpression = renderUserWhereExpression(state.whereClauses);
+  const whereExpression = buildWhereExpression(state);
   const returningClause = buildReturningClause(state);
 
   if (state.kind === 'delete') {
