@@ -89,15 +89,49 @@ describe('TimelineCalendarEventService — périmètre et targetFilter', () => {
     expect(calendarEventRepository.count).not.toHaveBeenCalled();
   });
 
-  it('an all-countries member keeps the upstream selection by target record', async () => {
+  it('an unscoped member keeps the upstream selection by target record', async () => {
     countryScopeService.isMemberScoped.mockResolvedValue(false);
 
     await getFromObjectRecord();
 
     const { where } = calendarEventRepository.count.mock.calls[0][0];
 
+    expect(countryScopeService.keepPersonIdsInScope).not.toHaveBeenCalled();
     expect(where).toEqual({
       calendarEventTargets: { companyId: 'company-hors-perimetre' },
     });
+  });
+
+  // Upstream's integration tests "manual company targets without a related person".
+  it('an unscoped member reads a company target that has no related person', async () => {
+    countryScopeService.isMemberScoped.mockResolvedValue(false);
+    relatedPersonIdsService.getRelatedPersonIds.mockResolvedValue([]);
+
+    await getFromObjectRecord();
+
+    expect(calendarEventRepository.count).toHaveBeenCalledTimes(1);
+    expect(calendarEventRepository.count.mock.calls[0][0].where).toEqual({
+      calendarEventTargets: { companyId: 'company-hors-perimetre' },
+    });
+  });
+
+  it('a scoped member reads nothing from a company target that has no related person', async () => {
+    countryScopeService.isMemberScoped.mockResolvedValue(true);
+    relatedPersonIdsService.getRelatedPersonIds.mockResolvedValue([]);
+    countryScopeService.keepPersonIdsInScope.mockResolvedValue([]);
+
+    await expect(getFromObjectRecord()).resolves.toEqual({
+      totalNumberOfCalendarEvents: 0,
+      timelineCalendarEvents: [],
+      relatedPersonIds: [],
+    });
+    expect(calendarEventRepository.count).not.toHaveBeenCalled();
+  });
+
+  it('fails closed: reads nothing when the scope cannot be resolved', async () => {
+    countryScopeService.isMemberScoped.mockRejectedValue(new Error('boom'));
+
+    await expect(getFromObjectRecord()).rejects.toThrow('boom');
+    expect(calendarEventRepository.count).not.toHaveBeenCalled();
   });
 });

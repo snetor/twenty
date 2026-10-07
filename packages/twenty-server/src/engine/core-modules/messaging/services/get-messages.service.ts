@@ -35,37 +35,37 @@ export class GetMessagesService {
     // en contexte système : le filtre du choke-point ORM ne s'y applique pas. Le périmètre
     // est donc posé à la main, au seul endroit qui les couvre toutes.
     //
-    // 🔴 `targetFilter` (upstream, selects threads by target record) is neutralised for scoped
-    // members below: this person-based scope is the only one this service applies.
-    const personIdsInScope =
-      await this.countryScopeService.keepPersonIdsInScope({
-        personIds,
-        workspaceMemberId,
-        workspaceId,
-      });
+    // Two branches, decided first (fail-closed: if the scope cannot be resolved this throws and
+    // nothing is read; a member that cannot be found counts as scoped and gets nothing):
+    //  - UNSCOPED member (all countries, or a workspace without scope fields): the upstream path,
+    //    unchanged — upstream's `targetFilter` (v2.45 removed
+    //    IS_MESSAGE_CALENDAR_TARGET_READ_ENABLED, so it exists for every workspace) selects
+    //    threads by TARGET RECORD, and no person is required for it.
+    //  - SCOPED member: the person-based selection only, `targetFilter` dropped. Otherwise an
+    //    out-of-scope company with one in-scope contact exposes all of its threads (trap 3 of
+    //    twenty-fork-security-checks.md). Empty when no related person is in scope.
+    // Sentinel: `get-messages.service.spec.ts`.
+    const isScoped = await this.countryScopeService.isMemberScoped({
+      workspaceMemberId,
+      workspaceId,
+    });
 
-    if (personIdsInScope.length === 0) {
+    const personIdsInScope = isScoped
+      ? await this.countryScopeService.keepPersonIdsInScope({
+          personIds,
+          workspaceMemberId,
+          workspaceId,
+        })
+      : personIds;
+    const effectiveTargetFilter = isScoped ? undefined : targetFilter;
+
+    if (personIdsInScope.length === 0 && !isDefined(effectiveTargetFilter)) {
       return {
         totalNumberOfThreads: 0,
         timelineThreads: [],
         relatedPersonIds: [],
       };
     }
-
-    // Snetor — since v2.45 upstream removed `IS_MESSAGE_CALENDAR_TARGET_READ_ENABLED`: a
-    // `targetFilter` is now resolved for every workspace that has the target objects, and it
-    // selects threads by TARGET RECORD, ignoring `personIdsInScope`. A scoped member must keep
-    // the person-based selection, otherwise an out-of-scope company with one in-scope contact
-    // exposes all of its threads (trap 3 of twenty-fork-security-checks.md). Sentinel:
-    // `get-messages.service.spec.ts`.
-    const effectiveTargetFilter =
-      isDefined(targetFilter) &&
-      (await this.countryScopeService.isMemberScoped({
-        workspaceMemberId,
-        workspaceId,
-      }))
-        ? undefined
-        : targetFilter;
 
     const { messageThreads, totalNumberOfThreads } =
       await this.timelineMessagingService.getAndCountMessageThreads(

@@ -204,14 +204,14 @@ describe('GetMessagesService — périmètre pays', () => {
       ).not.toHaveBeenCalled();
     });
 
-    it('an all-countries member keeps the upstream selection by target record', async () => {
+    it('an unscoped member keeps the upstream selection by target record', async () => {
       relatedPersonIdsService.getRelatedPersonIds.mockResolvedValue([
         'person-ci',
+        'person-co',
       ]);
       messageCalendarTargetReadinessService.resolveTargetFilter.mockResolvedValue(
         targetFilter,
       );
-      countryScopeService.keepPersonIdsInScope.mockResolvedValue(['person-ci']);
       countryScopeService.isMemberScoped.mockResolvedValue(false);
 
       await service.getMessagesFromObjectRecord(
@@ -221,15 +221,91 @@ describe('GetMessagesService — périmètre pays', () => {
         'workspace-id',
       );
 
+      // Upstream path: no person filtering, the target filter is passed through.
+      expect(countryScopeService.keepPersonIdsInScope).not.toHaveBeenCalled();
       expect(
         timelineMessagingService.getAndCountMessageThreads,
       ).toHaveBeenCalledWith(
-        ['person-ci'],
+        ['person-ci', 'person-co'],
         'workspace-id',
         0,
         expect.any(Number),
         targetFilter,
       );
+    });
+
+    // Upstream's integration tests "manual company targets without a related person":
+    // a target-backed timeline needs no person for an unscoped member.
+    it('an unscoped member reads a company target that has no related person', async () => {
+      relatedPersonIdsService.getRelatedPersonIds.mockResolvedValue([]);
+      messageCalendarTargetReadinessService.resolveTargetFilter.mockResolvedValue(
+        targetFilter,
+      );
+      countryScopeService.isMemberScoped.mockResolvedValue(false);
+
+      await service.getMessagesFromObjectRecord(
+        'workspace-member-id',
+        'company',
+        'company-manual',
+        'workspace-id',
+      );
+
+      expect(
+        timelineMessagingService.getAndCountMessageThreads,
+      ).toHaveBeenCalledWith(
+        [],
+        'workspace-id',
+        0,
+        expect.any(Number),
+        targetFilter,
+      );
+    });
+
+    it('a scoped member reads nothing from a company target that has no related person', async () => {
+      relatedPersonIdsService.getRelatedPersonIds.mockResolvedValue([]);
+      messageCalendarTargetReadinessService.resolveTargetFilter.mockResolvedValue(
+        targetFilter,
+      );
+      countryScopeService.keepPersonIdsInScope.mockResolvedValue([]);
+      countryScopeService.isMemberScoped.mockResolvedValue(true);
+
+      await expect(
+        service.getMessagesFromObjectRecord(
+          'workspace-member-id',
+          'company',
+          'company-manual',
+          'workspace-id',
+        ),
+      ).resolves.toEqual({
+        totalNumberOfThreads: 0,
+        timelineThreads: [],
+        relatedPersonIds: [],
+      });
+      expect(
+        timelineMessagingService.getAndCountMessageThreads,
+      ).not.toHaveBeenCalled();
+    });
+
+    it('fails closed: reads nothing when the scope cannot be resolved', async () => {
+      relatedPersonIdsService.getRelatedPersonIds.mockResolvedValue([
+        'person-ci',
+      ]);
+      messageCalendarTargetReadinessService.resolveTargetFilter.mockResolvedValue(
+        targetFilter,
+      );
+      countryScopeService.isMemberScoped.mockRejectedValue(new Error('boom'));
+
+      await expect(
+        service.getMessagesFromObjectRecord(
+          'workspace-member-id',
+          'company',
+          'company-hors-perimetre',
+          'workspace-id',
+        ),
+      ).rejects.toThrow('boom');
+      expect(
+        timelineMessagingService.getAndCountMessageThreads,
+      ).not.toHaveBeenCalled();
     });
   });
 });

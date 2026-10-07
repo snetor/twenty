@@ -60,36 +60,31 @@ export class TimelineCalendarEventService {
     // filtre du choke-point ORM ne s'y applique donc pas du tout. Le périmètre est posé à
     // la main, avant toute lecture.
     //
-    // 🔴 `targetFilter` (upstream, selects events by target record) is neutralised for scoped
-    // members below, as in `get-messages.service.ts`.
-    const personIdsInScope =
-      await this.countryScopeService.keepPersonIdsInScope({
-        personIds,
-        workspaceMemberId: currentWorkspaceMemberId,
-        workspaceId,
-      });
+    // Same two branches as `get-messages.service.ts`, decided first and fail-closed:
+    //  - UNSCOPED member: upstream path unchanged (`targetFilter` allowed, no person required);
+    //  - SCOPED member: in-scope persons only, `targetFilter` dropped, empty when none is in scope.
+    // Sentinel: `timeline-calendar-event.service.spec.ts`.
+    const isScoped = await this.countryScopeService.isMemberScoped({
+      workspaceMemberId: currentWorkspaceMemberId,
+      workspaceId,
+    });
 
-    if (personIdsInScope.length === 0) {
+    const personIdsInScope = isScoped
+      ? await this.countryScopeService.keepPersonIdsInScope({
+          personIds,
+          workspaceMemberId: currentWorkspaceMemberId,
+          workspaceId,
+        })
+      : personIds;
+    const effectiveTargetFilter = isScoped ? undefined : targetFilter;
+
+    if (personIdsInScope.length === 0 && !isDefined(effectiveTargetFilter)) {
       return {
         totalNumberOfCalendarEvents: 0,
         timelineCalendarEvents: [],
         relatedPersonIds: [],
       };
     }
-
-    // Snetor — since v2.45 upstream removed `IS_MESSAGE_CALENDAR_TARGET_READ_ENABLED`: a
-    // `targetFilter` is resolved for every workspace that has the target objects and selects
-    // events by TARGET RECORD, ignoring `personIdsInScope`. A scoped member keeps the
-    // person-based selection (trap 3 of twenty-fork-security-checks.md). Sentinel:
-    // `timeline-calendar-event.service.spec.ts`.
-    const effectiveTargetFilter =
-      isDefined(targetFilter) &&
-      (await this.countryScopeService.isMemberScoped({
-        workspaceMemberId: currentWorkspaceMemberId,
-        workspaceId,
-      }))
-        ? undefined
-        : targetFilter;
 
     const authContext = buildSystemAuthContext(workspaceId);
 

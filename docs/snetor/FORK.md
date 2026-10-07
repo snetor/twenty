@@ -22,8 +22,12 @@ carte en retard est pire qu'absent : il fait chercher au mauvais endroit.
 > 1. Upstream deleted `IS_MESSAGE_CALENDAR_TARGET_READ_ENABLED`: a `targetFilter` now exists for
 >    every workspace with the target objects and selects threads/events by target record, past
 >    the person scope. `get-messages.service.ts` and `timeline-calendar-event.service.ts` now drop it
->    for scoped members (`CountryScopeService.isMemberScoped`). Trap 3 of the private runbook is
->    therefore no longer a flag to keep off but a guard to keep in place.
+>    for scoped members (`CountryScopeService.isMemberScoped`), decided FIRST and fail-closed: an
+>    unscoped member (all countries, or a workspace without scope fields) takes the upstream path
+>    unchanged, no person required; a scoped member gets the person scope only, empty when no
+>    related person is in scope. Trap 3 of the private runbook is therefore no longer a flag to keep
+>    off but a guard to keep in place. (A first version kept the person early return for everyone and
+>    emptied upstream's "manual company targets without a related person" integration tests.)
 > 2. `applyWriteRowLevelPermissions()` now applies the Snetor filter too. A bulk write whose
 >    filter traverses a relation reports `rowLevelPermissionsApplied: true`, and `performMutation`
 >    skipped the filter on that path (present on `main` before this upgrade).
@@ -319,8 +323,8 @@ via `CountryScopeService.keepPersonIdsInScope`.
 
 | Fichier | Nature du patch | Fragilité |
 |---|---|---|
-| `core-modules/messaging/services/get-messages.service.ts` | injection au constructeur + bloc `keepPersonIdsInScope` + early-return + **3 substitutions** `personIds` → `personIdsInScope` | 🔴 substitutions dispersées. **Since 2.45:** also `effectiveTargetFilter` (drops upstream's `targetFilter` for scoped members, via `isMemberScoped`) |
-| `core-modules/calendar/timeline-calendar-event.service.ts` | idem, avec `currentWorkspaceMemberId` comme identité + substitutions dans le `where`, le retour anticipé et 2 `relatedPersonIds` | 🔴 idem. L'amont y a réécrit 517 lignes à la v2.39.0  **Since 2.45:** same `effectiveTargetFilter` guard before the `where` |
+| `core-modules/messaging/services/get-messages.service.ts` | injection au constructeur + bloc `keepPersonIdsInScope` + early-return + **3 substitutions** `personIds` → `personIdsInScope` | 🔴 substitutions dispersées. **Since 2.45:** `isMemberScoped` first (fail-closed): unscoped = upstream path (`targetFilter` allowed, no person early return), scoped = person scope + `effectiveTargetFilter` dropped |
+| `core-modules/calendar/timeline-calendar-event.service.ts` | idem, avec `currentWorkspaceMemberId` comme identité + substitutions dans le `where`, le retour anticipé et 2 `relatedPersonIds` | 🔴 idem. L'amont y a réécrit 517 lignes à la v2.39.0  **Since 2.45:** same two branches (`isMemberScoped` first, `effectiveTargetFilter`) before the `where` |
 | `core-modules/tool/tools/navigate-tool/navigate-app-tool.ts` | injection + signature élargie + renommages `selectColumns` → `baseSelectColumns` et `records` → `allRecords` + `.filter(isScopeInScope(...))` | 🔴 **le patch le plus intrusif du fork** |
 | `core-modules/messaging/timeline-messaging.module.ts` | `CountryScopeModule,` dans `imports:` | 🟢 stable |
 | `core-modules/calendar/timeline-calendar-event.module.ts` | idem | 🟢 stable |
@@ -379,6 +383,7 @@ après un merge.**
 | `api/common/common-query-runners/__tests__/common-merge-many-query-runner-scope-path.spec.ts` | that the native merge never writes `scopePath` with the user's permissions, and writes it in system context only after the user's update succeeded |
 | `core-modules/messaging/services/__tests__/get-messages.service.spec.ts` (`targetFilter` block) | that a scoped member never gets upstream's selection by target record (Emails tab) |
 | `core-modules/calendar/__tests__/timeline-calendar-event.service.spec.ts` | same guard, Calendar tab |
+| `test/integration/graphql/suites/timeline-from-object-record-scoped.integration-spec.ts` | integration: a scoped member gets no thread and no event from a company target without an in-scope person (an all-countries control reads them). **Needs Postgres/Redis**; it creates and removes the custom field `workspaceMember.allowedCountries`. The upstream `timeline-from-object-record.integration-spec.ts` is untouched and covers the unscoped member |
 | `twenty-orm/repository/__tests__/workspace-repository-country-filter.spec.ts` (bulk write block) | that the relational bulk-write path (`applyWriteRowLevelPermissions`) applies the Snetor filter, for update, delete, soft-delete and restore |
 
 Elles étaient cinq avant la v2.39.0 : celles du select builder et des trois builders de mutation
@@ -403,7 +408,7 @@ déployer — le détail est dans son en-tête et dans `modules/twenty/main.tf` 
 Si l'une échoue après un merge : **un patch a sauté. Ne pas continuer, ne pas la réparer en
 ajustant l'attente.** Retrouver où l'accroche a disparu.
 
-### L'inventaire des tests du fork — 17 suites jest, 189 cas (mesure du 2026-10-07, v2.45.6)
+### L'inventaire des tests du fork — 17 suites jest (+ 1 integration spec) (mesure du 2026-10-07, v2.45.6)
 
 Mesure du 2026-09-15, sur la branche de montée v2.39.0 :
 
@@ -452,7 +457,7 @@ Quatre choses qu'un humain doit relire à l'œil après chaque montée :
    `docs/live/runbooks/twenty-fork-security-checks.md` in `snetor/client-matrix` (private).
    Trap 3 changed on 2026-10-07: upstream deleted the flag, so the guard is now unconditional
    (`effectiveTargetFilter`). Check after each upgrade that both services still call it and that
-   their two sentinels are green.
+   their two sentinels are green. The unscoped branch must NOT require a related person: upstream's integration tests "manual company targets without a related person" depend on it.
 4. **La résurrection de `external-contributor-pr-auto-draft.yaml`.**
 
 ---
