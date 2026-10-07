@@ -60,11 +60,8 @@ export class TimelineCalendarEventService {
     // filtre du choke-point ORM ne s'y applique donc pas du tout. Le périmètre est posé à
     // la main, avant toute lecture.
     //
-    // 🔴 Même réserve que `get-messages.service.ts` : quand
-    // `IS_MESSAGE_CALENDAR_TARGET_READ_ENABLED` est allumé, le `where` ci-dessous bascule
-    // sur `calendarEventTargets` et ne consulte plus `personIds` — notre périmètre ne le
-    // couvre pas. Le drapeau est éteint hors seeder de développement ; ne pas l'allumer
-    // sans étendre le cloisonnement à `targetFilter`.
+    // 🔴 `targetFilter` (upstream, selects events by target record) is neutralised for scoped
+    // members below, as in `get-messages.service.ts`.
     const personIdsInScope =
       await this.countryScopeService.keepPersonIdsInScope({
         personIds,
@@ -80,6 +77,20 @@ export class TimelineCalendarEventService {
       };
     }
 
+    // Snetor — since v2.45 upstream removed `IS_MESSAGE_CALENDAR_TARGET_READ_ENABLED`: a
+    // `targetFilter` is resolved for every workspace that has the target objects and selects
+    // events by TARGET RECORD, ignoring `personIdsInScope`. A scoped member keeps the
+    // person-based selection (trap 3 of twenty-fork-security-checks.md). Sentinel:
+    // `timeline-calendar-event.service.spec.ts`.
+    const effectiveTargetFilter =
+      isDefined(targetFilter) &&
+      (await this.countryScopeService.isMemberScoped({
+        workspaceMemberId: currentWorkspaceMemberId,
+        workspaceId,
+      }))
+        ? undefined
+        : targetFilter;
+
     const authContext = buildSystemAuthContext(workspaceId);
 
     return this.workspaceOrmManager.executeInWorkspaceContext(async () => {
@@ -93,10 +104,10 @@ export class TimelineCalendarEventService {
           { shouldBypassPermissionChecks: true },
         );
 
-      const where = isDefined(targetFilter)
+      const where = isDefined(effectiveTargetFilter)
         ? {
             calendarEventTargets: {
-              [targetFilter.fieldName]: targetFilter.recordId,
+              [effectiveTargetFilter.fieldName]: effectiveTargetFilter.recordId,
             },
           }
         : {

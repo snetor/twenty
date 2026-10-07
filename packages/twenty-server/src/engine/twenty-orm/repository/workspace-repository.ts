@@ -265,6 +265,11 @@ export class WorkspaceRepository<TEntity extends ObjectLiteral = ObjectRecord> {
     kind: MutationKind,
   ): void {
     this.applyRowLevelPermissionPredicates(queryBuilder, kind);
+    // Snetor — `buildMutationQueryBuilder` calls this for a bulk update/delete whose filter
+    // traverses a relation, and then reports `rowLevelPermissionsApplied: true`, so
+    // `performMutation` skips the Snetor write filter. Without this call that path writes on
+    // out-of-scope rows. Sentinel: `workspace-repository-country-filter.spec.ts`.
+    this.applyCountryPermissionFilterPredicate(queryBuilder);
   }
 
   async findRecordIdsAllowedForOperation({

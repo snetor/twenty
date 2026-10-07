@@ -35,19 +35,8 @@ export class GetMessagesService {
     // en contexte système : le filtre du choke-point ORM ne s'y applique pas. Le périmètre
     // est donc posé à la main, au seul endroit qui les couvre toutes.
     //
-    // 🔴 À RELIRE AVANT D'ALLUMER `IS_MESSAGE_CALENDAR_TARGET_READ_ENABLED`. La v2.39.0 a
-    // introduit `targetFilter`, qui sélectionne les threads par l'enregistrement cible
-    // (`messageThreadTarget.<fieldName> = recordId`) et NON par les personnes. Notre
-    // périmètre, lui, ne porte que sur `personIds`. Tant que ce drapeau est éteint —
-    // son seul `true` du dépôt est dans le seeder de développement, donc il est absent
-    // d'un workspace réel — `resolveTargetFilter` rend `undefined` et le cloisonnement
-    // reste complet. L'allumer sans étendre le périmètre à `targetFilter` ouvrirait
-    // l'onglet Emails d'un enregistrement hors portée.
-    //
-    // Effet de bord assumé de l'early-return ci-dessous : avec le drapeau allumé, un
-    // membre dont aucune personne liée n'est dans sa portée ne verrait aucun thread, même
-    // ceux que `targetFilter` aurait légitimement remontés. Plus restrictif que l'amont,
-    // donc sûr — mais c'est la fonctionnalité qui tombe, pas la confidentialité.
+    // 🔴 `targetFilter` (upstream, selects threads by target record) is neutralised for scoped
+    // members below: this person-based scope is the only one this service applies.
     const personIdsInScope =
       await this.countryScopeService.keepPersonIdsInScope({
         personIds,
@@ -63,13 +52,28 @@ export class GetMessagesService {
       };
     }
 
+    // Snetor — since v2.45 upstream removed `IS_MESSAGE_CALENDAR_TARGET_READ_ENABLED`: a
+    // `targetFilter` is now resolved for every workspace that has the target objects, and it
+    // selects threads by TARGET RECORD, ignoring `personIdsInScope`. A scoped member must keep
+    // the person-based selection, otherwise an out-of-scope company with one in-scope contact
+    // exposes all of its threads (trap 3 of twenty-fork-security-checks.md). Sentinel:
+    // `get-messages.service.spec.ts`.
+    const effectiveTargetFilter =
+      isDefined(targetFilter) &&
+      (await this.countryScopeService.isMemberScoped({
+        workspaceMemberId,
+        workspaceId,
+      }))
+        ? undefined
+        : targetFilter;
+
     const { messageThreads, totalNumberOfThreads } =
       await this.timelineMessagingService.getAndCountMessageThreads(
         personIdsInScope,
         workspaceId,
         offset,
         pageSize,
-        targetFilter,
+        effectiveTargetFilter,
       );
 
     if (!messageThreads) {

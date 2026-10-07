@@ -106,6 +106,45 @@ describe('CountryScopeService', () => {
     expect(workspaceMemberRepository.findOne).not.toHaveBeenCalled();
   });
 
+  describe('isMemberScoped', () => {
+    const isMemberScoped = () =>
+      service.isMemberScoped({
+        workspaceMemberId: 'workspace-member-id',
+        workspaceId: 'workspace-id',
+      });
+
+    it.each([
+      ['a country scope', { allowedCountries: 'CI;SN' }],
+      ['a portfolio scope', { allowedScopes: 'SAP-1' }],
+      ['an empty country scope (deny all)', { allowedCountries: '' }],
+    ])('is true for a member with %s', async (_label, fields) => {
+      workspaceMemberRepository.findOne.mockResolvedValue({
+        id: 'workspace-member-id',
+        ...fields,
+      });
+
+      await expect(isMemberScoped()).resolves.toBe(true);
+    });
+
+    it.each([
+      ['no scope field at all (workspace not scoped)', {}],
+      ['an all-countries member', { allowedCountries: '*' }],
+    ])('is false for %s', async (_label, fields) => {
+      workspaceMemberRepository.findOne.mockResolvedValue({
+        id: 'workspace-member-id',
+        ...fields,
+      });
+
+      await expect(isMemberScoped()).resolves.toBe(false);
+    });
+
+    it('is true (default-deny) when the member cannot be found', async () => {
+      workspaceMemberRepository.findOne.mockResolvedValue(null);
+
+      await expect(isMemberScoped()).resolves.toBe(true);
+    });
+  });
+
   describe('resolveScopeForUser', () => {
     const resolveScopeForUser = (userId: string | undefined) =>
       service.resolveScopeForUser({ userId, workspaceId: 'workspace-id' });

@@ -78,6 +78,41 @@ export class CountryScopeService {
   }
 
   /**
+   * Whether the member's reads must be confined to their scope. Same decision as
+   * `keepPersonIdsInScope` (`resolveScope(...).kind !== 'unscoped'`), exposed for the surfaces
+   * that must choose HOW to select rows, not only filter a list of persons. A member that
+   * cannot be found counts as scoped (default-deny).
+   */
+  async isMemberScoped({
+    workspaceMemberId,
+    workspaceId,
+  }: {
+    workspaceMemberId: string;
+    workspaceId: string;
+  }): Promise<boolean> {
+    const authContext = buildSystemAuthContext(workspaceId);
+
+    return this.workspaceOrmManager.executeInWorkspaceContext(async () => {
+      const workspaceMember = await this.workspaceOrmManager
+        .getRepository<WorkspaceMemberWorkspaceEntity>('workspaceMember', {
+          shouldBypassPermissionChecks: true,
+        })
+        .findOne({ where: { id: workspaceMemberId } });
+
+      if (!isDefined(workspaceMember)) {
+        return true;
+      }
+
+      return (
+        resolveScope(
+          readMemberScopesField(workspaceMember),
+          readMemberCountryScopeField(workspaceMember),
+        ).kind !== 'unscoped'
+      );
+    }, authContext);
+  }
+
+  /**
    * Restreint une liste de personnes au périmètre du membre courant — portefeuille
    * (`scopePath`) d'abord, repli pays comme le fait le choke-point ORM.
    *
