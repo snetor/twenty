@@ -557,6 +557,7 @@ sérieusement.
 | `danger-js` | `The job has exceeded the maximum execution time of 5m0s` — il analyse le diff, ici 9 752 fichiers | Rien. Mécanique sur une PR de merge |
 | `renderer-sb-test` | `The job was not started because it repeatedly failed to be acquired (5 attempts)` — le runner GitHub n'a jamais démarré | Relancer si on y tient. C'est de l'infrastructure |
 | `server-integration-test (N)` | Instable | Relancer une fois avant de conclure |
+| `server-test (N)` red while every suite is green | An upstream **orphan snapshot** (a `.snap` without its spec): `jest --ci` exits 1 on "snapshot file obsolete". Seen at v2.45.6 (#27158). Check by running one passing spec locally with `--ci` | Delete the orphan `.snap` in its own commit; drop that commit when upstream's spec lands |
 
 ⚠️ **Le label ne suffit pas à relancer.** Le workflow lit
 `github.event.pull_request.labels.*.name`, c'est-à-dire le **payload de l'événement d'origine**.
